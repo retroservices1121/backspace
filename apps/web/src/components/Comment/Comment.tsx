@@ -8,7 +8,7 @@ import { FieldValue, Timestamp } from '@google-cloud/firestore';
 import useMedia from '@src/hooks/useMedia';
 import { Comment } from '@src/types/prisma';
 
-import { CommentUnion } from 'api/PostAPI';
+import type { CommentUnion } from 'api/PostAPI';
 import Avatar from 'components/Avatar';
 import { AvatarTypes } from 'components/Avatar/Avatar';
 import RichRender from 'components/Rich/RichRender';

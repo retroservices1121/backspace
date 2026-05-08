@@ -10,7 +10,7 @@ import { DirectMessage, Prisma } from '@prisma/client';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axios from '@src/lib/axios';
 
-import { MessageUnion } from 'api/communityAPI';
+import type { MessageUnion } from 'api/communityAPI';
 import ApiClient from 'lib/apiClient';
 import { MESSAGES_PER_FETCH } from 'lib/pagination';
 import { Conversation } from 'types/prisma';

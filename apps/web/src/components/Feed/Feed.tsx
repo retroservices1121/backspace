@@ -10,8 +10,9 @@ import { useFeed } from '@src/hooks/useFeed';
 import { AuthStatus } from '@src/store/authSlice';
 import { isEmpty } from 'lodash';
 
-import { MessageUnion } from 'api/communityAPI';
-import { getPostByID } from 'api/PostAPI';
+import axios from '@src/lib/axios';
+
+import type { MessageUnion } from 'api/communityAPI';
 import DesktopFeedDrawer from 'components/Feed/DesktopFeedDrawer';
 import FeedDrawer from 'components/Feed/FeedDrawer';
 import { Container, FeedContainer } from 'components/Feed/styles';
@@ -38,8 +39,11 @@ function useFeaturedPost() {
   useEffect(() => {
     const postQuery = query.get('post');
     if (!isEmpty(postQuery)) {
-      getPostByID(postQuery as string)
-        .then(post => {
+      // Postgres-backed lookup; replaces the legacy Firestore getPostByID.
+      // Backend route lands with the next /api/posts/[id] PR.
+      axios()
+        .get(`/posts/${postQuery as string}`)
+        .then(({ data: post }) => {
           if (post) {
             //@ts-ignore FIXME: StaticImage
             setAddFeaturedPost(post);

@@ -6,8 +6,6 @@
 
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { FireDB, paths } from 'api/firebase';
-import { getAllFollowedUsers, getAllRecentUsers } from 'api/userAPI';
 import axios from 'lib/axios';
 import { PostDocument } from 'types/documents';
 import { Sort } from 'types/feed';
@@ -92,9 +90,9 @@ export const fetchPosts = createAsyncThunk(
 export const deletePost = createAsyncThunk(
   `${NAMESPACE}/deletePost`,
   async (post: PostDocument) => {
-    const docPath = paths.posts(post.community, post.channel);
-    const postTable = new FireDB<PostDocument>(docPath);
-    await postTable.deleteDoc(post.id as string).catch(console.log);
+    // TODO: wire to DELETE /api/posts/{id} once the route exists.
+    // The legacy Firestore deletion was removed in the Firebase cleanup
+    // pass — until the Postgres-backed endpoint lands the thunk is a no-op.
     return post.id;
   },
 );
@@ -118,22 +116,18 @@ export const fetchMorePosts = createAsyncThunk(
 );
 
 
-/** Users fetched this way are memoized */
-export const fetchFollowedUsers = createAsyncThunk(
+// TODO: replace with axios.get('/api/follow?followerId=...') once the route
+// exists. Both thunks return empty arrays until then so the consumers
+// (Discover modal, sidebar suggestions) gracefully render nothing rather
+// than crash on legacy Firestore document shapes.
+export const fetchFollowedUsers = createAsyncThunk<OldUser[], string>(
   `${NAMESPACE}/fetchFollowedUsers`,
-  async (payload : string, thunkAPI) => {
-    const {  } = thunkAPI.getState() as RootState;
-    return getAllFollowedUsers(payload);
-  },
+  async () => [],
 );
 
-/** Users fetched this way are memoized */
-export const fetchRecentUsers = createAsyncThunk(
-  `${NAMESPACE}/fetchRecetUsers`,
-  async (payload : string, thunkAPI) => {
-    const {  } = thunkAPI.getState() as RootState;
-    return getAllRecentUsers(payload);
-  },
+export const fetchRecentUsers = createAsyncThunk<OldUser[], string>(
+  `${NAMESPACE}/fetchRecentUsers`,
+  async () => [],
 );
 
 type FeedPosts = {
