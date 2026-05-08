@@ -13,8 +13,7 @@ import Stripe from 'stripe';
 import axios from '@src/lib/axios';
 import logEvent, { EventMessages } from 'lib/events';
 import { CommunityDocument } from 'types/documents';
-
-import { CommunityUnion } from './communityAPI';
+import type { CommunityUnion } from 'types/legacy-aliases';
 
 export type SubscriptionUnion = Stripe.Subscription & {
   community: CommunityDocument | CommunityUnion,

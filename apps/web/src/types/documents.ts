@@ -2,8 +2,8 @@
 // Unauthorized copying of this file, via any medium is strictly prohibited
 // Proprietary and confidential
 // Author(s): See Git History
-import { FieldValue, Timestamp } from '@firebase/firestore';
-import { DocumentReference } from '@google-cloud/firestore';
+import type { FieldValue, Timestamp } from '@firebase/firestore';
+import type { DocumentReference } from '@google-cloud/firestore';
 import { Stripe as StripeOfficial } from 'stripe';
 
 

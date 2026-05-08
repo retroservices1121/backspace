@@ -4,11 +4,10 @@
 // Author(s): See Git History
 
 import React from 'react';
-import { FieldValue, Timestamp } from '@google-cloud/firestore';
 import useMedia from '@src/hooks/useMedia';
 import { Comment } from '@src/types/prisma';
 
-import type { CommentUnion } from 'api/PostAPI';
+import type { CommentUnion } from 'types/legacy-aliases';
 import Avatar from 'components/Avatar';
 import { AvatarTypes } from 'components/Avatar/Avatar';
 import RichRender from 'components/Rich/RichRender';

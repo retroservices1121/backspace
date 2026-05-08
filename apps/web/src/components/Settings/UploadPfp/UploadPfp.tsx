@@ -6,7 +6,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icons from 'icons';
 
-import MediaAPI from 'api/mediaAPI';
+import { legacyFirebasePathToURL } from '@src/api2/storage';
 import UploadInput from 'components/UploadInput';
 import { Flex } from 'styles/Flex';
 import { Icon } from 'styles/Globals';
@@ -30,10 +30,10 @@ const UploadPfp: Input<File, Props> = ({
 
   //Show current profile image if available
   const [previewURL, setPreviewURL] = useState('');
-  if (preview) MediaAPI.getDownloadURL(preview).then((str) => setPreviewURL(str));
+  if (preview) legacyFirebasePathToURL(preview).then((str) => setPreviewURL(str));
 
   useEffect(() => {
-    if (preview) MediaAPI.getDownloadURL(preview).then((str) => {
+    if (preview) legacyFirebasePathToURL(preview).then((str) => {
       setPreviewURL(str);
     });
   }, [preview]);

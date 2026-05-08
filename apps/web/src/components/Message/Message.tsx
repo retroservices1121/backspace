@@ -10,7 +10,7 @@ import { FilledIcon } from '@src/components/MediaPost/styled';
 import { oldMessageListRemoveMe } from '@src/store/messageSlice';
 import { useRouter } from 'next/router';
 
-import type { MessageUnion as MessageType } from 'api/communityAPI';
+import type { MessageUnion as MessageType } from 'types/legacy-aliases';
 import Avatar from 'components/Avatar';
 import { AvatarTypes } from 'components/Avatar/Avatar';
 import RichRender from 'components/Rich/RichRender';

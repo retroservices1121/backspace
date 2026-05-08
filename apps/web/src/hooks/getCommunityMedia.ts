@@ -2,35 +2,32 @@
 // Unauthorized copying of this file, via any medium is strictly prohibited
 // Proprietary and confidential
 // Author(s): See Git History
+//
+// Legacy community avatar/banner reader. Reads the pre-R2 Firebase
+// Storage paths so existing communities keep rendering after the
+// pivot. New uploads go through `pages/api/community/[id]` updates
+// and `Community.avatar` / `Community.banner` Media relations; once
+// every legacy community is re-uploaded (or migrated server-side)
+// this hook can be replaced with a Postgres lookup of those Media
+// rows.
 
 import { useEffect, useState } from 'react';
 
-import { getMemoizedMedia } from 'api/communityAPI';
-import { paths } from 'api/firebase';
+import { legacyFirebasePathToURL } from '@src/api2/storage';
 
-// THIS HOOK IS A MONKEYPATCH TO A PROBLEM THAT IS GOING TO BE REFACTORED SHORTLY
-// ASK BEFORE USING THIS. -unfortunately, sam
-//
-// 2026-05-08 cleanup note: this is one of the surviving Firebase-Storage
-// readers (Bucket B). Communities still serve avatars/banners out of the
-// legacy Firebase Storage bucket; the Postgres Community model has
-// avatar/banner Media relations that should drive this flow once the R2
-// migration lands. Replace this hook with a Prisma-backed lookup
-// (community.avatar.path → api2/storage.pathToURL) at that time.
+const COMMUNITIES_COLLECTION = 'communities';
+const profilePath = (id: string) => `${COMMUNITIES_COLLECTION}/${id}/profilePic`;
+const coverPath = (id: string) => `${COMMUNITIES_COLLECTION}/${id}/coverPic`;
+
 export function useCommunityMedia(id: string) {
   const [banner, setBanner] = useState('');
   const [profile, setProfile] = useState('');
 
   useEffect(() => {
-    if (id) {
-      getMemoizedMedia(paths.communityCover(id))
-        .then(url => setBanner(url || ''));
-      getMemoizedMedia(paths.communityProfile(id))
-        .then(url => setProfile(url || ''));
-    }
+    if (!id) return;
+    legacyFirebasePathToURL(coverPath(id)).then((url) => setBanner(url || ''));
+    legacyFirebasePathToURL(profilePath(id)).then((url) => setProfile(url || ''));
   }, [id]);
 
-  return {
-    banner, profile,
-  };
+  return { banner, profile };
 }

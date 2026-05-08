@@ -18,8 +18,6 @@ import { Modals } from '@src/utils/constants';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 
-import { fireStorage } from 'api/firebase';
-import { paths } from 'api/firebase';
 import { ErrorMessage, FormInput, FormTextarea } from 'components/FormInput';
 // Probably don't import this from here either in the future
 import { ImageHeader } from 'components/Settings/styledAgain';

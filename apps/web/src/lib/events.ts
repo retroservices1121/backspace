@@ -2,9 +2,12 @@
 // Unauthorized copying of this file, via any medium is strictly prohibited
 // Proprietary and confidential
 // Author(s): See Git History
-
-import { logEvent as fbLogEvent, setUserId } from 'firebase/analytics';
-import { analytics } from 'utils/firebase';
+//
+// Analytics surface. Firebase Analytics was removed during the
+// pivot; we kept the call sites and the EventMessages registry
+// since they're a useful index of what's worth tracking. Pick a
+// replacement (PostHog / Plausible / etc.) and wire `logEvent` /
+// `setAnalyticsUserId` to it — until then these are no-ops.
 
 
 enum AuthEvents {
@@ -78,16 +81,12 @@ export const EventMessages = {
   Media: MediaEvents,
 };
 
-export const setAnalyticsUserId = async (uid : string) => {
-  if (await analytics) {
-    setUserId(await analytics, uid);
-  }
+export const setAnalyticsUserId = async (_uid: string) => {
+  // No-op until an analytics provider is wired.
 };
 
-const logEvent = async (event: string, params?: any) => {
-  if (await analytics) {
-    fbLogEvent(await analytics, event, params);
-  }
+const logEvent = async (_event: string, _params?: any) => {
+  // No-op until an analytics provider is wired.
 };
 
 export const logEventScreen = (screenName: Screens) => {

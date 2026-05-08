@@ -96,3 +96,14 @@ export function mediaToURLCallback(
       console.error(e);
     });
 }
+
+// Legacy: callers that have a Firebase Storage path string (rather
+// than a full Media row) and need a URL. Used by the avatar/banner
+// preview components and the community-media hook to render images
+// uploaded before R2 cutover. Returns '' when the path doesn't
+// resolve so callers can show a placeholder. New code should use
+// `mediaToURL` with a Media row instead.
+export function legacyFirebasePathToURL(path: string): Promise<string> {
+  if (!path) return Promise.resolve('');
+  return pathToURL(path, StorageLocation.FIREBASE, StorageBucket.ERROR).catch(() => '');
+}

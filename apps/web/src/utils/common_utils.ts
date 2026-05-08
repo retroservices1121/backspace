@@ -8,13 +8,11 @@ const dayLongLookup = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', '
 const monthLongLookup = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 import { Media } from '@prisma/client';
 
-import { envType } from 'utils/firebase';
-export const isDevelopment = () => {
-  return envType != 'production';
-};
-export const isProduction = () => {
-  return envType == 'production';
-};
+// `envType` used to come from utils/firebase (which read it from a
+// REACT_APP_ env baked at build time). Now it's just NODE_ENV.
+const envType = process.env.NODE_ENV ?? 'development';
+export const isDevelopment = () => envType !== 'production';
+export const isProduction = () => envType === 'production';
 
 export const isClient = () : boolean => {
   let result = false;

@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
-import { getMediaUrl } from 'api/mediaAPI';
+import { legacyFirebasePathToURL as getMediaUrl } from '@src/api2/storage';
 import UploadInput from 'components/UploadInput';
 import { EditButton } from 'styles/Buttons';
 import { Icon } from 'styles/Globals';

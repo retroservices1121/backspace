@@ -1,8 +1,7 @@
 import { toast } from 'react-toastify';
 import copy from 'copy-to-clipboard';
 
-import type { MessageUnion } from 'api/communityAPI';
-import type { PostUnion } from 'api/PostAPI';
+import type { MessageUnion, PostUnion } from 'types/legacy-aliases';
 import Modal from 'components/ModalV2';
 
 import { OptionsButton } from './styled';

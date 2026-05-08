@@ -14,7 +14,7 @@ import { isEmpty } from 'lodash';
 import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
 import axios from '@src/lib/axios';
 
-import type { MessageUnion } from 'api/communityAPI';
+import type { MessageUnion } from 'types/legacy-aliases';
 import DesktopFeedDrawer from 'components/Feed/DesktopFeedDrawer';
 import FeedDrawer from 'components/Feed/FeedDrawer';
 import { Container, FeedContainer } from 'components/Feed/styles';
