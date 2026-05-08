@@ -17,7 +17,6 @@ import feedReducer from './feedSlice';
 import loadReducer from './loadSlice';
 import messageReducer from './messageSlice';
 import modalsSlice from './modalSlice';
-// import notificationsReducer from './notificationsSlice';
 import postReducer from './postSlice';
 import userReducer from './userSlice';
 import usersSlice from './usersSlice';
@@ -35,7 +34,6 @@ const combinedReducer = combineReducers({
   load: loadReducer,
   message: messageReducer,
   modals: modalsSlice,
-  // notifications: notificationsReducer,
   post: postReducer,
   user: userReducer,
   users: usersSlice,
