@@ -17,6 +17,7 @@ import prisma from '@src/api2/prisma';
 import { getUserByAuthId } from '@src/api2/user';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import {
+  createPriceAndProduct,
   createStripePrice,
   disableStripePrice,
   removeStripeProduct,
@@ -74,23 +75,50 @@ handler
 
     let nextStripePriceId: string | null = tier.stripePriceId;
     let nextPrice: number = tier.price;
+    const priceProvided = typeof body.priceUsd === 'number' && body.priceUsd > 0;
 
-    if (typeof body.priceUsd === 'number' && body.priceUsd > 0 && body.priceUsd !== tier.price) {
-      // Stripe prices are immutable. Mint a new one and disable the
-      // old. Existing subscribers stay on the old price (Stripe
-      // bills against the price ID stored on each subscription).
-      if (tier.stripePriceId) {
-        try {
-          await disableStripePrice(tier.stripePriceId);
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.warn('failed to disable old stripe price', err);
-        }
+    // Three cases:
+    //   1. Tier has no stripePriceId (was deleted/never published):
+    //      mint a fresh Product+Price using createPriceAndProduct.
+    //      The Product id reuses the tier uuid; if Stripe still has
+    //      the old Product cached, createPriceAndProduct will fail,
+    //      in which case the operator needs to bump the uuid by hand
+    //      — surface as a 4xx so the UI can explain.
+    //   2. Tier has a stripePriceId and the new price differs:
+    //      disable the old price, mint a new one against the
+    //      existing Product (createStripePrice).
+    //   3. Tier has a stripePriceId and price unchanged: leave alone.
+    const titleForStripe = body.title ?? tier.title;
+    if (!tier.stripePriceId && priceProvided) {
+      const priceCents = Math.round((body.priceUsd as number) * 100);
+      try {
+        const newPrice = await createPriceAndProduct(
+          titleForStripe,
+          priceCents,
+          tier.uuid,
+          user.authId,
+        );
+        nextStripePriceId = newPrice.id;
+        nextPrice = body.priceUsd as number;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('republish failed (createPriceAndProduct)', err);
+        res.status(HttpStatus.CONFLICT).end(
+          'Republish failed — Stripe still has the old product. Delete the tier and create a fresh one.',
+        );
+        return;
       }
-      const priceCents = Math.round(body.priceUsd * 100);
+    } else if (priceProvided && body.priceUsd !== tier.price && tier.stripePriceId) {
+      try {
+        await disableStripePrice(tier.stripePriceId);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('failed to disable old stripe price', err);
+      }
+      const priceCents = Math.round((body.priceUsd as number) * 100);
       const newPrice = await createStripePrice(priceCents, tier.uuid, user.authId);
       nextStripePriceId = newPrice.id;
-      nextPrice = body.priceUsd;
+      nextPrice = body.priceUsd as number;
     }
 
     const updated = await prisma.subscriptionTier.update({

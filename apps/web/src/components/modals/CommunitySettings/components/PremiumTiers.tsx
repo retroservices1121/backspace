@@ -126,6 +126,24 @@ const PremiumTiers: React.FC<any> = () => {
     setBusy(false);
   };
 
+  // Republish a tier whose Stripe price was nulled (after a delete).
+  // PATCH with the existing price triggers the "no stripePriceId" branch
+  // server-side which mints a fresh Product+Price.
+  const onRepublish = async (tier: TierPayload) => {
+    setBusy(true);
+    const updated = await apiUpdateTier(community.id.toString(), tier.id, {
+      title: tier.title,
+      priceUsd: tier.price,
+    });
+    if (updated?.stripePriceId) {
+      toast.success('Tier republished');
+      billing.refresh();
+    } else if (updated) {
+      toast.error('Tier republish failed — try deleting the row and creating a fresh one.');
+    }
+    setBusy(false);
+  };
+
   const initialValues = editState.mode === 'edit'
     ? payloadToFormValues(editState.tier)
     : newTierFormValues();
@@ -168,17 +186,23 @@ const PremiumTiers: React.FC<any> = () => {
               </p>
             )}
             {tier.stripePriceId === null && (
-              <p style={{ color: 'orange' }}>Stripe price missing — re-create to publish.</p>
+              <p style={{ color: 'orange' }}>Stripe price missing — click Republish to re-publish.</p>
             )}
           </OldCol>
           <OldRow>
-            <Button
-              color="none"
-              onClick={() => setEditState({ mode: 'edit', tier })}
-              disabled={busy}
-            >
-              Edit
-            </Button>
+            {tier.stripePriceId === null ? (
+              <Button color="primary" onClick={() => onRepublish(tier)} disabled={busy}>
+                Republish
+              </Button>
+            ) : (
+              <Button
+                color="none"
+                onClick={() => setEditState({ mode: 'edit', tier })}
+                disabled={busy}
+              >
+                Edit
+              </Button>
+            )}
             <Space size="sm" />
             <Button color="error" onClick={() => onDelete(tier)} disabled={busy}>
               Delete
