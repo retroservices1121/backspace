@@ -1,20 +1,18 @@
 // Account settings — Postgres-backed via PATCH /api/user and PATCH
-// /api/private. The legacy Firestore writes (updateUserInfo /
-// updateUserPrivateInfo) and the fireStorage avatar/banner uploads were
-// removed during the Firebase cleanup pass; the original file mapped
-// `display_name` / `description` / `profile_image` to Firestore-only
-// columns that no longer exist.
-//
-// Avatar and banner uploads are not handled here yet — they use the same
-// `mediaStorage` + POST /api/media flow as useOnboarding and will land in
-// a follow-up. For now the form ignores ProfilePic/BannerPic file fields
-// and toasts a heads-up if the user tries to set one.
+// /api/private. Avatar and banner uploads use the same mediaStorage +
+// PUT /api/media?relationId={uid} pattern as useOnboarding; the PUT
+// branch upserts so a re-upload replaces the existing Media row instead
+// of accumulating dead records.
 import React from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import { MediaUse } from '@prisma/client';
 import settingsLayout from '@src/layouts/settingsLayout';
 import axios from '@src/lib/axios';
+import { mediaStorage } from '@src/lib/media';
+import { CreateMediaBody } from '@src/types/requests/media';
+import { getFileExtension } from '@src/utils/common_utils';
 
 import AccountForm from 'components/Settings/AccountForm';
 import { Container } from 'components/Settings/styledAgain';
@@ -26,9 +24,10 @@ import type { UpdatePrivateBody } from '../api/private';
 
 const Account: ReactLayoutComponentType = () => {
   const uid = useSelector((state: RootState) => state.user.id);
+  const authId = useSelector((state: RootState) => state.user.authId);
 
   const handleSubmit = async (form: AccountFormState) => {
-    if (!uid) {
+    if (!uid || !authId) {
       toast.error('Error saving changes.');
       return;
     }
@@ -50,10 +49,6 @@ const Account: ReactLayoutComponentType = () => {
       privateUpdate.dobDay = dob.day;
     }
 
-    if (form[AccountFields.ProfilePic] instanceof File || form[AccountFields.BannerPic] instanceof File) {
-      toast.info('Avatar and banner uploads from settings are coming soon.');
-    }
-
     try {
       const requests: Promise<unknown>[] = [];
       if (Object.keys(userUpdate).length > 0) {
@@ -62,6 +57,22 @@ const Account: ReactLayoutComponentType = () => {
       if (Object.keys(privateUpdate).length > 0) {
         requests.push(axios().patch('/private', privateUpdate));
       }
+
+      // Avatar / banner uploads — same flow as useOnboarding, with PUT
+      // instead of POST so the upsert replaces an existing Media row.
+      const profilePic = form[AccountFields.ProfilePic];
+      if (profilePic instanceof File) {
+        requests.push(
+          uploadUserMedia(uid.toString(), authId, profilePic, MediaUse.AVATAR),
+        );
+      }
+      const bannerPic = form[AccountFields.BannerPic];
+      if (bannerPic instanceof File) {
+        requests.push(
+          uploadUserMedia(uid.toString(), authId, bannerPic, MediaUse.BANNER),
+        );
+      }
+
       if (requests.length === 0) {
         toast.info('No changes to save.');
         return;
@@ -80,6 +91,31 @@ const Account: ReactLayoutComponentType = () => {
     </Container>
   );
 };
+
+// Uploads file to storage, then PUT /api/media to upsert the user's
+// avatar or banner Media row keyed by the corresponding unique relation
+// (avatarUserId / bannerUserId).
+async function uploadUserMedia(
+  userId: string,
+  authId: string,
+  file: File,
+  type: typeof MediaUse.AVATAR | typeof MediaUse.BANNER,
+) {
+  const ms = mediaStorage(type);
+  const path = ms.getPath(userId, file.name);
+  const ok = await ms.uploadFile(path, file);
+  if (!ok) return;
+  const body: CreateMediaBody = {
+    type,
+    host: ms.host,
+    path,
+    fileExtension: getFileExtension(file),
+    ...(type === MediaUse.AVATAR
+      ? { avatarUser: { connect: { authId } } }
+      : { bannerUser: { connect: { authId } } }),
+  };
+  await axios().put(`/media?relationId=${userId}`, body);
+}
 
 Account.Layout = settingsLayout;
 

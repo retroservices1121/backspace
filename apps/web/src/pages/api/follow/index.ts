@@ -17,6 +17,27 @@ const handler = createHandler();
 
 handler
   .use(requireAuthMiddleware)
+  .get(async (req, res) => {
+    // Returns the users the authenticated caller follows. The sidebar
+    // discover/suggestions UI uses this to render its list.
+    //
+    // Identity comes from req.authId so the response is always scoped to
+    // the caller — query string is ignored deliberately.
+    const me = await prisma.user.findUnique({ where: { authId: req.authId } });
+    if (!me) {
+      res.json([]);
+      return;
+    }
+    const follows = await prisma.follow.findMany({
+      where: { followerId: me.id },
+      include: { account: { include: { avatar: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    // Hand the consumer the followed users directly — the Follow row
+    // itself isn't useful in the sidebar.
+    res.json(follows.map((f) => f.account));
+  })
   .put(async (req, res) => {
     const { 
       authId,

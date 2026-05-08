@@ -116,15 +116,20 @@ export const fetchMorePosts = createAsyncThunk(
 );
 
 
-// TODO: replace with axios.get('/api/follow?followerId=...') once the route
-// exists. Both thunks return empty arrays until then so the consumers
-// (Discover modal, sidebar suggestions) gracefully render nothing rather
-// than crash on legacy Firestore document shapes.
 export const fetchFollowedUsers = createAsyncThunk<OldUser[], string>(
   `${NAMESPACE}/fetchFollowedUsers`,
-  async () => [],
+  async () => {
+    // Identity comes from the auth cookie server-side; we ignore the
+    // payload (legacy callers pass the user's authId) and let the route
+    // scope the response to the current user.
+    const { data } = await axios().get('/follow');
+    return data ?? [];
+  },
 );
 
+// "Recent users" needs its own discovery endpoint (probably /api/users/recent
+// with some lightweight ranking). Returns [] until that lands so the sidebar
+// renders empty rather than crashing on a legacy Firestore document shape.
 export const fetchRecentUsers = createAsyncThunk<OldUser[], string>(
   `${NAMESPACE}/fetchRecentUsers`,
   async () => [],
