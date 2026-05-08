@@ -31,14 +31,18 @@ export type OldUser = UserDocument & {
   following_list?: string[],
 };
 
-type UserSliceType = User.Self;
+// `fetchAttempted` flips true after the first /user/self call resolves
+// (success OR failure). Bootstrapping logic in useAuthenticate uses it to
+// distinguish "the user has no DB row yet, send them to onboarding" from
+// "the fetch hasn't happened, hold off."
+type UserSliceType = User.Self & { fetchAttempted: boolean };
 //TODO this is annoying to maintain but it's nice to have empty arrays
 const initialState : UserSliceType = {
   id: undefined,
   uuid: undefined,
   authId: undefined,
   createdAt: undefined,
-  username: undefined, 
+  username: undefined,
   bio: undefined,
   platformPermission: PlatformUserType.USER,
   name: undefined,
@@ -54,8 +58,10 @@ const initialState : UserSliceType = {
   followers: [],
   following: [],
   conversations: [],
-  notifications: [], 
+  notifications: [],
   communities: [],
+
+  fetchAttempted: false,
 };
 
 // const initialState : UserSliceType = {
@@ -197,13 +203,21 @@ export const userSlice = createSlice({
     });
     builder.addCase(fetchUserBase.fulfilled, (state, { payload: user }) => {
       console.log(
-        user?.username 
-          ? `Logged in as ${JSON.stringify(user.username)}` 
+        user?.username
+          ? `Logged in as ${JSON.stringify(user.username)}`
           : 'Logged In', { toastId: 'fetchUser success' });
+      state.fetchAttempted = true;
       return populateStateFromObject(user, state);
     });
+    builder.addCase(fetchUserBase.rejected, (state) => {
+      state.fetchAttempted = true;
+    });
     builder.addCase(fetchUser.fulfilled, (state, { payload: user }) => {
+      state.fetchAttempted = true;
       return populateStateFromObject(user, state);
+    });
+    builder.addCase(fetchUser.rejected, (state) => {
+      state.fetchAttempted = true;
     });
     builder.addCase(login.fulfilled, (state, { payload: user }) => {
       return populateStateFromObject(user, state);

@@ -23,6 +23,7 @@ export default function useAuthentication() {
   const router = useRouter();
   const authState = useAppSelector((state: RootState) => state.auth.status);
   const userState = useAppSelector((state: RootState) => state.user.state);
+  const fetchAttempted = useAppSelector((state: RootState) => state.user.fetchAttempted);
 
   const { ready, authenticated, user, getAccessToken } = usePrivy();
 
@@ -53,20 +54,27 @@ export default function useAuthentication() {
     }
   }, [ready, authenticated, user]);
 
-  // Routing on auth state changes (unchanged from the Firebase version)
+  // Routing on auth state changes. Sends users without a finished
+  // onboarding row to /auth/onboarding — covers two cases:
+  //   1. User has a User row but UserState.onboarded is false (legacy).
+  //   2. Brand-new Privy login with no User row at all (first-time signup).
+  // Gate on fetchAttempted so we do not flicker-redirect during the
+  // initial /user/self request.
   useEffect(() => {
     if (authState === AuthStatus.SignedOut) {
       router.push(APP.AUTH.LOGIN);
-    } else if (authState === AuthStatus.SignedIn) {
-      if (userState?.onboarded === false) {
-        if (router.pathname.includes('logout')) {
-          console.log('User manually logging out, skipping redirect to onboarding');
-        } else {
-          router.push(APP.AUTH.ONBOARDING);
-        }
-      }
+      return;
     }
-  }, [authState, userState?.onboarded]);
+    if (authState !== AuthStatus.SignedIn) return;
+    if (!fetchAttempted) return;
+    if (userState?.onboarded === true) return;
+    if (router.pathname.includes('logout')) {
+      console.log('User manually logging out, skipping redirect to onboarding');
+      return;
+    }
+    if (router.pathname === APP.AUTH.ONBOARDING) return;
+    router.push(APP.AUTH.ONBOARDING);
+  }, [authState, userState?.onboarded, fetchAttempted]);
 
   return authState;
 }
