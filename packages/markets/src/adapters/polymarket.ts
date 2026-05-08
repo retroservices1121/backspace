@@ -84,33 +84,36 @@ export class PolymarketAdapter implements MarketVenue {
   }
 
   async listMarkets(args: ListMarketsArgs): Promise<ListMarketsResult> {
-    // Polymarket Gamma uses offset+limit pagination, not opaque cursors.
-    // We translate so callers stay on a single cursor-shaped contract.
+    // Use Gamma's /markets/keyset endpoint — the builder docs recommend it
+    // for catalog scans because it scales past offset-based pagination
+    // without skipping/repeating rows when the catalog mutates between
+    // pages. The cursor in our contract IS Polymarket's opaque
+    // `next_cursor`; we pass it through unchanged.
+    //
+    // The endpoint explicitly rejects `offset` (422 validation error), so
+    // do not pass it.
     const limit = clampLimit(args.limit);
-    const offset = parseCursor(args.cursor);
 
     const qs = new URLSearchParams();
     qs.set('limit', String(limit));
-    qs.set('offset', String(offset));
-    // Default to live catalog so the importer doesn't waste rows on
-    // settled markets — callers wanting historical data can pass
-    // category/search and we'll still narrow.
     qs.set('active', 'true');
     qs.set('closed', 'false');
+    if (args.cursor) qs.set('after_cursor', args.cursor);
     if (args.category) qs.set('category', args.category);
     if (args.search) qs.set('q', args.search);
 
-    const raw = await this.fetchJson<RawMarket[] | { markets: RawMarket[] }>(
-      `/markets?${qs.toString()}`,
+    const raw = await this.fetchJson<{ markets?: RawMarket[]; next_cursor?: string }>(
+      `/markets/keyset?${qs.toString()}`,
     );
-    const list = Array.isArray(raw) ? raw : (raw.markets ?? []);
+    const list = raw.markets ?? [];
     const markets = list
       .map((m) => mapRawMarket(m))
       .filter((m): m is VenueMarket => m !== null);
 
-    // If we got back fewer than `limit` rows we're at the end of the
-    // catalog; surface a null cursor so the caller stops paging.
-    const nextCursor = markets.length < limit ? null : encodeCursor(offset + limit);
+    // Per docs: "Present only when the number of returned markets equals
+    // the effective limit. Omitted on the last page." We surface that
+    // exact semantic as `cursor: null` for the final page.
+    const nextCursor = raw.next_cursor ?? null;
     return { markets, cursor: nextCursor };
   }
 
@@ -174,16 +177,6 @@ function parseDate(iso: string | null | undefined): Date | null {
 function clampLimit(requested: number | undefined): number {
   if (!requested || requested <= 0) return 50;
   return Math.min(requested, 200);
-}
-
-function parseCursor(cursor: string | undefined): number {
-  if (!cursor) return 0;
-  const n = Number.parseInt(cursor, 10);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
-function encodeCursor(offset: number): string {
-  return String(offset);
 }
 
 function mapRawMarket(raw: RawMarket): VenueMarket | null {
