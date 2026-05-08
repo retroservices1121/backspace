@@ -144,12 +144,14 @@ export const fetchFollowedUsers = createAsyncThunk<OldUser[], string>(
   },
 );
 
-// "Recent users" needs its own discovery endpoint (probably /api/users/recent
-// with some lightweight ranking). Returns [] until that lands so the sidebar
-// renders empty rather than crashing on a legacy Firestore document shape.
+// Recently-onboarded users for the Discover sidebar. The legacy thunk
+// took an authId arg; we ignore it (server scopes to req.authId).
 export const fetchRecentUsers = createAsyncThunk<OldUser[], string>(
   `${NAMESPACE}/fetchRecentUsers`,
-  async () => [],
+  async () => {
+    const { data } = await axios().get('/users/recent');
+    return (data ?? []) as OldUser[];
+  },
 );
 
 type FeedPosts = {

@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction } from 'react';
+import { useSelector } from 'react-redux';
 import { useFeed } from '@src/hooks/useFeed';
 import useUser from '@src/hooks/useUser';
 import { User } from '@src/types/prisma';
@@ -6,6 +7,7 @@ import { User } from '@src/types/prisma';
 import Drawer from 'components/Drawer';
 import { OptionTitle } from 'components/Feed/styles';
 import UserTile from 'components/User/UserTile';
+import { RootState } from 'store/store';
 import { Sort } from 'types/feed';
 
 import FeedCard from './FeedCard';
@@ -17,25 +19,28 @@ interface DrawerProps {
 
 export default function DesktopFeedDrawer({ contentPosition }: DrawerProps ) {
   const { user } = useUser();
+  const recentUsers = useSelector((state: RootState) => state.feed.recentUsers);
 
   return (
-    <Drawer 
-      title="Feed Options" 
-      color='backgroundDark' 
-      allowOverFlow={true} 
-      contentPosition={contentPosition} invisibleScroll 
+    <Drawer
+      title="Feed Options"
+      color='backgroundDark'
+      allowOverFlow={true}
+      contentPosition={contentPosition} invisibleScroll
     >
       <FeedCard>
         <FeedFilter />
       </FeedCard>
-      
 
-      {/* { recentUsers.length !== 0 && (
+
+      {recentUsers && recentUsers.length > 0 && (
         <FeedCard>
-          <OptionTitle>Recently Visited</OptionTitle>
-          {generateUserList(recentUsers)}
+          <OptionTitle>New Around Here</OptionTitle>
+          {recentUsers.map((u: any) => (
+            <UserTile key={`recent-${u.id ?? u.uuid}`} user={u} />
+          ))}
         </FeedCard>
-      )} */}
+      )}
 
       { user?.following?.length !== 0 && (
         <FeedCard>
