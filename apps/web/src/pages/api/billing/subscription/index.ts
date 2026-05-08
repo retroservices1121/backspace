@@ -4,11 +4,12 @@
 // Author(s): See Git History
 
 
-import { Billing } from '@prisma/client';
+import { Billing, Prisma } from '@prisma/client';
 import { BillingWithAll, getBillingByUserId } from '@src/api2/billing';
+import { upsertSubscription } from '@src/api2/subscription';
 import { getUserByAuthId } from '@src/api2/user';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
-import { removeStripeSubscription } from '@src/lib/stripe';
+import { createStripeSubscription, removeStripeSubscription } from '@src/lib/stripe';
 import HttpStatus from 'http-status-codes';
 import { resolve } from 'path';
 
@@ -34,12 +35,50 @@ handler
     res.json({ billing });
     resolve();
   })
+  // POST /api/billing/subscription   Create a new subscription on
+  // Stripe and persist a matching Subscription row in Postgres. Body:
+  // { priceId, communityId, accountId } where accountId is the
+  // creator's connected Stripe account (transfer destination).
+  .post(async (req, res) => {
+    const user = await getUserByAuthId(req.authId);
+    if (!user || req.authId !== user.authId) {
+      res.status(HttpStatus.UNAUTHORIZED).end('Not authorized');
+      return;
+    }
+    const billing = await getBillingByUserId(user.id);
+    if (!billing?.customer) {
+      res.status(HttpStatus.BAD_REQUEST).end('No Stripe customer');
+      return;
+    }
+    const { priceId, communityId, accountId } = req.body as {
+      priceId?: string; communityId?: string; accountId?: string;
+    };
+    if (!priceId || !communityId || !accountId) {
+      res.status(HttpStatus.BAD_REQUEST).end('priceId, communityId, accountId required');
+      return;
+    }
+    const stripeSub = await createStripeSubscription(
+      billing.customer.customerId,
+      priceId,
+      accountId,
+      communityId,
+      user.authId,
+    );
+    const persisted = await upsertSubscription(stripeSub.id, {
+      stripeId: stripeSub.id,
+      active: true,
+      stripeValue: JSON.stringify(stripeSub),
+      community: { connect: { id: BigInt(communityId) } },
+      user: { connect: { id: user.id } },
+    });
+    res.json({ subscription: persisted });
+  })
   .put((async (req, res) => {
-    const { 
+    const {
       authId,
       body,
     } = req;
-    
+
     let billing : Billing | null = null;
     const user = await getUserByAuthId(authId);
     if (user && authId === user?.authId) {

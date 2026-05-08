@@ -17,13 +17,12 @@ import { updateBilling } from '@src/store/billingSlice';
 import { SubscriptionWithCommunity } from '@src/types/billing';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, PaymentMethod, StripeElementsOptions } from '@stripe/stripe-js';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Stripe from 'stripe';
 import { useTheme } from 'styled-components';
 
-import { cancelSubscription, createNewStripeCustomer, getAllSubscriptions, getStripeCards, getStripeCustomer, SubscriptionUnion } from 'api/billing';
+import { addSourceToCustomer, cancelSubscription, createNewStripeCustomer, getAllSubscriptions, getStripeCards, getStripeCustomer, SubscriptionUnion } from 'api/billing';
 import CommunityIcon from 'components/CommunityIcon';
 import Modal from 'components/ModalV2';
 import AddPaymentMethod from 'components/Settings/AddPaymentMethod';
@@ -94,13 +93,8 @@ const StripeForm:React.FC<StripeFormProps> = ({ onSubmit, onSuccess }) => {
       }
       
       //   Attach newly created source to customer
-      const functions = getFunctions();
-      const addSourceToCustomer = httpsCallable(functions, 'addSourceToCustomer');
       addSourceToCustomer(result.source.id)
         .then((response) => {
-          // Read result of the Cloud Function.
-          const data = response.data;
-          
           const update : UpdateOptions = {
             render: 'Success!',
             type: 'success',
@@ -109,7 +103,7 @@ const StripeForm:React.FC<StripeFormProps> = ({ onSubmit, onSuccess }) => {
           };
           toast.update(toastId, update);
           onSuccess();
-          return data;
+          return response;
         })
         .catch((error) => {
           console.error(error);

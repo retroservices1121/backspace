@@ -1,265 +1,180 @@
-// Copyright 2021 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
-
+// Stripe billing client. Replaced the Firebase Cloud Functions surface
+// (httpsCallable for ~17 functions) with calls into our own
+// pages/api/billing/* routes — those routes use lib/stripe (server-side
+// Stripe SDK) and api2/* (Postgres) directly, so this file becomes a
+// thin axios wrapper.
+//
+// User-side (customer flows) is fully wired:
+//   getStripeCustomer / createNewStripeCustomer / getStripeCards /
+//   deletePayment / setDefaultPayment / getAllSubscriptions /
+//   createSubscription / cancelSubscription / addSourceToCustomer
+//
+// Creator-side (Express accounts, payouts, tier prices) is stubbed —
+// the underlying server-side handlers don't exist yet. Calls toast and
+// return null. /settings/creator already handles the no-account state
+// gracefully so the page renders without exploding.
 import { toast } from 'react-toastify';
-import { PaymentMethod } from '@stripe/stripe-js/types/api';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getFunctions, httpsCallable, HttpsCallableResult } from 'firebase/functions';
 import Stripe from 'stripe';
-import { db } from 'utils/firebase';
 
+import axios from '@src/lib/axios';
 import logEvent, { EventMessages } from 'lib/events';
-import { Collections, CommunityDocument, PrivateUserDocument } from 'types/documents';
+import { CommunityDocument } from 'types/documents';
 
-import { communityTable, CommunityUnion } from './communityAPI';
+import { CommunityUnion } from './communityAPI';
 
 export type SubscriptionUnion = Stripe.Subscription & {
   community: CommunityDocument | CommunityUnion,
 };
 
-export const getStripeCustomer = (uid: string) : Promise<Stripe.Customer | null> => {
-  const docRef = doc(db, Collections.UsersPrivate, uid, Collections.Stripe, 'customer');
-  return getDoc(docRef).then((document) => {
-    if (document.exists()) {
-      return document.data() as Stripe.Customer;
-    } else {
-      return null;
-    }
-  }).catch((error) => {
-    console.log(error);
+const creatorTodo = (label: string) => {
+  toast.info(`${label} is part of the creator-account flow, coming soon.`);
+  return null;
+};
+
+// User-side: fully wired.
+
+export const getStripeCustomer = async (
+  _uid: string,
+): Promise<Stripe.Customer | null> => {
+  try {
+    const { data } = await axios().get('/billing');
+    return (data?.billing?.customer?.stripeValue as Stripe.Customer) ?? null;
+  } catch (e) {
+    console.error(e);
     return null;
-  });
+  }
 };
 
-export const getStripeCreator = (uid: string) : Promise<Stripe.Account | null> => {
-  const docRef = doc(db, Collections.UsersPrivate, uid, Collections.Stripe, 'account');
-  return getDoc(docRef).then((document) => {
-    if (document.exists()) {
-      return document.data() as Stripe.Account;
-    } else {
-      return null;
-    }
-  }).catch((error) => {
-    console.error(error);
-    toast.error('Something went wrong, please note the time and contact support.');
-    return null;
-  });
-};
-
-export const getLoginLink = () => {
-  const functions = getFunctions();
-  const newExpressLoginLink = httpsCallable(functions, 'newExpressLoginLink');
-  return newExpressLoginLink()
-    .then((result) => {
-      // Read result of the Cloud Function.
-      const data = result?.data;
-      if (data) return data as Stripe.LoginLink;
-      else return null;
-    })
-    .catch((error) => {
-      console.error(error);
-      toast.error('Something went wrong, please note the time and contact support.');
-      return null;
-    });
-};
-
-export const getNewAccountLink = () => {
-  const functions = getFunctions();
-  const newAccountLink = httpsCallable(functions, 'newAccountLink');
-  return newAccountLink()
-    .then((result) => {
-      // Read result of the Cloud Function.
-      const data = result?.data;
-      if (data) return data as Stripe.AccountLink;
-      else return null;
-    })
-    .catch((error) => {
-      console.error(error);
-      toast.error('Something went wrong, please note the time and contact support.');
-      return null;
-    });
-};
-
-export const getAccountLink = (uid: string) : Promise<Stripe.AccountLink | null> => {
-  const docRef = doc(db, Collections.UsersPrivate, uid);
-  return getDoc(docRef).then((document) => {
-    if (document.exists()) {
-      const docData = document.data() as PrivateUserDocument;
-      const accountLink = docData.account_link;
-      if (accountLink?.expires_at && accountLink.expires_at > Date.now()) {
-        return accountLink;
-      } else { // This one expired, get a new one
-        return getNewAccountLink();
-      }
-    } else {
-      return null;
-    }
-  }).catch((error) => {
-    console.error(error);
-    toast.error('Something went wrong, please note the time and contact support.');
-    return null;
-  });
-};
-
-//TODO Check for existing first (prob call getStripeCustomer)
-export const createNewStripeCustomer = () => {
+export const createNewStripeCustomer = async () => {
   logEvent(EventMessages.Billing.NewCustomer);
-  const functions = getFunctions();
-  const NewStripeCustomer = httpsCallable(functions, 'NewStripeCustomer');
-  NewStripeCustomer()
-    .then((result : HttpsCallableResult) => {
-      // Read result of the Cloud Function.
-      const data = result?.data;
-      if (data) return data as Stripe.Customer;
-      else return null;
-    })
-    .catch((error : any) =>  {
-      console.error(error);
-      toast.error('Something went wrong, please note the time and contact support.');
-      return null;
-    });
+  try {
+    const { data } = await axios().post('/billing/customer', {});
+    return data?.billing?.customer?.stripeValue as Stripe.Customer | null;
+  } catch (e) {
+    console.error(e);
+    toast.error('Could not create billing account.');
+    return null;
+  }
 };
 
-// Creator account
-export const createStripeAccount = () => {
-  logEvent(EventMessages.Billing.NewCreator);
-  const functions = getFunctions();
-  const NewStripeAccount = httpsCallable(functions, 'NewStripeAccount');
-  return NewStripeAccount()
-    .then((result) => {
-      // Read result of the Cloud Function.
-      const data = result?.data;
-      if (data) return data as Stripe.AccountLink;
-      else return null;
-    })
-    .catch((error) => {
-      console.error(error);
-      toast.error('Something went wrong, please note the time and contact support.');
-      return null;
-    });
+/** Attach a payment source (Stripe source / payment method id) to the
+ *  authenticated user's Stripe customer. The form posts the source id
+ *  it minted via Stripe Elements; this fans the attachment out to
+ *  Stripe and promotes it to default. */
+export const addSourceToCustomer = async (sourceId: string) => {
+  const { data } = await axios().post('/billing/methods', { sourceId });
+  return data;
 };
 
-export const getStripeCards = () => {
-  const functions = getFunctions();
-  const getPaymentSources = httpsCallable(functions, 'getPaymentSources');
-  return getPaymentSources()
-    .then((result) => {
-      // Read result of the Cloud Function.
-      /** @type {any} */
-      const data = result.data;
-      return data as Array<PaymentMethod>;
-    })
-    .catch((error) => console.error('can\'t get cards', error));
+export const getStripeCards = async () => {
+  try {
+    const { data } = await axios().get('/billing/methods');
+    return (data?.methods as Stripe.PaymentMethod[]) ?? [];
+  } catch (e) {
+    console.error("can't get cards", e);
+    return [];
+  }
 };
 
 export const deletePayment = (sourceId: string) => {
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'removePaymentMethod ');
-  return fbFunction( sourceId )
-    .catch((error) => {console.error(error); throw new Error('Failed To Remove Payment');});
-};
-
-export const deleteTier = (communityId: string, tierId: string) => {
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'removeTier');
-  return fbFunction({ communityId, tierId })
-    .catch((error) => {console.error(error); throw new Error('FailedRemoveTier');});
-};
-
-export const getAllSubscriptions = () : Promise<Array<SubscriptionUnion> | undefined> => {
-  const functions = getFunctions();
-  const getSubscriptionHistory = httpsCallable(functions, 'getSubscriptionHistory');
-  return getSubscriptionHistory()
-    .then((result : HttpsCallableResult) => {
-      // Read result of the Cloud Function.
-      const data = result.data as Stripe.ApiList<Stripe.Subscription>;
-      const temp = data?.data as Array<SubscriptionUnion>;
-      if (temp) {
-        return Promise.all(temp.map(async (sub) => {
-          const community = await communityTable.getWithId(sub.metadata.community || '');
-          return {
-            ...sub,
-            community: community,
-          } as SubscriptionUnion;
-        }));
-      } else {
-        return undefined;
-      }
-    })
-    .catch((error) => {console.log(error); return undefined;});
-};
-
-//If webhook doesn't do it's job, we want to manually go get it.
-export const forceUpdateStripeAccount = (uid: string) => {
-  const functions = getFunctions();
-  const fetchStripeAccount = httpsCallable(functions, 'fetchStripeAccount');
-  return fetchStripeAccount()
-    .then((result) => {
-      // Read result of the Cloud Function.
-      const data = result?.data as Stripe.Account;
-      if (data) {
-        const docRef = doc(db, Collections.UsersPrivate, uid, Collections.Stripe, 'account');
-        setDoc(docRef, data, { merge: true });
-        return data;
-      } else return null;
-    })
+  return axios()
+    .delete(`/billing/methods?id=${encodeURIComponent(sourceId)}`)
     .catch((error) => {
       console.error(error);
-      // toast.error('Something went wrong, please note the time and contact support.');
-      return null;
+      throw new Error('Failed To Remove Payment');
     });
 };
 
-export const createNewPrice = (price : number, communityId: string, tierId: string) => {
-  logEvent(EventMessages.Billing.PriceUpdate, { community: communityId, tier: tierId });
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'createNewPrice');
-  return fbFunction({ price, communityId, tierId })
-    .then((result) => {
-      // Read result of the Cloud Function.
-      /** @type {any} */
-      const data = result.data;
-      return data as Stripe.Price;
-    })
-    .catch((error) => {console.error(error); throw new Error('FailedCreateNewPrice');});
-};
-
-
-export const updatePrice = (price : number, communityId: string, tierId: string) => {
-  logEvent(EventMessages.Billing.PriceUpdate, { community: communityId, tier: tierId });
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'updatePrice');
-  return fbFunction({ price, communityId, tierId })
-    .then((result) => {
-      // Read result of the Cloud Function.
-      /** @type {any} */
-      const data = result.data;
-      return data as Stripe.Price;
-    })
-    .catch((error) => {console.error(error); throw new Error('FailedUpdatePrice');});
-};
-
 export const setDefaultPayment = (sourceId: string) => {
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'setDefaultPaymentSource');
-  return fbFunction( sourceId )
-    .catch((error) => {console.error(error); throw new Error('Failed To Set Default Payment');});
+  return axios()
+    .put('/billing/methods', { sourceId })
+    .catch((error) => {
+      console.error(error);
+      throw new Error('Failed To Set Default Payment');
+    });
 };
 
-export const createSubscription = (communityId: string, tierId: string) => {
-  logEvent(EventMessages.Billing.Subscribe, { communityId: communityId, tierId: tierId });
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'createNewSubscription');
-  return fbFunction({ communityId, tierId })
-    .catch((error) => {console.error(error); throw new Error('FailedCreateNewSubscription');});
+export const getAllSubscriptions = async (): Promise<Array<SubscriptionUnion> | undefined> => {
+  try {
+    const { data } = await axios().get('/billing/subscriptions');
+    return (data as Array<SubscriptionUnion>) ?? undefined;
+  } catch (e) {
+    console.error(e);
+    return undefined;
+  }
 };
 
-export const cancelSubscription = (subscriptionId: string, communityId: string) => {
-  logEvent(EventMessages.Billing.UnSubcribe, { communityId: communityId, subscriptionId: subscriptionId });
-  const functions = getFunctions();
-  const fbFunction = httpsCallable(functions, 'removeSubscription');
-  return fbFunction({ subscriptionId, communityId })
-    .catch((error) => {console.error(error); throw new Error('FailedRemoveSubscription');});
+export const createSubscription = async (
+  communityId: string,
+  tierId: string,
+  accountId: string,
+) => {
+  logEvent(EventMessages.Billing.Subscribe, { communityId, tierId });
+  try {
+    const { data } = await axios().post('/billing/subscription', {
+      priceId: tierId,
+      communityId,
+      accountId,
+    });
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error('FailedCreateNewSubscription');
+  }
 };
+
+export const cancelSubscription = async (
+  subscriptionId: string,
+  communityId: string,
+) => {
+  logEvent(EventMessages.Billing.UnSubcribe, { communityId, subscriptionId });
+  try {
+    const { data } = await axios().delete(
+      `/billing/subscription?stripeId=${encodeURIComponent(subscriptionId)}`,
+    );
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw new Error('FailedRemoveSubscription');
+  }
+};
+
+// Creator-side: stubbed until /api/billing/account etc. land.
+
+export const getStripeCreator = async (
+  _uid: string,
+): Promise<Stripe.Account | null> => null;
+
+export const getLoginLink = async (): Promise<Stripe.LoginLink | null> =>
+  creatorTodo('Stripe creator dashboard link');
+
+export const getNewAccountLink = async (): Promise<Stripe.AccountLink | null> =>
+  creatorTodo('Stripe onboarding link');
+
+export const getAccountLink = async (
+  _uid: string,
+): Promise<Stripe.AccountLink | null> =>
+  creatorTodo('Stripe onboarding link');
+
+export const createStripeAccount = async (): Promise<Stripe.AccountLink | null> => {
+  logEvent(EventMessages.Billing.NewCreator);
+  return creatorTodo('Creator account creation');
+};
+
+export const forceUpdateStripeAccount = async (_uid: string) =>
+  creatorTodo('Creator account resync');
+
+export const deleteTier = async (_communityId: string, _tierId: string) =>
+  creatorTodo('Subscription tier removal');
+
+export const createNewPrice = async (
+  _price: number,
+  _communityId: string,
+  _tierId: string,
+): Promise<Stripe.Price | null> => creatorTodo('Tier pricing');
+
+export const updatePrice = async (
+  _price: number,
+  _communityId: string,
+  _tierId: string,
+): Promise<Stripe.Price | null> => creatorTodo('Tier pricing');
