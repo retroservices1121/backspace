@@ -23,6 +23,10 @@ export enum FilterOptions {
   RECENT = 'recent',
   FOLLOWING = 'following',
   COMMUNITY = 'community',
+  // Web3 pivot: rank by author's prediction-market accuracy.
+  // Until trades begin resolving, every user's rankingScore = 0 and
+  // results are effectively chronological-by-tiebreak.
+  ACCURACY = 'accuracy',
 }
 
 type FetchPostsPayload = {
@@ -137,6 +141,7 @@ type FeedPosts = {
   [FilterOptions.RECENT]: Post[],
   [FilterOptions.FOLLOWING]: Post[],
   [FilterOptions.COMMUNITY]: Post[],
+  [FilterOptions.ACCURACY]: Post[],
 };
 
 type FeedState = {
@@ -154,7 +159,10 @@ type FeedState = {
 
 
 const initialState: FeedState = {
-  filter: FilterOptions.DISCOVER,
+  // Default to ACCURACY ranking — the core pivot premise is "the person who is
+  // right 80% of the time gets seen, the person who is loud gets buried."
+  // Until trades resolve, this falls back to recency-by-tiebreak server-side.
+  filter: FilterOptions.ACCURACY,
   posts: <FeedPosts>{},
 
   discoverModalOpen: false,
@@ -173,7 +181,7 @@ const feedSlice = createSlice({
       state.discoverModalOpen = action.payload || !state.discoverModalOpen;
     },
     setFilter(state, action: PayloadAction<FilterOptions>) {
-      state.filter = action.payload || FilterOptions.DISCOVER;
+      state.filter = action.payload || FilterOptions.ACCURACY;
     },
     clearPosts(state) {
       state.posts = initialState.posts;

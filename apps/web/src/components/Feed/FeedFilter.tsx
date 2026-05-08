@@ -18,6 +18,12 @@ type FilterType = {
 
 const filters : Array<FilterType> = [
   {
+    // Web3 pivot: ranks by author's prediction-market accuracy first, recency second
+    name: 'Accuracy',
+    sort: FilterOptions.ACCURACY,
+    icon: Icons.Discover,
+  },
+  {
     name: 'Discover',
     sort: FilterOptions.DISCOVER,
     icon: Icons.Discover,

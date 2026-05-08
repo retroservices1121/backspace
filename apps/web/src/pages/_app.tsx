@@ -10,6 +10,7 @@ import Loading from '@src/components/Loading';
 import AppWelcome from '@src/components/modals/AppWelcome';
 import PostViewer from '@src/components/modals/PostViewer';
 import useAuthentication from '@src/hooks/useAuthenticate';
+import { useWalletSync } from '@src/hooks/useWalletSync';
 import { AuthStatus } from '@src/store/authSlice';
 import { AppLayoutProps } from 'next/app';
 
@@ -37,6 +38,7 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
   useAttribution();
   authorizeNotifications();
   const authState = useAuthentication();
+  useWalletSync();
   //Remove me eventually
   const queryClient = new QueryClient();
   // useEffect(() => {

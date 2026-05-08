@@ -6,6 +6,7 @@ import { Post } from '@src/types/prisma';
 import { getMediaType } from '@src/utils/common_utils';
 import { useDoubleTap } from 'use-double-tap';
 
+import { PostMarketCard } from 'components/Market/PostMarketCard';
 import RichRender from 'components/Rich/RichRender';
 import { ClickableSpan } from 'styles/Buttons';
 
@@ -87,6 +88,13 @@ export default function ContentContainer({ post, openPost, actionLikePost }: Con
 					<TextContent title={post.title} text={post.text} openPost={openPost} />
 				</div>
 			}
+
+			{/* Tradeable market — only renders when this post is linked to a Market row */}
+			{post.marketId && (
+				<div className="mx-2">
+					<PostMarketCard marketId={post.marketId} />
+				</div>
+			)}
 		</Col>
   );
 }

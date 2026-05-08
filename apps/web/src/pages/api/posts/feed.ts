@@ -92,6 +92,27 @@ handler
           },
         });
         break;
+      case FilterOptions.ACCURACY:
+        // Rank by author's UserAccuracy.rankingScore. Authors without an
+        // accuracy row sort to the bottom. Recency is the tiebreak so a brand
+        // new platform with all-zero scores still produces a sensible feed.
+        //
+        // Visibility filter mirrors DISCOVER (EVERYONE-readable + profile
+        // posts) — the ranking change shouldn't expose gated content.
+        posts = await prisma.post.findMany({
+          ...postFindManyBase,
+          orderBy: [
+            { author: { accuracy: { rankingScore: Prisma.SortOrder.desc } } },
+            { createdAt: Prisma.SortOrder.desc },
+          ],
+          where: {
+            OR: [
+              { message: { channel: { readPermission: Permissions.EVERYONE } } },
+              { profileId: { gte: 0 } },
+            ],
+          },
+        });
+        break;
       default:
         console.error(`Unsupported Filter of ${filter}`);
         res.status(HttpStatus.INTERNAL_SERVER_ERROR);
