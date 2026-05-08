@@ -8,8 +8,10 @@ import { useSelector } from 'react-redux';
 import useAuthentication from '@src/hooks/useAuthenticate';
 import { useFeed } from '@src/hooks/useFeed';
 import { AuthStatus } from '@src/store/authSlice';
+import { FilterOptions } from '@src/store/feedSlice';
 import { isEmpty } from 'lodash';
 
+import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
 import axios from '@src/lib/axios';
 
 import type { MessageUnion } from 'api/communityAPI';
@@ -114,16 +116,19 @@ const Feed: React.FC<Props> = ({}) => {
 
         <FeedContainer>
           <Col>
-            {
-            myFeed.posts ? 
-              myFeed.posts.map((post) => {
-                return (
-                  <MediaPost post={post} />
-                );
-              })
-              :
+            {myFeed.filter === FilterOptions.MARKETS ? (
+              myFeed.markets && myFeed.markets.length > 0 ? (
+                myFeed.markets.map((m) => (
+                  <CatalogMarketCard key={`${m.venue}:${m.externalId}`} market={m} />
+                ))
+              ) : (
+                <SkeletonLoader renderCount={10} />
+              )
+            ) : myFeed.posts ? (
+              myFeed.posts.map((post) => <MediaPost post={post} />)
+            ) : (
               <SkeletonLoader renderCount={10} />
-          }
+            )}
           </Col>
         </FeedContainer>
       </Container>

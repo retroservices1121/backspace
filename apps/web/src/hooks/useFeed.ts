@@ -4,23 +4,38 @@
 // Author(s): See Git History
 
 import { useEffect, useState } from 'react';
-import { FilterOptions } from '@src/store/feedSlice';
-import { setFilter as updateFilter } from '@src/store/feedSlice';
-import { fetchPosts as sliceFetchPosts } from '@src/store/feedSlice';
+import { MarketCardData } from '@src/components/Market/MarketCard';
+import {
+  fetchMarkets as sliceFetchMarkets,
+  fetchPosts as sliceFetchPosts,
+  FilterOptions,
+  setFilter as updateFilter,
+} from '@src/store/feedSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@src/store/store';
 
 import { Post } from 'types/prisma';
+
 export const useFeed = () => {
   const dispatch = useAppDispatch();
-  const { posts: allPosts, filter } = useAppSelector((state: RootState) => state.feed);
+  const { posts: allPosts, markets, filter } = useAppSelector(
+    (state: RootState) => state.feed,
+  );
   const [posts, setPosts] = useState<Post[]>(allPosts[filter]);
+
+  // MARKETS filter doesn't go through state.posts — it pulls the
+  // catalog snapshot directly into state.markets via /api/markets.
+  const fetchPosts = (newFilter?: FilterOptions) => {
+    const target = newFilter || filter;
+    if (target === FilterOptions.MARKETS) {
+      return dispatch(sliceFetchMarkets());
+    }
+    return dispatch(sliceFetchPosts(target));
+  };
 
   const setFilter = async (newFilter: FilterOptions) => {
     await dispatch(updateFilter(newFilter));
     fetchPosts(newFilter);
   };
-
-  const fetchPosts = (newFilter? : FilterOptions) => dispatch(sliceFetchPosts(newFilter || filter));
 
   useEffect(() => {
     setPosts(allPosts[filter]);
@@ -28,8 +43,8 @@ export const useFeed = () => {
 
   return {
     posts,
+    markets: markets as MarketCardData[],
     filter,
-
     fetchPosts,
     setFilter,
   };

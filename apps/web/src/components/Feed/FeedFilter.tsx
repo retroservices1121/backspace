@@ -38,6 +38,13 @@ const filters : Array<FilterType> = [
     sort: FilterOptions.COMMUNITY,
     icon: Icons.Community,
   },
+  {
+    // Catalog tab — bypass Posts entirely and render the active-market
+    // catalog from /api/markets so users can browse what's tradeable.
+    name: 'Markets',
+    sort: FilterOptions.MARKETS,
+    icon: Icons.Discover,
+  },
 ];
 
 

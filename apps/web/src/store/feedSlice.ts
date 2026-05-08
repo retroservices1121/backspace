@@ -6,6 +6,7 @@
 
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+import { MarketCardData } from '@src/components/Market/MarketCard';
 import axios from 'lib/axios';
 import { PostDocument } from 'types/documents';
 import { Sort } from 'types/feed';
@@ -25,6 +26,10 @@ export enum FilterOptions {
   // Until trades begin resolving, every user's rankingScore = 0 and
   // results are effectively chronological-by-tiebreak.
   ACCURACY = 'accuracy',
+  // Catalog browse — bypasses Posts entirely. The feed renders Market
+  // rows directly so users can see what's tradeable without anyone
+  // having to author a post around them.
+  MARKETS = 'markets',
 }
 
 type FetchPostsPayload = {
@@ -49,6 +54,18 @@ export const fetchPosts = createAsyncThunk(
     const { data } = await axios().get(`/posts/feed?filter=${myFilter}`);
     return { ...feed.posts, [myFilter]: data || [] };
   });
+
+// Standalone catalog fetch for the MARKETS filter. Returns the active-
+// market snapshot from /api/markets — the response is already shaped
+// like MarketCardData so the feed renderer can hand it straight to
+// <MarketCard /> with no further mapping.
+export const fetchMarkets = createAsyncThunk<MarketCardData[]>(
+  `${NAMESPACE}/fetchMarkets`,
+  async () => {
+    const { data } = await axios().get('/markets');
+    return (data ?? []) as MarketCardData[];
+  },
+);
 
 // export const setFilter = createAsyncThunk(
 //   `${NAMESPACE}/setFilter`,
@@ -146,6 +163,10 @@ type FeedPosts = {
 type FeedState = {
   filter: FilterOptions;
   posts: FeedPosts;
+  // Separate from `posts` because Market rows aren't Posts. The
+  // MARKETS filter renders straight from this array; all the other
+  // filters render from posts[filter].
+  markets: MarketCardData[];
 
   discoverModalOpen: boolean;
   // posts: PostUnion[];
@@ -163,9 +184,10 @@ const initialState: FeedState = {
   // Until trades resolve, this falls back to recency-by-tiebreak server-side.
   filter: FilterOptions.ACCURACY,
   posts: <FeedPosts>{},
+  markets: [],
 
   discoverModalOpen: false,
-  
+
   followedUsers: [],
   recentUsers: [],
   userCache: {},
@@ -199,6 +221,9 @@ const feedSlice = createSlice({
     });
     builder.addCase(fetchRecentUsers.fulfilled, (state, action) => {
       state.recentUsers = action.payload;
+    });
+    builder.addCase(fetchMarkets.fulfilled, (state, action) => {
+      state.markets = action.payload;
     });
     builder.addCase(setFeaturedPost.fulfilled, (state, action) => {
       state.featuredPost = action.payload;
