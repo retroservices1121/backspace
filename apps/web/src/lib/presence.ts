@@ -2,21 +2,21 @@
 // Database `setConnected` / `subscribeToStatusChanges` flow.
 //
 // Model:
-//   - One global presence channel: `presence:global`. Every signed-in
-//     client `enter`s it with their Privy DID as Ably clientId. Ably
-//     auto-removes them on disconnect via the WebSocket close handshake,
-//     so `lastOnline` bookkeeping is no longer something we maintain.
+//   - One global presence channel: `presence:global`. The client's
+//     Ably token (issued by /api/realtime/token) carries the user's
+//     Privy DID as clientId, so presence claims are server-authoritative
+//     — the browser cannot pick its own clientId.
 //   - Online status (Online / Idle / Away) is published as the presence
-//     `data` payload. `idle-js` still drives the transitions on the
+//     `data` payload. `idle-js` drives the transitions on the
 //     window the user has focus on; presence updates re-publish to the
 //     channel.
 //   - Subscribers receive the full member list on first subscribe and
 //     deltas after; we project that into the existing redux
-//     `users.onlineStatus` map keyed by DID.
+//     `users.onlineStatus` map keyed by clientId (DID).
 
 import { Types } from 'ably';
 
-import { presenceClient, disposePresenceClient } from '@src/lib/ably';
+import { ablyClient, disposeAblyClient } from '@src/lib/ablyClient';
 import { OnlinePresence } from '@src/types/documents';
 
 const PRESENCE_CHANNEL = 'presence:global';
@@ -27,30 +27,25 @@ type Idle = {
 };
 
 let idleHandle: Idle | null = null;
-let activeDid: string | null = null;
+let entered = false;
 
 /**
  * Announce the current user as online and start the idle/active/away
  * transition tracker. Safe to call multiple times — subsequent calls
- * are no-ops if the same DID is already announced.
+ * are no-ops if presence is already active on this client.
  *
- * Returns a teardown function. The caller (useAuthenticate) doesn't
- * have to invoke it on logout because Ably reaps the presence on
- * disconnect, but explicit cleanup is available for completeness.
+ * The `did` argument is kept for source compatibility with the
+ * pre-token-auth callsite, but the actual clientId comes from the
+ * server-signed Ably token, not from this argument.
  */
-export async function announcePresence(did: string): Promise<() => void> {
-  if (activeDid === did) return () => disconnectPresence();
-  if (activeDid && activeDid !== did) {
-    // Different user logged in on this client — tear down the prior
-    // presence claim before announcing the new one.
-    disconnectPresence();
-  }
-  activeDid = did;
+export async function announcePresence(_did: string): Promise<() => void> {
+  if (entered) return () => disconnectPresence();
 
-  const client = presenceClient(did);
+  const client = ablyClient();
   const channel = client.channels.get(PRESENCE_CHANNEL);
 
   await channel.presence.enter({ status: OnlinePresence.Online });
+  entered = true;
 
   // idle-js drives Online ⇄ Idle ⇄ Away from window/document events.
   try {
@@ -70,6 +65,7 @@ export async function announcePresence(did: string): Promise<() => void> {
   } catch (err) {
     // idle-js is missing or the environment doesn't support it (SSR).
     // Presence still works; we just don't get the idle transitions.
+    // eslint-disable-next-line no-console
     console.warn('idle-js unavailable, skipping idle transitions', err);
   }
 
@@ -77,15 +73,16 @@ export async function announcePresence(did: string): Promise<() => void> {
 }
 
 export function disconnectPresence() {
-  if (!activeDid) return;
+  if (!entered) return;
   if (idleHandle && typeof idleHandle.stop === 'function') {
     try { idleHandle.stop(); } catch {}
   }
   idleHandle = null;
-  // closing the connection releases presence claim on the server side;
-  // no need to call leave() explicitly.
-  disposePresenceClient(activeDid);
-  activeDid = null;
+  // Closing the connection releases presence claim on the server side;
+  // no need to call leave() explicitly. We dispose the cached client
+  // so the next sign-in mints a fresh token under the new identity.
+  disposeAblyClient();
+  entered = false;
 }
 
 export type PresenceMap = Map<string, OnlinePresence>;
@@ -94,16 +91,12 @@ export type PresenceMap = Map<string, OnlinePresence>;
  * Subscribe to the global presence channel and project every membership
  * change into a callback that receives the full {clientId → status}
  * map. Returns an unsubscribe function.
- *
- * Requires a Privy DID for the listener so it can reuse / build the
- * per-DID connection — pass the same DID currently announced via
- * `announcePresence`.
  */
 export async function subscribePresence(
-  did: string,
+  _did: string,
   onUpdate: (members: PresenceMap) => void,
 ): Promise<() => void> {
-  const client = presenceClient(did);
+  const client = ablyClient();
   const channel = client.channels.get(PRESENCE_CHANNEL);
 
   const project = async () => {

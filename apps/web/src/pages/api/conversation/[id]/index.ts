@@ -3,7 +3,8 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import { ablyLite, buildID, buildSubscriptionChannel, SubEvents } from '@src/lib/ably';
+import { buildID, buildSubscriptionChannel, SubEvents } from '@src/lib/ably';
+import { ablyLite } from '@src/lib/ablyServer';
 
 import createHandler, { requireAuthMiddleware } from 'lib/nextconnect';
 import { paginate } from 'lib/pagination';

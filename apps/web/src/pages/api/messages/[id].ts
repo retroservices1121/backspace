@@ -4,7 +4,8 @@
 // Author(s): See Git History
 
 import prisma from 'api2/prisma';
-import { ablyLite, buildChannelTopic, SubEvents } from 'lib/ably';
+import { buildChannelTopic, SubEvents } from 'lib/ably';
+import { ablyLite } from 'lib/ablyServer';
 import createHandler, { requireAuthMiddleware } from 'lib/nextconnect';
 import { paginate } from 'lib/pagination';
 import { Message } from 'types/prisma';

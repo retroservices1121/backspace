@@ -5,7 +5,10 @@
 
 import { Types } from 'ably';
 
-import ably, { buildID, SubEvents } from 'lib/ably';
+import { ablyClient } from 'lib/ablyClient';
+import { buildID, SubEvents } from 'lib/ably';
+
+const ably = ablyClient();
 
 export type SubPubChannel = {
   id: string,
