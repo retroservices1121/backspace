@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Backspace",
+    "slug": "mobile-iframe-expo",
+    "owner": "newsocial",
+    "version": "1.3.4",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "notification": {
+      "icon": "./assets/icon.png"
+    },
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#5822FB"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.newsocial.backspace"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#5822FB"
+      },
+      "package": "com.newsocial.backspace",
+      "versionCode": 7
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b02ed1ec-8c65-4c09-b2d4-20ff2ca988ec"
+      }
+    }
+  }
+}

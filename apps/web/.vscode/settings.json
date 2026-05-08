@@ -1,0 +1,47 @@
+{
+  "autoSnippet.snippets": [
+    {
+      "regex": ".*\\.ts[x]",
+      "snippet": "React File License"
+    },
+    {
+      "regex": ".*\\.ts",
+      "snippet": "File License"
+    },
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "cSpell.words": [
+    "convo",
+    "immer",
+    "Normalizr",
+    "Uncapitalize"
+  ],
+  "todo-tree.general.tags": [
+    "TODO",
+    "FIXME",
+    "TEST",
+    "Note!",
+    "BS",
+    "https://linear.app/newsocial/issue/BS",
+  ],
+  "todo-tree.highlights.customHighlight": {
+    "Note!": {
+      "background": "#00000065",
+      "iconColour": "#913cff",
+      "type": "text-and-comment",
+      "icon": "light-bulb",
+      "gutterIcon": true
+    },
+    "BS": {
+      "foreground": "#FFF",
+      "background": "#5A23FB",
+      "type": "tag",
+    },
+    "https://linear.app/newsocial/issue/BS": {
+      "foreground": "#FFF",
+      "background": "#5A23FB",
+      "type": "tag",
+    },
+  },
+  "todo-tree.general.statusBar": "top three",
+}

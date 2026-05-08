@@ -1,0 +1,752 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+// Commented out because Vercel cannot handle
+// generator erd {
+//   provider = "prisma-erd-generator"
+// }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+// General note, most structures populate out from a user
+model User {
+  id                   BigInt          @id @unique @default(autoincrement())
+  uuid                 String          @unique @default(uuid()) 
+  createdAt            DateTime        @default(now())
+  platformPermission   PlatformUserType @default(USER)
+  username             String          @unique
+  name                 String
+  authId               String          @unique //Authentication Identifier
+  bio                  String          @default("")
+  verified             Boolean         @default(false)
+  featuredCommunity    Community?      @relation(name: "featuredCommunity", fields: [featuredCommunityId], references: [id])
+  featuredCommunityId  BigInt?
+  state                UserState?
+  private              Private?
+  avatar               Media?          @relation(name: "avatar")
+  banner               Media?          @relation(name: "banner")
+  billing              Billing?
+  connections          Connections[]
+  posts                Post[]
+  profile              Post[]          @relation(name:"profile")
+  comments             Comment[]
+  likesGiven           PostLike[]      @relation(name: "likesGiven")
+  likesRecieved        PostLike[]      @relation(name: "likesRecieved")
+  commentLikesGiven    CommentLike[]   @relation(name: "commentLikesGiven")
+  commentLikesRecieved CommentLike[]   @relation(name: "commentLikesRecieved")
+  communities          Community[]     @relation(name: "ownedCommunity")
+  memberships          Member[]
+  subscriptions        Subscription[]
+  //People following me
+  followers            Follow[]        @relation(name: "follower")
+  //People I follow
+  following            Follow[]        @relation(name: "following")
+  sentMessages         Message[]
+  sentDMs              DirectMessage[]
+  //Mentioned by others
+  mentioned            Mention[]
+  //Mentions by this user
+  mentions             Mention[]       @relation(name:"mentionAuthor")
+  conversations        Conversation[]
+  notifications        Notification[]
+  // Web3 / prediction-markets
+  wallets              Wallet[]
+  positions            Position[]
+  trades               Trade[]
+  marketsCreated       Market[]            @relation(name: "marketCreator")
+  marketsResolved      MarketResolution[]  @relation(name: "marketResolver")
+  accuracy             UserAccuracy?
+  // Admin / moderation
+  auditActions         AuditLog[]          @relation(name: "auditActor")
+  auditMentions        AuditLog[]          @relation(name: "auditTarget")
+  reportsFiled         Report[]            @relation(name: "reporter")
+  reportsAgainst       Report[]            @relation(name: "reportedUser")
+  reportsResolved      Report[]            @relation(name: "reportResolver")
+  communitiesArchived  Community[]         @relation(name: "communityArchiver")
+}
+// used to mark a username as taken/forbidden without creating a full user
+model ReservedUser {
+  id                   BigInt          @id @unique @default(autoincrement())
+  uuid                 String          @unique @default(uuid()) 
+  username             String          @unique
+}
+// User connection and connection status (i.e. online vs offline)
+model Connections {
+  id        BigInt       @id @unique @default(autoincrement())
+  uuid      String       @unique @default(uuid())
+  online    OnlineStatus @default(OFFLINE)
+  updatedAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id])
+  userId    BigInt
+}
+
+// User state variables
+model UserState {
+  onboarded Boolean       @default(false)
+  user      User          @relation(fields: [userId], references: [id])
+  userId    BigInt        @id
+  @@map("UserStatus") //TODO I don't want to deal with the bad migration rn
+}
+
+// If follow exists, then account is followed by follower
+model Follow {
+  id         BigInt       @id @unique @default(autoincrement())
+  uuid       String       @unique @default(uuid())
+  createdAt  DateTime     @default(now())
+  //Account doing the following
+  follower   User         @relation(name: "following", fields: [followerId], references: [id])
+  followerId BigInt
+  //Account being followed
+  account    User         @relation(name: "follower", fields: [accountId], references: [id])
+  accountId  BigInt
+  notification Notification?
+
+  @@unique([accountId, followerId], name: "followIdentifier")
+}
+
+model Notification {
+  id         BigInt         @id @unique @default(autoincrement())
+  uuid       String         @unique @default(uuid())
+  createdAt  DateTime       @default(now())
+  type       NotificationType
+  //after seen, mark read
+  read       Boolean        @default(false)
+  //who gets notification
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     BigInt
+  dm         DirectMessage? @relation(fields:[dmId], references: [id], onDelete: Cascade)
+  dmId       BigInt?        
+  follow     Follow?        @relation(fields: [followId], references: [id], onDelete: Cascade)
+  followId   BigInt?        @unique
+  mention    Mention?       @relation(fields: [mentionId], references: [id], onDelete: Cascade)
+  mentionId  BigInt?        @unique
+  subscription  Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionId  BigInt?
+}
+
+// If you modify this, check that PostHistory doesn't need mods
+model Post {
+  id             BigInt        @id @unique @default(autoincrement())
+  uuid           String        @unique @default(uuid())
+  fbid           String?       @unique //Used for migration only
+  createdAt      DateTime      @default(now())
+  edited         Boolean       @default(false)
+  enableComments Boolean       @default(true)
+  title          String
+  text           String
+  author         User          @relation(fields: [authorId], references: [id])
+  authorId       BigInt
+
+  //Post Destinations
+  message        Message?       @relation(fields: [messageId], references: [id])
+  messageId      BigInt?        @unique
+  profile        User?          @relation(name:"profile", fields: [profileId], references: [id])
+  profileId      BigInt?        
+  
+  history        PostHistory[]
+  media          Media[]
+  comments       Comment[]
+  likes          PostLike[]
+  mentions       Mention[]
+  // Optional market link — non-null posts render <MarketCard />
+  market         Market?       @relation(fields: [marketId], references: [id])
+  marketId       BigInt?
+  reports        Report[]
+  @@index([marketId])
+}
+
+// Every time a post is modified, save a copy of what the post content was
+model PostHistory {
+  id             BigInt         @id @unique @default(autoincrement())
+  uuid           String         @unique @default(uuid())
+  createdAt      DateTime       @default(now())
+  post           Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId         BigInt
+  title          String
+  text           String
+  enableComments Boolean
+}
+
+// mentioning a user by username. userId should be given priority over username
+model Mention {
+  id              BigInt         @id @unique @default(autoincrement())
+  uuid            String         @unique @default(uuid())
+  fbid            String?        @unique // for firebase migration
+  createdAt       DateTime       @default(now())
+  type            MentionSource
+  user            User           @relation(fields: [username], references: [username])
+  username        String
+  //Author makes the includes much easier for "John mentioned you in a post"
+  author          User           @relation(name:"mentionAuthor", fields: [authorId], references: [id])
+  authorId        BigInt
+  notification    Notification?
+  notificationId  BigInt?
+  post            Post?          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId          BigInt?
+  comment         Comment?       @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId       BigInt?
+  message         Message?       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId       BigInt?
+  directMessage   DirectMessage? @relation(fields: [directMessageId], references: [id], onDelete: Cascade)
+  directMessageId BigInt?
+}
+
+// If you modify this object, make sure that CommentHistory doesn't need a mod
+model Comment {
+  id        BigInt           @id @unique @default(autoincrement())
+  uuid      String           @unique @default(uuid())
+  fbid      String?          @unique // for firebase migration
+  createdAt DateTime         @default(now())
+  edited    Boolean          @default(false)
+  text      String
+  post      Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    BigInt
+  author    User             @relation(fields: [authorId], references: [id])
+  authorId  BigInt
+  history   CommentHistory[]
+  likes     CommentLike[]
+  mention   Mention[]
+  reports   Report[]
+}
+
+// Every time a comment is modified, save a copy of what the comment text was
+model CommentHistory {
+  id             BigInt   @id @unique @default(autoincrement())
+  uuid           String   @unique @default(uuid())
+  createdAt      DateTime @default(now())
+  comment        Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId      BigInt
+  text           String
+  enableComments Boolean
+}
+
+model CommentLike {
+  id             BigInt   @id @unique @default(autoincrement())
+  uuid           String   @unique @default(uuid())
+  createdAt      DateTime @default(now())
+  comment        Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId      BigInt
+  commentOwner   User     @relation(name: "commentLikesRecieved", fields: [commentOwnerId], references: [id])
+  commentOwnerId BigInt
+  user           User     @relation(name: "commentLikesGiven", fields: [userId], references: [id])
+  userId         BigInt
+}
+
+model PostLike {
+  id          BigInt   @id @unique @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  fbid        String?  @unique // for firebase migration
+  createdAt   DateTime @default(now())
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      BigInt
+  postOwner   User     @relation(name: "likesRecieved", fields: [postOwnerId], references: [id])
+  postOwnerId BigInt
+  user        User     @relation(name: "likesGiven", fields: [userId], references: [id])
+  userId      BigInt
+
+  @@unique([postId, userId], name:"userLike")
+}
+
+model Private {
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        BigInt   @id
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  phone         String   @default("")
+  firstName     String   @default("")
+  lastName      String   @default("")
+  dobMonth      Int      @default(1)
+  dobDay        Int      @default(1)
+  dobYear       Int      @default(1900)
+}
+
+model Media {
+  //common media object
+  id                  BigInt          @id @unique @default(autoincrement())
+  uuid                String          @unique @default(uuid())
+  createdAt           DateTime        @default(now())
+  type                MediaUse
+  host                StorageLocation
+  path                String
+  fileExtension       String
+  //Each place we use media is below
+  message             Message?        @relation(fields: [messageId], references: [id])
+  messageId           BigInt?
+  post                Post?           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId              BigInt?
+  avatarUser          User?           @relation(name: "avatar", fields: [avatarUserId], references: [id])
+  avatarUserId        BigInt?         @unique
+  bannerUser          User?           @relation(name: "banner", fields: [bannerUserId], references: [id])
+  bannerUserId        BigInt?         @unique
+  avatarCommunity     Community?      @relation(name: "communityAvatar", fields: [avatarCommunityId], references: [id])
+  avatarCommunityId   BigInt?         @unique
+  bannerCommunity     Community?      @relation(name: "communityBanner", fields: [bannerCommunityId], references: [id])
+  bannerCommunityId   BigInt?         @unique
+  DirectMessage       DirectMessage?  @relation(fields: [directMessageId], references: [id])
+  directMessageId     BigInt?
+}
+
+model Community {
+  id          BigInt    @id @unique @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  fbid        String?   @unique
+  createdAt   DateTime  @default(now())
+  name        String
+  description String
+  allowJoin   Boolean   @default(true)
+  owner       User      @relation(name: "ownedCommunity", fields: [ownerId], references: [id])
+  ownerId     BigInt
+  channelOrder String[] //Order to display channels
+  featuredBy  User[]    @relation(name: "featuredCommunity")
+  avatar      Media?    @relation(name: "communityAvatar")
+  banner      Media?    @relation(name: "communityBanner")
+  channels    Channel[]
+  members     Member[]
+  subscriptions Subscription[]
+  tiers       SubscriptionTier[]
+  messages    Message[]
+  // Soft-delete via admin force-archive
+  archivedAt    DateTime?
+  archivedBy    User?     @relation(name: "communityArchiver", fields: [archivedById], references: [id])
+  archivedById  BigInt?
+  // Communities can host prediction markets
+  markets     Market[]
+}
+
+model Channel {
+  id              BigInt      @id @unique @default(autoincrement())
+  uuid            String      @unique @default(uuid())
+  fbId            String?     @unique //This is only used for firebase migration
+  createdAt       DateTime    @default(now())
+  type            ChannelType
+  hidden          Boolean     @default(false)
+  name            String
+  description     String
+  community       Community   @relation(fields: [communityId], references: [id])
+  communityId     BigInt
+  readPermission  Permissions
+  writePermission Permissions
+  messages        Message[]
+}
+
+model Member {
+  id          BigInt      @id @unique @default(autoincrement())
+  uuid        String      @unique @default(uuid())
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id])
+  userId      BigInt
+  community   Community   @relation(fields: [communityId], references: [id])
+  communityId BigInt
+  role        Permissions @map("permission")
+  updated     DateTime    @default(now())
+
+  @@unique([userId, communityId], name:"membership")
+}
+
+// Platform messages (not a DM, but a message in a channel)
+model Message {
+  id          BigInt    @id @unique @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  createdAt   DateTime  @default(now())
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    BigInt
+  community   Community @relation(fields: [communityId], references: [id])
+  communityId BigInt
+  channel     Channel   @relation(fields: [channelId], references: [id])
+  channelId   BigInt
+  text        String
+  post        Post?
+  media       Media[]
+  mentions    Mention[]
+  reports     Report[]
+}
+
+model Conversation {
+  id        BigInt          @id @unique @default(autoincrement())
+  uuid      String          @unique @default(uuid())
+  createdAt DateTime        @default(now())
+  //Optional group display name
+  name      String?
+  messages  DirectMessage[]
+  members   User[]
+}
+// Platform messages (not a DM, but a message in a channel)
+model DirectMessage {
+  id             BigInt             @id @unique @default(autoincrement())
+  uuid           String             @unique @default(uuid())
+  createdAt      DateTime           @default(now())
+  author         User               @relation(fields: [authorId], references: [id])
+  authorId       BigInt
+  text           String
+  media          Media[]
+  mentions       Mention[]
+  notification   Notification[]
+  conversation   Conversation       @relation(fields: [conversationId], references: [id])
+  conversationId BigInt
+}
+
+// This subsciption requires a matching Stripe object
+model Subscription {
+  id             BigInt             @id @unique @default(autoincrement())
+  uuid           String             @unique @default(uuid())
+  createdAt      DateTime           @default(now())
+  active         Boolean            @default(true)
+  stripeId       String             @unique
+  stripeValue    String?
+  communityId    BigInt     
+  community      Community          @relation(fields: [communityId], references: [id])
+  userId         BigInt             
+  user           User               @relation(fields: [userId], references: [id])
+  tier           SubscriptionTier?  @relation(fields: [tierId], references: [id])
+  tierId         BigInt?
+  notification   Notification[]
+  @@index([userId, communityId], name:"userSubscription")
+}
+
+// Tiers created by a creator for different prices/benefits
+model SubscriptionTier {
+  id             BigInt        @id @unique @default(autoincrement())
+  uuid           String        @unique @default(uuid())
+  createdAt      DateTime      @default(now())
+  community      Community     @relation(fields: [communityId], references: [id])
+  communityId    BigInt
+  subscription   Subscription[]
+  perks          String[]      
+  description    String        @default("")
+  title          String        @default("Subscription Tier")
+  price          Float         @default(4.99)
+}
+
+model Billing {
+  id             BigInt         @id @unique @default(autoincrement())
+  createdAt     DateTime        @default(now())
+  user          User            @relation(fields: [userId], references: [id])
+  userId        BigInt          @unique
+  accountLink   Json?
+  account       StripeAccount?
+  customer      StripeCustomer?
+}
+
+model StripeCustomer {
+  id             BigInt        @id @unique @default(autoincrement())
+  uuid           String        @unique @default(uuid())
+  createdAt      DateTime      @default(now())
+  billing        Billing       @relation(fields: [billingId], references: [id])
+  billingId      BigInt        @unique
+  customerId     String        @unique
+  defaultSource  String?
+  stripeValue    Json?
+}
+
+model StripeAccount {
+  id             BigInt        @id @unique @default(autoincrement())
+  uuid           String        @unique @default(uuid())
+  createdAt      DateTime      @default(now())
+  billing        Billing       @relation(fields: [billingId], references: [id])
+  billingId      BigInt        @unique
+  accountId      String        @unique
+  stripeValue    Json?
+}
+
+enum ChannelType {
+  CHAT //Messages, and Posts
+  POST //Posts only, no messages
+  DISCUSSION //Text only, no media
+  LIBRARY //Text only, no media
+  LIVESTREAM //Livestream
+}
+
+//TODO make this a table so we don't rely exclusively on a field for permissions
+enum PlatformUserType {
+  DISABLED
+  USER
+  CREATOR
+  MODERATOR
+  ELEVATED
+  ADMIN
+}
+
+// The order of these is used to implicitly set the "power" of the role
+// DO NOT REARRANGE ORDER. INSERTING ELEMENTS IS OKAY
+enum Permissions {
+  BLOCKED
+  EVERYONE @map("NONE")
+  MEMBER
+  SUBSCRIBER
+  MODERATOR
+  ADMIN
+  OWNER
+}
+enum StorageLocation {
+  NONE
+  FIREBASE
+  SUPABASE
+  URL //Web link to media
+}
+enum OnlineStatus {
+  ONLINE
+  OFFLINE
+  AWAY
+  IDLE
+  BUSY
+  INVISIBLE
+}
+enum MediaUse {
+  POST
+  AVATAR
+  BANNER
+  COMMUNITY_AVATAR
+  COMMUNITY_BANNER
+  MESSAGE
+}
+enum MentionSource {
+  DIRECT_MESSAGE
+  MESSAGE
+  POST
+  COMMENT
+}
+
+enum NotificationType {
+  PLATFORM // For Platform Notices
+  FOLLOW
+  SUBSCRIBE
+  MENTION
+  DIRECT_MESSAGE
+}
+
+// =============================================================================
+// Web3 / prediction-markets / admin (added 2026-05-08)
+// =============================================================================
+// `chain` columns are stored as String (not enum) so adding Solana / Cosmos /
+// future chains is a code change, not a migration. Convention: lowercase
+// "ethereum" | "polygon" | "base" | "arbitrum" | "optimism" | "solana".
+
+enum MarketVenue {
+  POLYMARKET
+  AZURO
+  INTERNAL
+}
+
+enum MarketStatus {
+  ACTIVE
+  FROZEN
+  RESOLVED
+  INVALIDATED
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  POST
+  COMMENT
+  USER
+  MESSAGE
+  MARKET
+}
+
+model Wallet {
+  id          BigInt    @id @unique @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      BigInt
+  chain       String
+  address     String
+  verifiedAt  DateTime?
+  isPrimary   Boolean   @default(false)
+  // Privy embedded (custodial-by-us) wallets vs externally-connected
+  custodial   Boolean   @default(false)
+  positions   Position[]
+  trades      Trade[]
+  @@unique([chain, address], name: "walletIdentity")
+  @@index([userId])
+}
+
+model Market {
+  id              BigInt        @id @unique @default(autoincrement())
+  uuid            String        @unique @default(uuid())
+  createdAt       DateTime      @default(now())
+  venue           MarketVenue
+  externalId      String
+  chain           String?
+  contractAddress String?
+  question        String
+  description     String        @default("")
+  category        String?
+  imageUrl        String?
+  status          MarketStatus  @default(ACTIVE)
+  opensAt         DateTime?
+  closesAt        DateTime
+  resolvedAt      DateTime?
+  community       Community?    @relation(fields: [communityId], references: [id])
+  communityId     BigInt?
+  creator         User?         @relation(name: "marketCreator", fields: [creatorId], references: [id])
+  creatorId       BigInt?
+  outcomes        Outcome[]
+  positions       Position[]
+  trades          Trade[]
+  resolution      MarketResolution?
+  posts           Post[]
+  reports         Report[]
+  @@unique([venue, externalId], name: "venueExternalId")
+  @@index([status, closesAt])
+  @@index([communityId])
+}
+
+model Outcome {
+  id          BigInt    @id @unique @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  market      Market    @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  marketId    BigInt
+  externalId  String
+  label       String
+  // Decimal — never use Float for money / shares
+  lastPrice   Decimal?  @db.Decimal(18, 8)
+  lastPriceAt DateTime?
+  positions   Position[]
+  trades      Trade[]
+  resolutions MarketResolution[]
+  @@unique([marketId, externalId], name: "marketOutcome")
+}
+
+model Position {
+  id              BigInt    @id @unique @default(autoincrement())
+  uuid            String    @unique @default(uuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+  userId          BigInt
+  market          Market    @relation(fields: [marketId], references: [id])
+  marketId        BigInt
+  outcome         Outcome   @relation(fields: [outcomeId], references: [id])
+  outcomeId       BigInt
+  wallet          Wallet?   @relation(fields: [walletId], references: [id])
+  walletId        BigInt?
+  shares          Decimal   @db.Decimal(36, 18)
+  avgCostUsd      Decimal   @db.Decimal(18, 8)
+  realizedPnlUsd  Decimal   @default(0) @db.Decimal(18, 8)
+  settledAt       DateTime?
+  payoutUsd       Decimal?  @db.Decimal(18, 8)
+  trades          Trade[]
+  @@unique([userId, marketId, outcomeId], name: "userPosition")
+  @@index([marketId])
+  @@index([walletId])
+}
+
+model Trade {
+  id            BigInt    @id @unique @default(autoincrement())
+  uuid          String    @unique @default(uuid())
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id])
+  userId        BigInt
+  position      Position  @relation(fields: [positionId], references: [id])
+  positionId    BigInt
+  market        Market    @relation(fields: [marketId], references: [id])
+  marketId      BigInt
+  outcome       Outcome   @relation(fields: [outcomeId], references: [id])
+  outcomeId     BigInt
+  wallet        Wallet?   @relation(fields: [walletId], references: [id])
+  walletId      BigInt?
+  side          TradeSide
+  shares        Decimal   @db.Decimal(36, 18)
+  priceUsd      Decimal   @db.Decimal(18, 8)
+  feeUsd        Decimal   @default(0) @db.Decimal(18, 8)
+  txHash        String?
+  venueOrderId  String?
+  @@index([userId, createdAt])
+  @@index([marketId])
+  @@index([txHash])
+}
+
+model MarketResolution {
+  market           Market    @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  marketId         BigInt    @id
+  resolvedAt       DateTime  @default(now())
+  winningOutcome   Outcome   @relation(fields: [winningOutcomeId], references: [id])
+  winningOutcomeId BigInt
+  source           String
+  notes            String?
+  resolver         User?     @relation(name: "marketResolver", fields: [resolverId], references: [id])
+  resolverId       BigInt?
+}
+
+model UserAccuracy {
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              BigInt    @id
+  resolvedPositions   Int       @default(0)
+  correctPositions    Int       @default(0)
+  // Stake-weighted Brier score; lower is better. Display layer derives accuracy %
+  weightedBrierScore  Decimal?  @db.Decimal(10, 8)
+  // Display-friendly 0..1 score after recency decay; ORDER BY this in ACCURACY feed
+  rankingScore        Decimal   @default(0) @db.Decimal(10, 8)
+  lastRecomputedAt    DateTime  @default(now())
+  @@index([rankingScore])
+}
+
+model AuditLog {
+  id                BigInt    @id @unique @default(autoincrement())
+  uuid              String    @unique @default(uuid())
+  createdAt         DateTime  @default(now())
+  actor             User      @relation(name: "auditActor", fields: [actorId], references: [id])
+  actorId           BigInt
+  // Action key, e.g. "user.verify" | "user.role.set" | "community.archive" | "market.resolve"
+  action            String
+  // User target (most actions are user-scoped). For non-user targets, use the polymorphic FKs below.
+  target            User?     @relation(name: "auditTarget", fields: [targetId], references: [id])
+  targetId          BigInt?
+  targetCommunityId BigInt?
+  targetMarketId    BigInt?
+  targetPostId      BigInt?
+  targetCommentId   BigInt?
+  // Full request payload for forensics (e.g. {"oldRole":"USER","newRole":"CREATOR"})
+  payload           Json?
+  ipAddress         String?
+  userAgent         String?
+  @@index([actorId, createdAt])
+  @@index([targetId, createdAt])
+  @@index([action, createdAt])
+}
+
+model Report {
+  id              BigInt           @id @unique @default(autoincrement())
+  uuid            String           @unique @default(uuid())
+  createdAt       DateTime         @default(now())
+  reporter        User             @relation(name: "reporter", fields: [reporterId], references: [id])
+  reporterId      BigInt
+  targetType      ReportTargetType
+  reason          String
+  details         String?
+  status          ReportStatus     @default(OPEN)
+  // Polymorphic target — exactly one is non-null based on targetType
+  post            Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId          BigInt?
+  comment         Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId       BigInt?
+  targetUser      User?            @relation(name: "reportedUser", fields: [targetUserId], references: [id])
+  targetUserId    BigInt?
+  message         Message?         @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId       BigInt?
+  market          Market?          @relation(fields: [marketId], references: [id])
+  marketId        BigInt?
+  resolvedAt      DateTime?
+  resolvedBy      User?            @relation(name: "reportResolver", fields: [resolvedById], references: [id])
+  resolvedById    BigInt?
+  resolutionNotes String?
+  @@index([status, createdAt])
+  @@index([targetType, status])
+}

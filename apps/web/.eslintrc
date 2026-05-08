@@ -1,0 +1,82 @@
+{
+  "root": true,
+  "extends": [
+    "airbnb-typescript"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "sourceType": "module",
+    "project": [
+      "./tsconfig.json"
+    ]
+  },
+  "plugins": [
+    "import",
+    "@typescript-eslint",
+    "simple-import-sort"
+  ],
+  "ignorePatterns": ["*.test.*", "tailwind.config.js"],
+  "rules": {
+    // We can remove these after we no longer have javascript files
+    "react/prop-types": "off",
+    "no-param-reassign": "off",
+    // Firebase SDK
+    "import/no-extraneous-dependencies": "off",
+    // Remove this line when no more js files
+    "react/jsx-filename-extension": "off",
+    // Remove forced line between class members
+    "lines-between-class-members": "off",
+    // While this is good, it makes my code ugly af
+    "no-use-before-define": "off",
+    "@typescript-eslint/no-use-before-define": "off",
+    "@typescript-eslint/lines-between-class-members": 0,
+    "no-unused-vars": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
+    // Try to reduce console logs getting in main. If you NEED a log, add an eslint-ignore.
+    "no-console": "warn",
+    // Avoids having to horizontal scroll
+    "max-len": [
+      "warn",
+      {
+        "code": 120
+      }
+    ],
+     //Makes our imports have a semblance of organization
+     "simple-import-sort/imports": [
+       "warn",
+       {
+         "groups": [
+           // Packages. `react` related packages come first.
+           // Things that start with a letter (or digit or underscore), or `@` followed by a letter.
+            [
+              "^react",
+              "^@?\\w"
+            ],
+          // Absolute imports and Relative imports.
+          [
+            "^(api|api2|app|audio|components|fonts|graphics|hooks|icons|lib|pages|routes|shared|store|styles|types|utils|root)(/.*|$)",
+            "^\\w"
+          ],
+          [
+            "^(public)(/.*|$)",
+            "^\\w"
+          ],
+          // for css imports.
+          [
+            "^[^.]"
+          ]
+         ]
+       }
+     ]
+  }
+}

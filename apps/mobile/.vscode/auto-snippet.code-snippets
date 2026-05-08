@@ -1,0 +1,29 @@
+{
+	"React File License": {
+		"prefix": "bc-license",
+		"body": [
+			"// Copyright 2022 NewSocial Inc. - All Rights Reserved",
+			"// Unauthorized copying of this file, via any medium is strictly prohibited",
+			"// Proprietary and confidential",
+			"// Author(s): See Git History",
+			"",
+			"const $TM_FILENAME_BASE: React.FC<any> = () => <div>$TM_FILENAME_BASE</div>;",
+			"export default $TM_FILENAME_BASE;",
+			"",
+		],
+		"description": "BackChannel License"
+	},
+	"File License": {
+		"prefix": "bc-license",
+		"body": [
+			"// Copyright 2022 NewSocial Inc. - All Rights Reserved",
+			"// Unauthorized copying of this file, via any medium is strictly prohibited",
+			"// Proprietary and confidential",
+			"// Author(s): See Git History",
+			"",
+			"export {};",
+			"",
+		],
+		"description": "BackChannel License"
+	}
+}

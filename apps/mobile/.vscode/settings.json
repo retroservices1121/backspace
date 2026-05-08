@@ -1,0 +1,12 @@
+{
+  "autoSnippet.snippets": [
+    {
+      "regex": ".*\\.ts[x]",
+      "snippet": "React File License"
+    },
+    {
+      "regex": ".*\\.ts",
+      "snippet": "File License"
+    },
+  ]
+}

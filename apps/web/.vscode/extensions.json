@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "gruntfuggly.auto-snippet",
+    "gruntfuggly.todo-tree",
+    "mhutchie.git-graph",
+    "prisma.prisma",
+    "streetsidesoftware.code-spell-checker",
+    "wallabyjs.quokka-vscode",
+  ]
+}

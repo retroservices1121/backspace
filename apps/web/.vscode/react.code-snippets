@@ -1,0 +1,153 @@
+{
+	"Functional Component": {
+		"prefix": "rfc",
+		"body": [
+			"import React from 'react';",
+			"",
+			"type Props = {};",
+			"",
+			"const ${1:$TM_FILENAME_BASE}: React.FC<Props> = ({}) => {",
+			"",
+			"  return (",
+			"    <div>${1:$TM_FILENAME_BASE}</div>",
+			"  );",
+			"};",
+			"",
+			"export default ${1:$TM_FILENAME_BASE};"
+		],
+		"description": "Functional Component"
+	},
+	"Styled-Components Theme variable": {
+		"prefix": "theme",
+		"body": [
+			"${({ theme }) => theme.${1:$CLIPBOARD}};"
+		],
+		"description": "Styled-Components Theme variable"
+	},
+	"Styled-Components Conditional Block": {
+		"prefix": "conditional-block",
+		"body": [
+			"${({ ${1} }) => ${1} && css`",
+			"  ${2}",
+			"`}"
+		],
+		"description": "Styled-Components Conditional Block"
+	},
+	"useRouting": {
+		"prefix": "useRouting",
+		"body": [
+			"const { ${1} } = useRouting();"
+		],
+		"description": "useRouting"
+	},
+	"FormikForm": {
+		"prefix": "FF",
+		"body": [
+			"import React from 'react';",
+			"import { Form, Formik } from 'formik';",
+			"import { FormType } from 'types/forms';",
+			"",
+			"type ${1:$TM_FILENAME_BASE}State = {};",
+			"",
+			"const INITAL_STATE: ${1:$TM_FILENAME_BASE}State = {};",
+			"",
+			"type Props = {};",
+			"",
+			"const ${1:$TM_FILENAME_BASE}: FormType<${1:$TM_FILENAME_BASE}State, Props> = ({",
+			"  onSubmit,",
+			"}) => {",
+			"",
+			"  return (",
+			"    <Formik",
+			"      onSubmit={onSubmit}",
+			"      initialValues={INITAL_STATE}",
+			"    >",
+			"      <Form>",
+			"",
+			"      </Form>",
+			"    </Formik>",
+			"  );",
+			"};",
+			"",
+			"export default ${1:$TM_FILENAME_BASE};"
+		],
+		"description": "FormikForm"
+	},
+	// Turn text into PascalCase: ${n/^(.)(.*)$/${1:/upcase}${2}/} where n is the tab stop
+	"RTK Slice": {
+		"prefix": "slice",
+		"body": [
+			"import { createSlice } from '@reduxjs/toolkit';",
+			"",
+			"const NAMESPACE = '${1:app}';",
+			"",
+			"type ${1/^(.)(.*)$/${1:/upcase}${2}/}State = {};",
+			"",
+			"const initialState: ${1/^(.)(.*)$/${1:/upcase}${2}/}State = {};",
+			"",
+			"const ${1:app}Slice = createSlice({",
+			"  name: NAMESPACE,",
+			"  initialState,",
+			"  reducers: {",
+			"",
+			"  },",
+			"  extraReducers: {",
+			"",
+			"  },",
+			"});",
+			"",
+			"export default ${1:app}Slice.reducer;",
+      "export const actions = {",
+      "  ...${1:app}Slice.actions,",
+      "  ",
+      "};",
+      ""
+		],
+		"description": "RTK Slice"
+	},
+	"RTK Thunk": {
+		"prefix": "thunk",
+		"body": [
+			"const ${1:doSomething} = createAsyncThunk(",
+			"  `${NAMESPACE\\}/${1:doSomething}`,",
+			"  async (payload, thunkAPI) => {",
+			"    const {  } = thunkAPI.getState() as RootState;",
+			"    ${2}",
+			"  },",
+			");"
+		],
+		"description": "RTK Thunk"
+	},
+	"Custom useSelector": {
+		"prefix": "useSelector",
+		"body": [
+			"const ${1:slice} = useAppSelector((state: RootState) => state.${1:slice});"
+		],
+		"description": "Custom useSelector"
+	},
+	"Add thunk via builder": {
+		"prefix": "addThunk",
+		"body": [
+			"builder.addCase(${1:thunk}.fulfilled, (state, action) => {",
+			"  ",
+			"});"
+		],
+		"description": "Add thunk via builder"
+	},
+	"useDispatch": {
+		"prefix": "useDispatch",
+		"body": [
+			"const dispatch = useAppDispatch();"
+		],
+		"description": "useDispatch"
+	},
+	"useAsyncEffect": {
+		"prefix": "useAsyncEffect",
+		"body": [
+			"useAsyncEffect([${1}], async () => {",
+			"\t$2",
+			"});"
+		],
+		"description": "useAsyncEffect"
+	}
+}

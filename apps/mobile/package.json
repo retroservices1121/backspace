@@ -1,0 +1,35 @@
+{
+  "name": "@backspace/mobile",
+  "version": "1.3.4",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "eject": "expo eject",
+    "eas": "npx eas build"
+  },
+  "dependencies": {
+    "expo": "~44.0.0",
+    "expo-dev-client": "~0.8.4",
+    "expo-device": "^4.1.1",
+    "expo-notifications": "^0.14.1",
+    "expo-status-bar": "~1.2.0",
+    "expo-updates": "~0.11.6",
+    "firebase": "^9.6.11",
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
+    "react-native": "0.64.3",
+    "react-native-web": "0.17.1",
+    "react-native-webview": "11.15.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.9",
+    "@types/react": "~17.0.21",
+    "@types/react-native": "~0.64.12",
+    "eas-cli": "^3.3.2",
+    "typescript": "~4.3.5"
+  },
+  "private": true
+}

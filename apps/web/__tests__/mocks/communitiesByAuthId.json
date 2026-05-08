@@ -1,0 +1,2946 @@
+[
+  {
+    "id": "1",
+    "uuid": "d3662588-9d5e-4f4b-b7f5-9522108b1474",
+    "fbid": "0A11kLc9gtWqbwAye6vT2Xgd4z53",
+    "createdAt": "2022-06-28T00:49:44.635Z",
+    "name": "SDKHSdkH lskdSLDKj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "1",
+    "members": [
+      {
+        "id": "1",
+        "uuid": "1b4cfd1f-a68e-4cdd-a204-3dedc399b57e",
+        "createdAt": "2022-06-28T00:49:46.522Z",
+        "userId": "1",
+        "communityId": "1",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:49:46.522Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "1",
+        "uuid": "f16209d3-d68f-4c66-beaf-3d0835bfe930",
+        "fbId": "0A11kLc9gtWqbwAye6vT2Xgd4z53",
+        "createdAt": "2022-06-28T00:49:46.396Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "1",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "1",
+      "uuid": "59cdb2bc-377b-4899-b0c2-0868be34ec8d",
+      "createdAt": "2022-06-28T00:47:49.541Z",
+      "username": "ksdhsdh",
+      "name": "SDKHSdkH lskdSLDKj",
+      "authId": "0A11kLc9gtWqbwAye6vT2Xgd4z53",
+      "bio": ""
+    }
+  },
+  {
+    "id": "2",
+    "uuid": "9142af13-4910-42a9-b851-3162f923f2bd",
+    "fbid": "1fPHBLqvNhMUVUc28KsOOcqy2li2",
+    "createdAt": "2022-06-28T00:49:47.371Z",
+    "name": "yeee eet's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "2",
+    "members": [
+      {
+        "id": "2",
+        "uuid": "c8cbb081-13fc-42be-98f8-026f7b4007ae",
+        "createdAt": "2022-06-28T00:49:49.123Z",
+        "userId": "2",
+        "communityId": "2",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:49:49.123Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "2",
+        "uuid": "fb665e5f-f37d-40b3-a878-d62a4a6d647a",
+        "fbId": "1fPHBLqvNhMUVUc28KsOOcqy2li2",
+        "createdAt": "2022-06-28T00:49:49.021Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "2",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "2",
+      "uuid": "8e623e9f-a99b-4c39-bf90-ecddd1b53a23",
+      "createdAt": "2022-06-28T00:47:51.333Z",
+      "username": "yeet",
+      "name": "yeee eet",
+      "authId": "1fPHBLqvNhMUVUc28KsOOcqy2li2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "3",
+    "uuid": "36125c55-6d90-4f3d-80a1-f4e05fc099f3",
+    "fbid": "2DfzZVxDeIehpfM1tfCC8NZvjiD2",
+    "createdAt": "2022-06-28T00:49:49.736Z",
+    "name": "slkdSLDKj slkdJSLkj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "3",
+    "members": [
+      {
+        "id": "3",
+        "uuid": "5e6cf9bf-cdc4-4a3f-bcee-7e3261853c5a",
+        "createdAt": "2022-06-28T00:49:51.021Z",
+        "userId": "3",
+        "communityId": "3",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:49:51.021Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "3",
+        "uuid": "4c4ee028-f2ba-443b-8e76-fa605c78f1ff",
+        "fbId": "2DfzZVxDeIehpfM1tfCC8NZvjiD2",
+        "createdAt": "2022-06-28T00:49:51.417Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "3",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "3",
+      "uuid": "36d7e941-cd30-4177-9c9a-f55d1ba745f4",
+      "createdAt": "2022-06-28T00:47:54.054Z",
+      "username": "lkslslfslkslksl",
+      "name": "slkdSLDKj slkdJSLkj",
+      "authId": "2DfzZVxDeIehpfM1tfCC8NZvjiD2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "4",
+    "uuid": "1ffd3bdb-cce9-453c-a275-8c7384a870fd",
+    "fbid": "2wgMffCRFsP1xjiHdjS6vt2ledC2",
+    "createdAt": "2022-06-28T00:49:51.630Z",
+    "name": "sam zanca's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "4",
+    "members": [
+      {
+        "id": "4",
+        "uuid": "512a1835-8076-476d-9a07-be37ea36942e",
+        "createdAt": "2022-06-28T00:49:52.940Z",
+        "userId": "4",
+        "communityId": "4",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:49:52.940Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "4",
+        "uuid": "b38310c4-7e8e-4492-8813-c8279f6ce9f0",
+        "fbId": "2wgMffCRFsP1xjiHdjS6vt2ledC2",
+        "createdAt": "2022-06-28T00:49:53.371Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "4",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "4",
+      "uuid": "38fe15f6-222e-40cd-9c91-4a0a93ba6ef7",
+      "createdAt": "2022-06-28T00:47:54.862Z",
+      "username": "tester3",
+      "name": "sam zanca",
+      "authId": "2wgMffCRFsP1xjiHdjS6vt2ledC2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "5",
+    "uuid": "2ce03344-fe1d-417c-a36d-2464e48d790a",
+    "fbid": "3oOXqPqiIbWhSA6LeNlzFEMGn872",
+    "createdAt": "2022-06-28T00:49:53.547Z",
+    "name": "Brenton Beltrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "5",
+    "members": [
+      {
+        "id": "5",
+        "uuid": "48d2702d-8714-410b-ad86-990073589058",
+        "createdAt": "2022-06-28T00:49:54.845Z",
+        "userId": "5",
+        "communityId": "5",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:49:54.845Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "5",
+        "uuid": "a6b0e0b1-8c11-4f42-8eec-588e94bf4598",
+        "fbId": "3oOXqPqiIbWhSA6LeNlzFEMGn872",
+        "createdAt": "2022-06-28T00:49:55.225Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "5",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "5",
+      "uuid": "90b8fcc9-1c01-458b-a6d9-06b09266a775",
+      "createdAt": "2022-06-28T00:47:56.220Z",
+      "username": "onboard123",
+      "name": "Brenton Beltrami",
+      "authId": "3oOXqPqiIbWhSA6LeNlzFEMGn872",
+      "bio": ""
+    }
+  },
+  {
+    "id": "6",
+    "uuid": "71d5732f-8fd8-4e4d-8cfa-dd13d67ca318",
+    "fbid": "41NtJB6KIxgHGygncwUg0iu3XAS2",
+    "createdAt": "2022-06-28T00:49:55.468Z",
+    "name": "lksdjl lskDLj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "6",
+    "members": [
+      {
+        "id": "6",
+        "uuid": "913b350d-a5b9-457a-ac13-8a32787f3e49",
+        "createdAt": "2022-06-28T00:49:56.793Z",
+        "userId": "6",
+        "communityId": "6",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:49:56.793Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "6",
+        "uuid": "2ebb8b93-495a-4ec1-8135-5569dffe47e2",
+        "fbId": "41NtJB6KIxgHGygncwUg0iu3XAS2",
+        "createdAt": "2022-06-28T00:49:57.172Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "6",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "6",
+      "uuid": "7f4938fd-e1c4-4023-8730-6e0dfc6e822c",
+      "createdAt": "2022-06-28T00:47:57.094Z",
+      "username": "testingagain",
+      "name": "lksdjl lskDLj",
+      "authId": "41NtJB6KIxgHGygncwUg0iu3XAS2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "7",
+    "uuid": "d983ced9-208e-4928-b840-bd6514941e38",
+    "fbid": "4cxWHEHKC2dYeUqKBFYmjtE5qJf1",
+    "createdAt": "2022-06-28T00:49:57.400Z",
+    "name": "Brandon cinturami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "7",
+    "members": [
+      {
+        "id": "7",
+        "uuid": "c97ed21b-ded7-456f-a7c7-27928097665b",
+        "createdAt": "2022-06-28T00:49:58.734Z",
+        "userId": "7",
+        "communityId": "7",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:49:58.734Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "7",
+        "uuid": "259ca5fd-0b18-4bba-894b-1d91fe4b9ef8",
+        "fbId": "4cxWHEHKC2dYeUqKBFYmjtE5qJf1",
+        "createdAt": "2022-06-28T00:49:59.131Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "7",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "7",
+      "uuid": "923b78d6-90cc-4a0b-a78d-b6b845b699bb",
+      "createdAt": "2022-06-28T00:47:57.886Z",
+      "username": "brandon",
+      "name": "Brandon cinturami",
+      "authId": "4cxWHEHKC2dYeUqKBFYmjtE5qJf1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "8",
+    "uuid": "6d782697-5d91-4fa3-a0d6-8bd7b48caf98",
+    "fbid": "5EMuSxPqg6cCPNz9xdob2yKmnxy2",
+    "createdAt": "2022-06-28T00:49:59.355Z",
+    "name": "Brenton Beltrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "8",
+    "members": [
+      {
+        "id": "8",
+        "uuid": "d32407ec-2da0-4368-a828-2a7776e2ecb6",
+        "createdAt": "2022-06-28T00:50:00.632Z",
+        "userId": "8",
+        "communityId": "8",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:00.632Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "8",
+        "uuid": "c8bfc587-c981-4432-b231-955df477cf44",
+        "fbId": "5EMuSxPqg6cCPNz9xdob2yKmnxy2",
+        "createdAt": "2022-06-28T00:50:01.132Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "8",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "8",
+      "uuid": "a17ad999-ef25-44ad-992d-bbfd879b1778",
+      "createdAt": "2022-06-28T00:47:59.635Z",
+      "username": "brenton2",
+      "name": "Brenton Beltrami",
+      "authId": "5EMuSxPqg6cCPNz9xdob2yKmnxy2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "9",
+    "uuid": "be42a6b2-28e5-49dd-b571-1a860041a4d5",
+    "fbid": "8TDE3eV4RhRhbcZTZAy9MVqg8Dm1",
+    "createdAt": "2022-06-28T00:50:01.251Z",
+    "name": "test test's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "9",
+    "members": [
+      {
+        "id": "9",
+        "uuid": "58f6ca22-1c83-4b97-ae3a-480b1d8be90b",
+        "createdAt": "2022-06-28T00:50:02.568Z",
+        "userId": "9",
+        "communityId": "9",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:02.568Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "9",
+        "uuid": "6ecf5446-d47c-4fec-99dc-d7ec70cee0f5",
+        "fbId": "o4TU1OSTXQdFgsXyMBvS",
+        "createdAt": "2022-06-28T00:50:02.993Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Faiz spot",
+        "description": "Not Faiz’s spot",
+        "communityId": "9",
+        "readPermission": "NONE",
+        "writePermission": "NONE"
+      },
+      {
+        "id": "10",
+        "uuid": "cf6f420e-a4a1-449e-acb3-f174b5fc0d91",
+        "fbId": "8TDE3eV4RhRhbcZTZAy9MVqg8Dm1",
+        "createdAt": "2022-06-28T00:50:03.063Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "9",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "9",
+      "uuid": "8bf61a1e-95be-4718-922c-45f02571a4a6",
+      "createdAt": "2022-06-28T00:48:00.506Z",
+      "username": "test",
+      "name": "test test",
+      "authId": "8TDE3eV4RhRhbcZTZAy9MVqg8Dm1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "10",
+    "uuid": "9f3440fa-c915-4cf1-9697-adad704ef9de",
+    "fbid": "8XZZufvR8JhmbBwSz0f8ynXEcyS2",
+    "createdAt": "2022-06-28T00:50:03.951Z",
+    "name": "Faiz's Place",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "10",
+    "members": [
+      {
+        "id": "11",
+        "uuid": "5a423a15-66e0-4dab-864a-f362a5615813",
+        "createdAt": "2022-06-28T00:50:07.727Z",
+        "userId": "23",
+        "communityId": "10",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:07.727Z"
+      },
+      {
+        "id": "12",
+        "uuid": "50ba65f7-feae-4892-8eda-c2dcd6851eed",
+        "createdAt": "2022-06-28T00:50:08.312Z",
+        "userId": "26",
+        "communityId": "10",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:08.312Z"
+      },
+      {
+        "id": "10",
+        "uuid": "37729c7a-b511-4b73-95a3-5fb91101eb6b",
+        "createdAt": "2022-06-28T00:50:06.161Z",
+        "userId": "47",
+        "communityId": "10",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:06.161Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "11",
+        "uuid": "7206d73f-b369-49a3-a755-2c9ac043e5fa",
+        "fbId": "3a4qBthGmPWGnNhABnpJ",
+        "createdAt": "2022-06-28T00:50:05.653Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "test",
+        "description": "",
+        "communityId": "10",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "12",
+        "uuid": "232b0182-419d-4f81-b9c5-12a7883210ba",
+        "fbId": "IsbeBxKNdjsdCb637br5",
+        "createdAt": "2022-06-28T00:50:05.665Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Club Faiz",
+        "description": "",
+        "communityId": "10",
+        "readPermission": "SUBSCRIBER",
+        "writePermission": "SUBSCRIBER"
+      },
+      {
+        "id": "13",
+        "uuid": "4e8b89b9-d011-467e-9df3-913597b4059b",
+        "fbId": "BwqnTyvsGtaqztsXUlx2",
+        "createdAt": "2022-06-28T00:50:05.657Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "test",
+        "description": "",
+        "communityId": "10",
+        "readPermission": "SUBSCRIBER",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "14",
+        "uuid": "780780f4-8216-43f8-8d60-10fdaf26fec3",
+        "fbId": "8XZZufvR8JhmbBwSz0f8ynXEcyS2",
+        "createdAt": "2022-06-28T00:50:05.653Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "10",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "15",
+        "uuid": "19c9afc8-522f-4876-80f1-380dbf9d94da",
+        "fbId": "FH10gc4soc4gOfk1JmM0",
+        "createdAt": "2022-06-28T00:50:07.159Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "test",
+        "description": "test",
+        "communityId": "10",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "16",
+        "uuid": "c5e5c6aa-e02f-45f7-985b-dca857a66095",
+        "fbId": "Z3qNZBGi5Mqzlsw89FEM",
+        "createdAt": "2022-06-28T00:50:06.155Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "test offline",
+        "description": "test",
+        "communityId": "10",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "17",
+        "uuid": "6903e529-e79c-4837-a816-85aaf881ed30",
+        "fbId": "PukEAYFPgndbhJvVes55",
+        "createdAt": "2022-06-28T00:50:07.690Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "dsffes",
+        "description": "",
+        "communityId": "10",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "18",
+        "uuid": "23c0a487-d425-4e95-ae53-71ee69049649",
+        "fbId": "a0b6wWbXI4s5Z6E1VhFq",
+        "createdAt": "2022-06-28T00:50:07.727Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "dfdfd",
+        "description": "",
+        "communityId": "10",
+        "readPermission": "SUBSCRIBER",
+        "writePermission": "NONE"
+      },
+      {
+        "id": "19",
+        "uuid": "252251e7-3246-4cb6-a169-44fe2beb9600",
+        "fbId": "RcDpAIzx8bStfsWTIOm6",
+        "createdAt": "2022-06-28T00:50:07.734Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "test 2",
+        "description": "",
+        "communityId": "10",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "10",
+      "uuid": "0b801e1b-90f5-42c4-ad24-db6fdf0e97cb",
+      "createdAt": "2022-06-28T00:48:02.258Z",
+      "username": "faiz",
+      "name": "Faiz Imran",
+      "authId": "8XZZufvR8JhmbBwSz0f8ynXEcyS2",
+      "bio": "The entrepreneur, speaker, & CEO behind @backspace @fismma @businessblurb @hair.fi +5 FT. Forbes, Yahoo, ABC news, ETC"
+    }
+  },
+  {
+    "id": "11",
+    "uuid": "f34ec6c8-29b3-4418-a50e-13356e7619a0",
+    "fbid": "8eVWSi2hPmZLsBHdIbwRN7KFZP02",
+    "createdAt": "2022-06-28T00:50:10.511Z",
+    "name": "Faiz Imran's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "11",
+    "members": [
+      {
+        "id": "13",
+        "uuid": "79ef3b5c-3e4c-4d2b-8628-3e49c435ef7e",
+        "createdAt": "2022-06-28T00:50:11.750Z",
+        "userId": "11",
+        "communityId": "11",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:11.750Z"
+      },
+      {
+        "id": "14",
+        "uuid": "86d3e59b-79bf-45ca-a9c5-72ec6eb0ba1d",
+        "createdAt": "2022-06-28T00:50:12.299Z",
+        "userId": "37",
+        "communityId": "11",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:12.299Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "20",
+        "uuid": "49580558-74da-41e9-8e0b-8cb0fb0e04a8",
+        "fbId": "8eVWSi2hPmZLsBHdIbwRN7KFZP02",
+        "createdAt": "2022-06-28T00:50:12.176Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "11",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "11",
+      "uuid": "bf6a20df-b4af-4e58-a37d-fd7b2d6185b7",
+      "createdAt": "2022-06-28T00:48:04.367Z",
+      "username": "testfaiz",
+      "name": "Faiz Imran",
+      "authId": "8eVWSi2hPmZLsBHdIbwRN7KFZP02",
+      "bio": ""
+    }
+  },
+  {
+    "id": "12",
+    "uuid": "ff3d9393-1eda-409e-a0c8-6afd4ba58d39",
+    "fbid": "AtjzfS5joeb1oVly7r42v8Dk3zE3",
+    "createdAt": "2022-06-28T00:50:13.809Z",
+    "name": "Dev Dylan BC",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "12",
+    "members": [
+      {
+        "id": "15",
+        "uuid": "c91029ca-4050-4a5a-930d-5d33bb2433fd",
+        "createdAt": "2022-06-28T00:50:15.107Z",
+        "userId": "12",
+        "communityId": "12",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:15.107Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "21",
+        "uuid": "971cf24b-8748-49a4-89f3-9dce1edaa54a",
+        "fbId": "AtjzfS5joeb1oVly7r42v8Dk3zE3",
+        "createdAt": "2022-06-28T00:50:15.527Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "12",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "12",
+      "uuid": "83588355-2729-4d59-ab03-e3ccd821bfd2",
+      "createdAt": "2022-06-28T00:48:05.159Z",
+      "username": "dev",
+      "name": "Dylan Dev",
+      "authId": "AtjzfS5joeb1oVly7r42v8Dk3zE3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "13",
+    "uuid": "43bd548a-a477-4f75-9e51-429a55d79215",
+    "fbid": "CM5cPrXQTtVBnmheLwsqRoi9q9y2",
+    "createdAt": "2022-06-28T00:50:16.627Z",
+    "name": "Testing Founders's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "13",
+    "members": [
+      {
+        "id": "16",
+        "uuid": "f84366dd-4ebe-4c9d-b0ba-b5300af59f5f",
+        "createdAt": "2022-06-28T00:50:17.867Z",
+        "userId": "13",
+        "communityId": "13",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:17.867Z"
+      },
+      {
+        "id": "17",
+        "uuid": "4e48475b-a004-4505-84cb-262b21c20497",
+        "createdAt": "2022-06-28T00:50:18.419Z",
+        "userId": "37",
+        "communityId": "13",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:18.419Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "22",
+        "uuid": "08e6ed3e-13a4-421f-a247-41bc1da38c3a",
+        "fbId": "CM5cPrXQTtVBnmheLwsqRoi9q9y2",
+        "createdAt": "2022-06-28T00:50:18.300Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "13",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "13",
+      "uuid": "6dcd63f4-74d2-4ce4-bd59-3948224d12e5",
+      "createdAt": "2022-06-28T00:48:06.269Z",
+      "username": "followingfounder",
+      "name": "Testing Founders",
+      "authId": "CM5cPrXQTtVBnmheLwsqRoi9q9y2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "14",
+    "uuid": "6d73e560-d149-4292-9fc6-b8fe767e6c99",
+    "fbid": "CuYfl1RsVleCfipIzBZmPXn5KTS2",
+    "createdAt": "2022-06-28T00:50:19.032Z",
+    "name": "dadwad dwdawdaw's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "14",
+    "members": [
+      {
+        "id": "18",
+        "uuid": "74019ebd-2fb3-4734-a303-3cd978ea12c3",
+        "createdAt": "2022-06-28T00:50:20.298Z",
+        "userId": "14",
+        "communityId": "14",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:20.298Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "23",
+        "uuid": "4f653271-5863-47a1-a12f-dd9c5a63a78f",
+        "fbId": "CuYfl1RsVleCfipIzBZmPXn5KTS2",
+        "createdAt": "2022-06-28T00:50:20.751Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "14",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "14",
+      "uuid": "968ffd7e-8804-4f72-bdd8-0398d0e0cd06",
+      "createdAt": "2022-06-28T00:48:07.825Z",
+      "username": "deleteme",
+      "name": "dadwad dwdawdaw",
+      "authId": "CuYfl1RsVleCfipIzBZmPXn5KTS2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "15",
+    "uuid": "39212fca-b7c5-42d9-a2b6-9a732028a71d",
+    "fbid": "Cv4C91HhrpPaDnoojQ1a40lvq5u1",
+    "createdAt": "2022-06-28T00:50:20.938Z",
+    "name": "dawdaa dawdaw's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "15",
+    "members": [
+      {
+        "id": "19",
+        "uuid": "3bde9bd5-67e1-40d5-b57c-d6924589dd23",
+        "createdAt": "2022-06-28T00:50:22.157Z",
+        "userId": "15",
+        "communityId": "15",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:22.157Z"
+      },
+      {
+        "id": "20",
+        "uuid": "7276e1f6-d5b6-43e5-9aaa-d71de8273dfa",
+        "createdAt": "2022-06-28T00:50:22.718Z",
+        "userId": "37",
+        "communityId": "15",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:22.718Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "24",
+        "uuid": "baec56d9-c3d9-45df-aefc-1487337d3ed7",
+        "fbId": "Cv4C91HhrpPaDnoojQ1a40lvq5u1",
+        "createdAt": "2022-06-28T00:50:22.599Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "15",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "15",
+      "uuid": "8d021f50-7a58-4696-a58c-ae5b2bb94284",
+      "createdAt": "2022-06-28T00:48:08.710Z",
+      "username": "sam2",
+      "name": "dawdaa dawdaw",
+      "authId": "Cv4C91HhrpPaDnoojQ1a40lvq5u1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "16",
+    "uuid": "ed587b57-2c3b-4f68-bd50-9589e0bd7a24",
+    "fbid": "DQDVEmmDAsdzJlzMp0qUf2Lxs2F3",
+    "createdAt": "2022-06-28T00:50:23.322Z",
+    "name": "Brenton Beltrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "16",
+    "members": [
+      {
+        "id": "21",
+        "uuid": "5fd15c53-e96f-44a2-a571-d87e094f5b57",
+        "createdAt": "2022-06-28T00:50:24.591Z",
+        "userId": "16",
+        "communityId": "16",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:24.591Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "25",
+        "uuid": "c1c9dcee-13b4-481c-941e-e72098a22a1a",
+        "fbId": "DQDVEmmDAsdzJlzMp0qUf2Lxs2F3",
+        "createdAt": "2022-06-28T00:50:25.022Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "16",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "26",
+        "uuid": "6d2984d4-fc57-4a08-afb5-3f7a9a9b8e09",
+        "fbId": "5hoeO6IE4UbXjRtJaObf",
+        "createdAt": "2022-06-28T00:50:25.084Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Test",
+        "description": "",
+        "communityId": "16",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      }
+    ],
+    "owner": {
+      "id": "16",
+      "uuid": "a88c7386-39f9-471a-b940-d09fa47c657f",
+      "createdAt": "2022-06-28T00:48:09.539Z",
+      "username": "username",
+      "name": "Brenton Beltrami",
+      "authId": "DQDVEmmDAsdzJlzMp0qUf2Lxs2F3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "17",
+    "uuid": "9ac5ee99-dd68-466e-9bee-4522d4bb0f24",
+    "fbid": "Dm1z9KsZBNbn8WwmgIwVhnbk9NG3",
+    "createdAt": "2022-06-28T00:50:25.207Z",
+    "name": "sdSLkj sldkJSDLj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "17",
+    "members": [
+      {
+        "id": "22",
+        "uuid": "299eb5f0-55ba-4727-9b53-d651b432a2f0",
+        "createdAt": "2022-06-28T00:50:26.498Z",
+        "userId": "17",
+        "communityId": "17",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:26.498Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "27",
+        "uuid": "bfb79948-f770-4f54-ab22-2be0b415d284",
+        "fbId": "Dm1z9KsZBNbn8WwmgIwVhnbk9NG3",
+        "createdAt": "2022-06-28T00:50:26.867Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "17",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "17",
+      "uuid": "eb45dcb1-87a0-42be-8fba-ea1306fb3500",
+      "createdAt": "2022-06-28T00:48:10.432Z",
+      "username": "31",
+      "name": "sdSLkj sldkJSDLj",
+      "authId": "Dm1z9KsZBNbn8WwmgIwVhnbk9NG3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "18",
+    "uuid": "cf95fa6e-5f53-448a-a0af-b3224c5131ac",
+    "fbid": "HFY2AuGIIwTUWTMPo9AcLZRlCYt2",
+    "createdAt": "2022-06-28T00:50:27.079Z",
+    "name": "Benton CantSpell's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "18",
+    "members": [
+      {
+        "id": "23",
+        "uuid": "063b761f-2195-4fd1-933c-6be5a51969bc",
+        "createdAt": "2022-06-28T00:50:28.315Z",
+        "userId": "18",
+        "communityId": "18",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:28.315Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "28",
+        "uuid": "aaee0fa1-a456-4a5d-bc35-4c3f5a430470",
+        "fbId": "HFY2AuGIIwTUWTMPo9AcLZRlCYt2",
+        "createdAt": "2022-06-28T00:50:28.733Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "18",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "18",
+      "uuid": "614c8bf1-618b-4512-9557-35e9aa3f794a",
+      "createdAt": "2022-06-28T00:48:11.232Z",
+      "username": "testuser",
+      "name": "Benton CantSpell",
+      "authId": "HFY2AuGIIwTUWTMPo9AcLZRlCYt2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "19",
+    "uuid": "6f37cd84-0433-4084-b16a-554566c3f167",
+    "fbid": "HqBhoiYJSJXXdQ662RJQ7kHBeaz2",
+    "createdAt": "2022-06-28T00:50:28.917Z",
+    "name": "lsdkJSELj lksDLSDj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "19",
+    "members": [
+      {
+        "id": "24",
+        "uuid": "0ffd1fd0-7176-4367-95d4-27150d446a4c",
+        "createdAt": "2022-06-28T00:50:30.170Z",
+        "userId": "19",
+        "communityId": "19",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:30.170Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "29",
+        "uuid": "9845e7d0-e8f3-4f6a-a769-ef719919bcd0",
+        "fbId": "HqBhoiYJSJXXdQ662RJQ7kHBeaz2",
+        "createdAt": "2022-06-28T00:50:30.568Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "19",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "19",
+      "uuid": "3321e9c4-f899-44e0-abba-ee091b95ed05",
+      "createdAt": "2022-06-28T00:48:12.025Z",
+      "username": "32",
+      "name": "lsdkJSELj lksDLSDj",
+      "authId": "HqBhoiYJSJXXdQ662RJQ7kHBeaz2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "20",
+    "uuid": "cc662c93-e6f4-468b-92f9-4627829c4956",
+    "fbid": "NprryZyxVKM14y2DVGpwAD2B9Do1",
+    "createdAt": "2022-06-28T00:50:30.775Z",
+    "name": "sdSf sdSDf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "20",
+    "members": [
+      {
+        "id": "25",
+        "uuid": "db618686-2620-436f-8f3c-1a9b9881ec95",
+        "createdAt": "2022-06-28T00:50:32.032Z",
+        "userId": "20",
+        "communityId": "20",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:32.032Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "30",
+        "uuid": "d23ec32e-1586-4fd2-a6ef-b5ba63b3ee57",
+        "fbId": "NprryZyxVKM14y2DVGpwAD2B9Do1",
+        "createdAt": "2022-06-28T00:50:32.479Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "20",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "20",
+      "uuid": "8ba0509f-ac60-492f-ac4d-5da5252c5067",
+      "createdAt": "2022-06-28T00:48:12.872Z",
+      "username": "26",
+      "name": "sdSf sdSDf",
+      "authId": "NprryZyxVKM14y2DVGpwAD2B9Do1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "21",
+    "uuid": "7d7ef3e2-5df5-4309-a0bd-bb8bce8f8532",
+    "fbid": "R3OvufUauNejq6sFzZocUimQApe2",
+    "createdAt": "2022-06-28T00:50:33.599Z",
+    "name": "Brenton Testrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "21",
+    "members": [
+      {
+        "id": "26",
+        "uuid": "dcb19f87-aa1c-420f-96c0-7533479b5c29",
+        "createdAt": "2022-06-28T00:50:34.888Z",
+        "userId": "21",
+        "communityId": "21",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:34.888Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "31",
+        "uuid": "ace03166-53fe-4f8f-9cc2-8ff805830687",
+        "fbId": "R3OvufUauNejq6sFzZocUimQApe2",
+        "createdAt": "2022-06-28T00:50:35.319Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "21",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "21",
+      "uuid": "a3dfd21f-d999-4053-b8e2-c5682894bcdc",
+      "createdAt": "2022-06-28T00:48:13.700Z",
+      "username": "addedthebool",
+      "name": "Brenton Testrami",
+      "authId": "R3OvufUauNejq6sFzZocUimQApe2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "22",
+    "uuid": "05ebc2ca-3840-4386-8dec-0d7361ae5a03",
+    "fbid": "T7YpgVo8sVP4cuFHeDrVHsgHRuz2",
+    "createdAt": "2022-06-28T00:50:35.505Z",
+    "name": "Brenton Beltrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "22",
+    "members": [
+      {
+        "id": "27",
+        "uuid": "d5dc45a9-25f2-40c6-92cb-61a341d7a3e9",
+        "createdAt": "2022-06-28T00:50:36.774Z",
+        "userId": "22",
+        "communityId": "22",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:36.774Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "32",
+        "uuid": "ad39fb49-9f30-4783-9670-eaaf7cced4ed",
+        "fbId": "T7YpgVo8sVP4cuFHeDrVHsgHRuz2",
+        "createdAt": "2022-06-28T00:50:37.214Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "22",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "22",
+      "uuid": "52f79407-f612-4b28-8d7d-39505ef65fdf",
+      "createdAt": "2022-06-28T00:48:14.503Z",
+      "username": "testonboard12345",
+      "name": "Brenton Beltrami",
+      "authId": "T7YpgVo8sVP4cuFHeDrVHsgHRuz2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "23",
+    "uuid": "e2a5d025-e9c5-443a-80f2-66e0add50945",
+    "fbid": "TfCT32h1puRyRb88JaKGnUHVQlf2",
+    "createdAt": "2022-06-28T00:50:38.387Z",
+    "name": "Cult Brenton",
+    "description": "Hello",
+    "allowJoin": true,
+    "ownerId": "23",
+    "members": [
+      {
+        "id": "28",
+        "uuid": "57bb223f-9993-4fef-86b8-331979dd11e4",
+        "createdAt": "2022-06-28T00:50:39.750Z",
+        "userId": "9",
+        "communityId": "23",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:39.750Z"
+      },
+      {
+        "id": "29",
+        "uuid": "de6b8bd6-84e8-439e-a956-ab673f2d5ec6",
+        "createdAt": "2022-06-28T00:50:40.331Z",
+        "userId": "10",
+        "communityId": "23",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:40.331Z"
+      },
+      {
+        "id": "30",
+        "uuid": "75dc02f0-0a14-42b7-b761-65c75bbf72bc",
+        "createdAt": "2022-06-28T00:50:40.917Z",
+        "userId": "23",
+        "communityId": "23",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:40.917Z"
+      },
+      {
+        "id": "31",
+        "uuid": "56870126-1a64-470a-b940-7b869dc86e8f",
+        "createdAt": "2022-06-28T00:50:41.520Z",
+        "userId": "26",
+        "communityId": "23",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:41.520Z"
+      },
+      {
+        "id": "32",
+        "uuid": "d414d572-3268-4a2a-ad05-7f71e5de8085",
+        "createdAt": "2022-06-28T00:50:42.094Z",
+        "userId": "37",
+        "communityId": "23",
+        "role": "SUBSCRIBER",
+        "updated": "2022-06-28T00:50:42.094Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "33",
+        "uuid": "eb3f971b-3273-4f7c-bed4-9720d4071a7b",
+        "fbId": "GzFGcVsuNxUwhZK7QkxL",
+        "createdAt": "2022-06-28T00:50:40.074Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Test Channel Two",
+        "description": "Description",
+        "communityId": "23",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "34",
+        "uuid": "10af71a2-108d-4212-a603-c0404755ea4b",
+        "fbId": "TfCT32h1puRyRb88JaKGnUHVQlf2",
+        "createdAt": "2022-06-28T00:50:40.072Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "23",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "35",
+        "uuid": "51d84392-4268-4f2d-ae59-9b70c58d734e",
+        "fbId": "GwxQnOCu6nCzV3mdJjbO",
+        "createdAt": "2022-06-28T00:50:40.073Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Media Only",
+        "description": "This is an absurdly long description of what this channel does. I think I need at least a few more words for this to work properly so I am just going to keep going for a little bit longer. Apparently that wasn't long enough for my screensize so I need to add some more content to this description.",
+        "communityId": "23",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "36",
+        "uuid": "48677c2f-f03b-4804-aece-299bb9cc7f87",
+        "fbId": "ougRxmiA4htGSuU4tZxO",
+        "createdAt": "2022-06-28T00:50:40.203Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Testing",
+        "description": "",
+        "communityId": "23",
+        "readPermission": "MEMBER",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "37",
+        "uuid": "5c9df573-1ca5-458f-9827-4b70d3142292",
+        "fbId": "XFn0SgGrrbHFvZALPGq3",
+        "createdAt": "2022-06-28T00:50:40.134Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Posts Only",
+        "description": "",
+        "communityId": "23",
+        "readPermission": "NONE",
+        "writePermission": "NONE"
+      },
+      {
+        "id": "38",
+        "uuid": "6edd4812-3f6c-4e02-ba90-73227fddf589",
+        "fbId": "mIOSxQ4oK8roz1BsDNIK",
+        "createdAt": "2022-06-28T00:50:40.324Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Testing",
+        "description": "",
+        "communityId": "23",
+        "readPermission": "MEMBER",
+        "writePermission": "SUBSCRIBER"
+      },
+      {
+        "id": "39",
+        "uuid": "176c4572-1e74-45b5-a86d-51577c6429f2",
+        "fbId": "jWXlUSjOMSPaLbFcsnz3",
+        "createdAt": "2022-06-28T00:50:40.331Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Test",
+        "description": "",
+        "communityId": "23",
+        "readPermission": "SUBSCRIBER",
+        "writePermission": "NONE"
+      },
+      {
+        "id": "40",
+        "uuid": "1f2857d9-8ef1-4ac3-bb15-b6fa3c1dc265",
+        "fbId": "iBZ7aZv3BHoqKfycstQ0",
+        "createdAt": "2022-06-28T00:50:40.397Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "theelo ",
+        "description": "",
+        "communityId": "23",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "41",
+        "uuid": "7ea44015-d4af-4e54-8ce3-f1216f2c5324",
+        "fbId": "gyKcbbFYcbdDNTd5CJuJ",
+        "createdAt": "2022-06-28T00:50:40.448Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Room View/Post",
+        "description": "Other",
+        "communityId": "23",
+        "readPermission": "MEMBER",
+        "writePermission": "ADMIN"
+      }
+    ],
+    "owner": {
+      "id": "23",
+      "uuid": "7f0c1c9b-4a74-4ab5-92f3-ee4449548dd4",
+      "createdAt": "2022-06-28T00:48:15.362Z",
+      "username": "brentonbeltrami",
+      "name": "brentonbeltrami",
+      "authId": "TfCT32h1puRyRb88JaKGnUHVQlf2",
+      "bio": "This is an absurdly long description of what this channel does. I think I need at least a few more words for this to work properly so I am just going to keep going for a little bit longer."
+    }
+  },
+  {
+    "id": "24",
+    "uuid": "35d7968e-7aaa-4a19-8d68-5f8fd05d09a8",
+    "fbid": "UkwY94EsomcbhRbQNw3dgg4XhJm2",
+    "createdAt": "2022-06-28T00:50:42.728Z",
+    "name": "Brenton Beltrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "24",
+    "members": [
+      {
+        "id": "33",
+        "uuid": "f45b4024-f362-4a83-ba29-e729934288bb",
+        "createdAt": "2022-06-28T00:50:43.967Z",
+        "userId": "24",
+        "communityId": "24",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:43.967Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "42",
+        "uuid": "6333e130-6088-444e-ba02-bfa832c41618",
+        "fbId": "UkwY94EsomcbhRbQNw3dgg4XhJm2",
+        "createdAt": "2022-06-28T00:50:44.392Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "24",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "24",
+      "uuid": "0674b7cc-dbac-4dcb-8dfd-3d651a240feb",
+      "createdAt": "2022-06-28T00:48:18.743Z",
+      "username": "imhungryrn",
+      "name": "Brenton Beltrami",
+      "authId": "UkwY94EsomcbhRbQNw3dgg4XhJm2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "25",
+    "uuid": "938da289-a462-45f4-b439-95b318286df4",
+    "fbid": "VR8MAm5b9zeT8raOoyGnvyanOj72",
+    "createdAt": "2022-06-28T00:50:44.585Z",
+    "name": "Mark Zucker's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "25",
+    "members": [
+      {
+        "id": "34",
+        "uuid": "4e7f8f4e-2718-4ace-8c7f-f2c7281d771d",
+        "createdAt": "2022-06-28T00:50:45.851Z",
+        "userId": "25",
+        "communityId": "25",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:45.851Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "43",
+        "uuid": "b1baa534-bf9f-46a4-809d-ab98c676e085",
+        "fbId": "VR8MAm5b9zeT8raOoyGnvyanOj72",
+        "createdAt": "2022-06-28T00:50:46.257Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "25",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "25",
+      "uuid": "4aeb5f27-6f0d-4510-9d12-95ef983e6297",
+      "createdAt": "2022-06-28T00:48:19.579Z",
+      "username": "Lizard",
+      "name": "Mark Zucker",
+      "authId": "VR8MAm5b9zeT8raOoyGnvyanOj72",
+      "bio": ""
+    }
+  },
+  {
+    "id": "26",
+    "uuid": "a880f5bb-f5a2-4f90-868e-c05cc453e0e4",
+    "fbid": "YhbGS5vA4RQ4JnSXtSG3MHXP5lA3",
+    "createdAt": "2022-06-28T00:50:47.373Z",
+    "name": "Tim Trafford's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "26",
+    "members": [
+      {
+        "id": "35",
+        "uuid": "c4b9d1c3-4f56-4a3b-b1da-31c6e59bf07a",
+        "createdAt": "2022-06-28T00:50:48.732Z",
+        "userId": "26",
+        "communityId": "26",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:48.732Z"
+      },
+      {
+        "id": "36",
+        "uuid": "bd1b9bd8-cde8-4382-8018-58d2525acd3c",
+        "createdAt": "2022-06-28T00:50:49.283Z",
+        "userId": "37",
+        "communityId": "26",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:49.284Z"
+      },
+      {
+        "id": "37",
+        "uuid": "7dae97a4-59e3-472e-9f91-5a34d2c4c6b6",
+        "createdAt": "2022-06-28T00:50:49.825Z",
+        "userId": "40",
+        "communityId": "26",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:49.825Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "44",
+        "uuid": "659cf82f-b96a-435e-be6b-d00ffc5ecf30",
+        "fbId": "YhbGS5vA4RQ4JnSXtSG3MHXP5lA3",
+        "createdAt": "2022-06-28T00:50:49.106Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "26",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "45",
+        "uuid": "31756770-ce4b-4383-8bf9-1b49afed43cd",
+        "fbId": "tfPEiBIdtxuHAKnU1J2f",
+        "createdAt": "2022-06-28T00:50:49.106Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Olympic Highlights",
+        "description": "I have olympic highlights to share...",
+        "communityId": "26",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      }
+    ],
+    "owner": {
+      "id": "26",
+      "uuid": "1b20d3d4-8d6f-40b5-a100-fcbe29213c26",
+      "createdAt": "2022-06-28T00:48:20.390Z",
+      "username": "tim",
+      "name": "Tim Trafford",
+      "authId": "YhbGS5vA4RQ4JnSXtSG3MHXP5lA3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "27",
+    "uuid": "4e483ceb-1adb-4e75-a635-33041aed2ffa",
+    "fbid": "aKfobVviGzNPzTJE4sBTIRcyVmi1",
+    "createdAt": "2022-06-28T00:50:50.427Z",
+    "name": "test delete me's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "27",
+    "members": [
+      {
+        "id": "38",
+        "uuid": "e8af7f65-da0a-43ca-858a-b1b2032d988d",
+        "createdAt": "2022-06-28T00:50:51.671Z",
+        "userId": "27",
+        "communityId": "27",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:51.671Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "46",
+        "uuid": "7e026179-33b5-41ce-a80c-8e661a45d53a",
+        "fbId": "aKfobVviGzNPzTJE4sBTIRcyVmi1",
+        "createdAt": "2022-06-28T00:50:52.129Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "27",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "27",
+      "uuid": "ded671eb-244d-4d00-abbe-0fc48cba456d",
+      "createdAt": "2022-06-28T00:48:23.076Z",
+      "username": "metruzancagmail",
+      "name": "test delete me",
+      "authId": "aKfobVviGzNPzTJE4sBTIRcyVmi1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "28",
+    "uuid": "2cd35fa7-b343-4ca4-92fa-42936067a49d",
+    "fbid": "bf4Uex8Inngi9uIZYRWRv1Z7Zfq2",
+    "createdAt": "2022-06-28T00:50:52.268Z",
+    "name": "sdSDf sdfsdf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "28",
+    "members": [
+      {
+        "id": "39",
+        "uuid": "adbd02a9-df91-488c-ace7-ac2d507dedde",
+        "createdAt": "2022-06-28T00:50:53.475Z",
+        "userId": "28",
+        "communityId": "28",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:53.475Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "47",
+        "uuid": "32aeb7d2-ad55-4e8e-8853-4fdfecddf369",
+        "fbId": "bf4Uex8Inngi9uIZYRWRv1Z7Zfq2",
+        "createdAt": "2022-06-28T00:50:53.895Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "28",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "28",
+      "uuid": "d726a439-f4c4-4d5b-bb7f-f256cdc80fb2",
+      "createdAt": "2022-06-28T00:48:24.129Z",
+      "username": "27",
+      "name": "sdSDf sdfsdf",
+      "authId": "bf4Uex8Inngi9uIZYRWRv1Z7Zfq2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "29",
+    "uuid": "dbdd66f6-862e-47aa-8a43-09054e497ad8",
+    "fbid": "bsI4udauSDcIWX0rFkGZBLSDFeF3",
+    "createdAt": "2022-06-28T00:50:54.075Z",
+    "name": "lskdj lskdf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "29",
+    "members": [
+      {
+        "id": "40",
+        "uuid": "01fd8c61-b037-4a7e-a0c5-fa8723876ada",
+        "createdAt": "2022-06-28T00:50:55.295Z",
+        "userId": "29",
+        "communityId": "29",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:55.295Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "48",
+        "uuid": "1ddd575f-2ff8-4fc3-975f-9df03909c952",
+        "fbId": "bsI4udauSDcIWX0rFkGZBLSDFeF3",
+        "createdAt": "2022-06-28T00:50:55.790Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "29",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "29",
+      "uuid": "ab901653-f6ef-484e-ac94-1d0497dd444c",
+      "createdAt": "2022-06-28T00:48:24.982Z",
+      "username": "slkdjslkf",
+      "name": "lskdj lskdf",
+      "authId": "bsI4udauSDcIWX0rFkGZBLSDFeF3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "30",
+    "uuid": "6b6f9f38-a1e7-4fd2-b1ec-4ca3bb07fc00",
+    "fbid": "cW5TObhvckczJYjXek08usvaXx72",
+    "createdAt": "2022-06-28T00:50:55.974Z",
+    "name": "Tester's BC",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "30",
+    "members": [
+      {
+        "id": "41",
+        "uuid": "db3d6998-6d52-4ce7-8fda-c21e7e0fac6f",
+        "createdAt": "2022-06-28T00:50:57.291Z",
+        "userId": "30",
+        "communityId": "30",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:50:57.291Z"
+      },
+      {
+        "id": "42",
+        "uuid": "bac62ebe-21c1-43b7-a334-4db4d3d696da",
+        "createdAt": "2022-06-28T00:50:57.824Z",
+        "userId": "37",
+        "communityId": "30",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:57.824Z"
+      },
+      {
+        "id": "43",
+        "uuid": "280b2dfb-6327-4951-a40d-c1f7e56235c3",
+        "createdAt": "2022-06-28T00:50:58.367Z",
+        "userId": "4",
+        "communityId": "30",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:50:58.367Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "50",
+        "uuid": "09756fe7-638a-4751-be28-0558fa4eaf30",
+        "fbId": "xlKORzqs72xPKrzJ0Lxp",
+        "createdAt": "2022-06-28T00:50:57.621Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Lmao",
+        "description": "",
+        "communityId": "30",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "49",
+        "uuid": "c46fc9b8-7c22-4766-8239-18b3378e0ecf",
+        "fbId": "cW5TObhvckczJYjXek08usvaXx72",
+        "createdAt": "2022-06-28T00:50:57.621Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "30",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "30",
+      "uuid": "17a5cf4a-7c67-4104-ad32-87118e4370c2",
+      "createdAt": "2022-06-28T00:48:25.847Z",
+      "username": "sams_test_account",
+      "name": "Tester Man",
+      "authId": "cW5TObhvckczJYjXek08usvaXx72",
+      "bio": ""
+    }
+  },
+  {
+    "id": "31",
+    "uuid": "b07c2728-4c2b-418c-8e79-f259024b98a5",
+    "fbid": "ceXK53ZvHiMUSGKKFAS3uO0ib7w1",
+    "createdAt": "2022-06-28T00:50:58.976Z",
+    "name": "Testing One's Backchannel",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "31",
+    "members": [
+      {
+        "id": "44",
+        "uuid": "d1261c71-bf77-4628-9b9d-05dbc39dac3e",
+        "createdAt": "2022-06-28T00:51:00.265Z",
+        "userId": "31",
+        "communityId": "31",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:00.265Z"
+      },
+      {
+        "id": "45",
+        "uuid": "426563df-ea00-43ac-a12f-4ce85e2f92f1",
+        "createdAt": "2022-06-28T00:51:00.811Z",
+        "userId": "37",
+        "communityId": "31",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:00.811Z"
+      },
+      {
+        "id": "46",
+        "uuid": "eaefd25f-6c76-4fe0-b5ee-59c20133a8d7",
+        "createdAt": "2022-06-28T00:51:01.368Z",
+        "userId": "49",
+        "communityId": "31",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:01.368Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "53",
+        "uuid": "bc6ca1e1-0f3e-44b6-9120-c21e834bec43",
+        "fbId": "ceXK53ZvHiMUSGKKFAS3uO0ib7w1",
+        "createdAt": "2022-06-28T00:51:00.689Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "31",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "52",
+        "uuid": "929d9aa1-58fe-45fa-9c2f-7f61c4da27db",
+        "fbId": "eOUtmyiBkrdnBkFDgF9y",
+        "createdAt": "2022-06-28T00:51:00.665Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "But School Is Cooler",
+        "description": "",
+        "communityId": "31",
+        "readPermission": "NONE",
+        "writePermission": "SUBSCRIBER"
+      },
+      {
+        "id": "51",
+        "uuid": "75504a6d-2563-4176-8801-c929c41b1af5",
+        "fbId": "FBek1zxdobQgG2430sYL",
+        "createdAt": "2022-06-28T00:51:00.673Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Drugs Are Cool",
+        "description": "This is a description",
+        "communityId": "31",
+        "readPermission": "MEMBER",
+        "writePermission": "MEMBER"
+      }
+    ],
+    "owner": {
+      "id": "31",
+      "uuid": "177dc7dd-79be-482f-972d-9f70cb78a444",
+      "createdAt": "2022-06-28T00:48:27.283Z",
+      "username": "regressionuser",
+      "name": "Testing One",
+      "authId": "ceXK53ZvHiMUSGKKFAS3uO0ib7w1",
+      "bio": "This is a story all about how my life got flip-turned upside down."
+    }
+  },
+  {
+    "id": "32",
+    "uuid": "69835aee-fd69-4622-8d9f-2adde306634d",
+    "fbid": "fH67LF1BvNPh8D5OEkF1W1c1rMT2",
+    "createdAt": "2022-06-28T00:51:01.972Z",
+    "name": "dsSDf sdfsdf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "32",
+    "members": [
+      {
+        "id": "47",
+        "uuid": "5e85865d-8666-4831-b429-c512fa7841fe",
+        "createdAt": "2022-06-28T00:51:03.321Z",
+        "userId": "32",
+        "communityId": "32",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:03.321Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "54",
+        "uuid": "f7568522-8ef2-4442-8f65-ee2b5f6e77fe",
+        "fbId": "fH67LF1BvNPh8D5OEkF1W1c1rMT2",
+        "createdAt": "2022-06-28T00:51:03.699Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "32",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "32",
+      "uuid": "d1cf4a7f-2557-467f-abbf-773d7ffa3075",
+      "createdAt": "2022-06-28T00:48:28.413Z",
+      "username": "33",
+      "name": "dsSDf sdfsdf",
+      "authId": "fH67LF1BvNPh8D5OEkF1W1c1rMT2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "33",
+    "uuid": "8734ec97-34c5-477f-9b7b-989e60a3051a",
+    "fbid": "fVg0opQjwvTUqRwHXzFuN9kQALV2",
+    "createdAt": "2022-06-28T00:51:03.940Z",
+    "name": "lskSLj lksLSKDf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "33",
+    "members": [
+      {
+        "id": "48",
+        "uuid": "91e0fbb5-b995-4abe-84d6-8aff556a2985",
+        "createdAt": "2022-06-28T00:51:05.173Z",
+        "userId": "33",
+        "communityId": "33",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:05.173Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "55",
+        "uuid": "6e680b3b-ae93-4898-8ced-21320ecf846f",
+        "fbId": "fVg0opQjwvTUqRwHXzFuN9kQALV2",
+        "createdAt": "2022-06-28T00:51:05.631Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "33",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "33",
+      "uuid": "58b6d301-27f6-49bc-82e1-b823b1c3e632",
+      "createdAt": "2022-06-28T00:48:29.220Z",
+      "username": "uhhhidekanymore",
+      "name": "lskSLj lksLSKDf",
+      "authId": "fVg0opQjwvTUqRwHXzFuN9kQALV2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "34",
+    "uuid": "2e2c6dac-6cce-44e0-8654-240b34279e10",
+    "fbid": "fWIT8yTyeNhiyj5nKOnfxXJF4ld2",
+    "createdAt": "2022-06-28T00:51:05.821Z",
+    "name": "Brenton Google2's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "34",
+    "members": [
+      {
+        "id": "49",
+        "uuid": "9272f9fc-81fa-42bc-ad4d-d12cab947461",
+        "createdAt": "2022-06-28T00:51:07.051Z",
+        "userId": "34",
+        "communityId": "34",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:07.051Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "56",
+        "uuid": "94622d4b-928b-4c0a-8eff-dd9141b74865",
+        "fbId": "fWIT8yTyeNhiyj5nKOnfxXJF4ld2",
+        "createdAt": "2022-06-28T00:51:07.543Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "34",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "34",
+      "uuid": "cac01d9e-12e9-4c7f-aec3-60aa9f3ce095",
+      "createdAt": "2022-06-28T00:48:30.063Z",
+      "username": "brentongoogle2",
+      "name": "Brenton Google2",
+      "authId": "fWIT8yTyeNhiyj5nKOnfxXJF4ld2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "35",
+    "uuid": "f0bc40e4-c57f-4870-9bda-47678127da49",
+    "fbid": "i7nxaEWjV6YY2TGLcxLXnlorhVC3",
+    "createdAt": "2022-06-28T00:51:09.498Z",
+    "name": "Afaf Khurram's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "35",
+    "members": [
+      {
+        "id": "50",
+        "uuid": "87dd13f6-3237-4212-b52a-16d3e56d5e2f",
+        "createdAt": "2022-06-28T00:51:10.727Z",
+        "userId": "35",
+        "communityId": "35",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:10.727Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "57",
+        "uuid": "bf673f4a-cbba-4759-9513-47168d48f5c9",
+        "fbId": "i7nxaEWjV6YY2TGLcxLXnlorhVC3",
+        "createdAt": "2022-06-28T00:51:11.100Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "35",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "35",
+      "uuid": "f291b1ed-db69-471d-ab89-02deab3a4971",
+      "createdAt": "2022-06-28T00:48:30.939Z",
+      "username": "afafkh_",
+      "name": "Afaf Khurram",
+      "authId": "i7nxaEWjV6YY2TGLcxLXnlorhVC3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "36",
+    "uuid": "ea358388-6ce5-4039-ba52-cd9b5bf27f8e",
+    "fbid": "is1NOI8qskbas3x6Q9CwMSahuOy2",
+    "createdAt": "2022-06-28T00:51:11.317Z",
+    "name": "Brenton Bletrami's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "36",
+    "members": [
+      {
+        "id": "51",
+        "uuid": "f56cae1d-6876-41f7-ac18-ec4c5e4edcd9",
+        "createdAt": "2022-06-28T00:51:12.584Z",
+        "userId": "36",
+        "communityId": "36",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:12.584Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "58",
+        "uuid": "3482f6ce-9165-40fe-afc1-2a339f563633",
+        "fbId": "is1NOI8qskbas3x6Q9CwMSahuOy2",
+        "createdAt": "2022-06-28T00:51:12.987Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "36",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "36",
+      "uuid": "5ee62074-05b8-41c2-9368-d8a96b9a1927",
+      "createdAt": "2022-06-28T00:48:31.764Z",
+      "username": "notaninposter",
+      "name": "Brenton Bletrami",
+      "authId": "is1NOI8qskbas3x6Q9CwMSahuOy2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "37",
+    "uuid": "17c065ef-dbdf-48a5-9b0d-dad48f5db17c",
+    "fbid": "j9i6PloH7pMgaPIUfUVcgPYRihl1",
+    "createdAt": "2022-06-28T00:51:13.187Z",
+    "name": "Dylan's Spot",
+    "description": "This is a community for testing out changes to communities",
+    "allowJoin": true,
+    "ownerId": "37",
+    "members": [
+      {
+        "id": "52",
+        "uuid": "11598163-e2f2-4cc3-bb79-4f2cedde9548",
+        "createdAt": "2022-06-28T00:51:14.581Z",
+        "userId": "9",
+        "communityId": "37",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:14.581Z"
+      },
+      {
+        "id": "53",
+        "uuid": "920b846f-dd46-4814-a3e7-d71fa88140d0",
+        "createdAt": "2022-06-28T00:51:15.134Z",
+        "userId": "10",
+        "communityId": "37",
+        "role": "SUBSCRIBER",
+        "updated": "2022-06-28T00:51:15.134Z"
+      },
+      {
+        "id": "54",
+        "uuid": "e96427f6-c70b-4aac-a5be-0b0497836ebd",
+        "createdAt": "2022-06-28T00:51:15.672Z",
+        "userId": "11",
+        "communityId": "37",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:15.672Z"
+      },
+      {
+        "id": "55",
+        "uuid": "1c120bce-9d15-402c-88d6-342a44748e1d",
+        "createdAt": "2022-06-28T00:51:16.237Z",
+        "userId": "12",
+        "communityId": "37",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:16.237Z"
+      },
+      {
+        "id": "56",
+        "uuid": "a9a7714b-f7c2-4352-be7a-271d86274739",
+        "createdAt": "2022-06-28T00:51:16.792Z",
+        "userId": "47",
+        "communityId": "37",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:16.792Z"
+      },
+      {
+        "id": "57",
+        "uuid": "017cb50c-5de0-4dcb-a16f-186fc2c6751e",
+        "createdAt": "2022-06-28T00:51:17.325Z",
+        "userId": "23",
+        "communityId": "37",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:17.325Z"
+      },
+      {
+        "id": "58",
+        "uuid": "95cfc4f7-7938-4686-bdfe-1d67a52c3ba5",
+        "createdAt": "2022-06-28T00:51:17.895Z",
+        "userId": "26",
+        "communityId": "37",
+        "role": "MODERATOR",
+        "updated": "2022-06-28T00:51:17.895Z"
+      },
+      {
+        "id": "59",
+        "uuid": "c0d0ba3f-7b0e-4dec-96b2-4c81fcf3f47f",
+        "createdAt": "2022-06-28T00:51:18.426Z",
+        "userId": "37",
+        "communityId": "37",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:18.426Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "61",
+        "uuid": "67566c59-9f7b-4026-9010-f293b44e67be",
+        "fbId": "qiuDL4sFUJ5xbaXSCE4t",
+        "createdAt": "2022-06-28T00:51:14.958Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Top Channel",
+        "description": "This is my first channel",
+        "communityId": "37",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "62",
+        "uuid": "a0c52fd6-202d-4c7e-8fcc-977512be8ce4",
+        "fbId": "j9i6PloH7pMgaPIUfUVcgPYRihl1",
+        "createdAt": "2022-06-28T00:51:14.957Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "37",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "60",
+        "uuid": "3be33d9a-cdce-4c15-95c2-7a37eab7513d",
+        "fbId": "ToPMUAC2Ixiy3OfH0DbY",
+        "createdAt": "2022-06-28T00:51:14.962Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "This is a test",
+        "description": "Here is a test",
+        "communityId": "37",
+        "readPermission": "ADMIN",
+        "writePermission": "ADMIN"
+      },
+      {
+        "id": "59",
+        "uuid": "7158934e-da0a-41f3-bbb3-1f289c5ddfbd",
+        "fbId": "kZAoK1r9y2q5holMKZys",
+        "createdAt": "2022-06-28T00:51:14.936Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Test Library",
+        "description": "This is for testing grid view",
+        "communityId": "37",
+        "readPermission": "NONE",
+        "writePermission": "ADMIN"
+      },
+      {
+        "id": "63",
+        "uuid": "1109c2cf-0890-4791-8211-b1b102913422",
+        "fbId": "NKk10QE4WiHHjMUbWGz1",
+        "createdAt": "2022-06-28T00:51:15.103Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Lmao I can change your channel names",
+        "description": "This is a test of the discussion channel",
+        "communityId": "37",
+        "readPermission": "SUBSCRIBER",
+        "writePermission": "SUBSCRIBER"
+      }
+    ],
+    "owner": {
+      "id": "37",
+      "uuid": "6d3ffef3-deac-480c-817a-6de239e05241",
+      "createdAt": "2022-06-28T00:48:32.585Z",
+      "username": "trafford",
+      "name": "Dylan Trafford",
+      "authId": "j9i6PloH7pMgaPIUfUVcgPYRihl1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "38",
+    "uuid": "06b9d1b5-094a-47bf-8eaa-3eada07ebdb5",
+    "fbid": "mUzbK9V46pSCAbCPxFONqxNQxTs1",
+    "createdAt": "2022-06-28T00:51:19.960Z",
+    "name": "Brenton STOPCREATINGNEWUESRS's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "38",
+    "members": [
+      {
+        "id": "60",
+        "uuid": "e8473880-e30a-4f2f-89a3-e79e1f8d7f87",
+        "createdAt": "2022-06-28T00:51:21.176Z",
+        "userId": "38",
+        "communityId": "38",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:21.176Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "64",
+        "uuid": "02889fa3-9eb9-43ea-b29f-a4ae5677306f",
+        "fbId": "mUzbK9V46pSCAbCPxFONqxNQxTs1",
+        "createdAt": "2022-06-28T00:51:21.595Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "38",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "38",
+      "uuid": "701d29ce-f0c2-467c-a365-2b0c52eaf1ad",
+      "createdAt": "2022-06-28T00:48:35.541Z",
+      "username": "darkmodeisbest",
+      "name": "Brenton STOPCREATINGNEWUESRS",
+      "authId": "mUzbK9V46pSCAbCPxFONqxNQxTs1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "39",
+    "uuid": "c4f5d356-aaf1-419c-98be-46bac4f0f8f7",
+    "fbid": "nCvWla7SozMziL71hvNH0cxWEvW2",
+    "createdAt": "2022-06-28T00:51:21.783Z",
+    "name": "lsdkj lsdkflskdj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "39",
+    "members": [
+      {
+        "id": "61",
+        "uuid": "7f0940e1-c203-41d4-9db4-35cb44f6f622",
+        "createdAt": "2022-06-28T00:51:23.046Z",
+        "userId": "39",
+        "communityId": "39",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:23.046Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "65",
+        "uuid": "6b94230d-ab89-4968-875c-478a0c3a3bb7",
+        "fbId": "nCvWla7SozMziL71hvNH0cxWEvW2",
+        "createdAt": "2022-06-28T00:51:23.469Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "39",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "39",
+      "uuid": "684b5a35-ce41-429d-96ad-e5826fa4e358",
+      "createdAt": "2022-06-28T00:48:36.406Z",
+      "username": "skdflskflsdkj",
+      "name": "lsdkj lsdkflskdj",
+      "authId": "nCvWla7SozMziL71hvNH0cxWEvW2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "40",
+    "uuid": "28b8be2c-cc53-4d7c-b415-ef4f1c1b91e3",
+    "fbid": "nIlRijWbbvQInmwJNhlvgfdncbP2",
+    "createdAt": "2022-06-28T00:51:23.659Z",
+    "name": "Faiz Imran's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "40",
+    "members": [
+      {
+        "id": "62",
+        "uuid": "26d4163b-d550-432c-b07a-aa46d656d74f",
+        "createdAt": "2022-06-28T00:51:24.912Z",
+        "userId": "40",
+        "communityId": "40",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:24.912Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "66",
+        "uuid": "42191d4b-a0dc-4c65-8422-0112232a2118",
+        "fbId": "nIlRijWbbvQInmwJNhlvgfdncbP2",
+        "createdAt": "2022-06-28T00:51:25.320Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "40",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "40",
+      "uuid": "a142f4cc-085d-4ff4-890f-76e6a2968ece",
+      "createdAt": "2022-06-28T00:48:37.182Z",
+      "username": "faiztest",
+      "name": "Faiz Imran",
+      "authId": "nIlRijWbbvQInmwJNhlvgfdncbP2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "41",
+    "uuid": "194fb9eb-b095-4635-8e94-853d1cc6d28b",
+    "fbid": "opD3B6dHUiSmIIGWRjXHlq0f3VN2",
+    "createdAt": "2022-06-28T00:51:26.463Z",
+    "name": "sdSD sdSDf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "41",
+    "members": [
+      {
+        "id": "63",
+        "uuid": "11ae4fbf-e802-482a-838c-ab9b54bee53c",
+        "createdAt": "2022-06-28T00:51:27.715Z",
+        "userId": "41",
+        "communityId": "41",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:27.715Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "67",
+        "uuid": "cd957cbd-c9fa-4327-852c-25bb1b954602",
+        "fbId": "opD3B6dHUiSmIIGWRjXHlq0f3VN2",
+        "createdAt": "2022-06-28T00:51:28.123Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "41",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "41",
+      "uuid": "71219f93-ce5a-4300-b6da-b9431dceeee1",
+      "createdAt": "2022-06-28T00:48:38.586Z",
+      "username": "29",
+      "name": "sdSD sdSDf",
+      "authId": "opD3B6dHUiSmIIGWRjXHlq0f3VN2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "42",
+    "uuid": "4f170c26-b961-43d5-bebe-ebf52f3064a5",
+    "fbid": "pUWMIcefSNZOJEmsjJJkH8qtHI02",
+    "createdAt": "2022-06-28T00:51:28.339Z",
+    "name": "sdDSf sdSDS's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "42",
+    "members": [
+      {
+        "id": "64",
+        "uuid": "afb2bb8d-808b-4829-b739-66f8d77c51f9",
+        "createdAt": "2022-06-28T00:51:29.580Z",
+        "userId": "42",
+        "communityId": "42",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:29.580Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "68",
+        "uuid": "29abd1f6-ad78-43e5-b964-c157ed34fde9",
+        "fbId": "pUWMIcefSNZOJEmsjJJkH8qtHI02",
+        "createdAt": "2022-06-28T00:51:30.020Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "42",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "42",
+      "uuid": "ae210977-f6bb-4fdb-a85f-7d24f02a031f",
+      "createdAt": "2022-06-28T00:48:39.407Z",
+      "username": "34",
+      "name": "sdDSf sdSDS",
+      "authId": "pUWMIcefSNZOJEmsjJJkH8qtHI02",
+      "bio": ""
+    }
+  },
+  {
+    "id": "43",
+    "uuid": "9ec0e8a3-05bf-48e8-bd67-e30fc6179d77",
+    "fbid": "sGvQ7O91erM2xZeWLts785dsTco1",
+    "createdAt": "2022-06-28T00:51:32.088Z",
+    "name": "lsDlsj lskSLkj's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "43",
+    "members": [
+      {
+        "id": "65",
+        "uuid": "69ce01e3-127c-4be0-a6f8-d81db277815e",
+        "createdAt": "2022-06-28T00:51:33.325Z",
+        "userId": "43",
+        "communityId": "43",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:33.325Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "69",
+        "uuid": "6269d267-f10a-498a-81f1-7597349aa88b",
+        "fbId": "sGvQ7O91erM2xZeWLts785dsTco1",
+        "createdAt": "2022-06-28T00:51:33.768Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "43",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "43",
+      "uuid": "adec5673-9f77-4c93-b5cb-bca80acfa429",
+      "createdAt": "2022-06-28T00:48:40.279Z",
+      "username": "testingafterthebool2",
+      "name": "lsDlsj lskSLkj",
+      "authId": "sGvQ7O91erM2xZeWLts785dsTco1",
+      "bio": ""
+    }
+  },
+  {
+    "id": "44",
+    "uuid": "a9edd6a8-e670-43cd-8a9b-2006f45174f4",
+    "fbid": "tRGsoKqf61haJdyRWcnSeet9ckC3",
+    "createdAt": "2022-06-28T00:51:33.951Z",
+    "name": "New Brenton's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "44",
+    "members": [
+      {
+        "id": "66",
+        "uuid": "b3818ff7-ac75-43f5-9d7b-ea22e0dc90a8",
+        "createdAt": "2022-06-28T00:51:35.174Z",
+        "userId": "44",
+        "communityId": "44",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:35.174Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "70",
+        "uuid": "0839e21a-cf52-4fc5-a7ed-b89b7d5e6226",
+        "fbId": "tRGsoKqf61haJdyRWcnSeet9ckC3",
+        "createdAt": "2022-06-28T00:51:35.585Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "44",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "44",
+      "uuid": "9b1e9734-211c-44b5-9c64-85e74b7f98ba",
+      "createdAt": "2022-06-28T00:48:41.122Z",
+      "username": "newbrenton",
+      "name": "New Brenton",
+      "authId": "tRGsoKqf61haJdyRWcnSeet9ckC3",
+      "bio": ""
+    }
+  },
+  {
+    "id": "45",
+    "uuid": "2dbff147-0436-4e35-9a20-3c9eb7d6e13e",
+    "fbid": "tv5ntyLJeLfLc4jc0IolqO1aGjf2",
+    "createdAt": "2022-06-28T00:51:35.783Z",
+    "name": "slkdLSDKJ sdf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "45",
+    "members": [
+      {
+        "id": "67",
+        "uuid": "5e931d49-f93b-48e2-a48d-38aa35f040a2",
+        "createdAt": "2022-06-28T00:51:37.035Z",
+        "userId": "45",
+        "communityId": "45",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:37.035Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "71",
+        "uuid": "8ac8993a-14e7-45a3-9e2c-df15f3afd3c6",
+        "fbId": "tv5ntyLJeLfLc4jc0IolqO1aGjf2",
+        "createdAt": "2022-06-28T00:51:37.423Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "45",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "45",
+      "uuid": "f8fe8de8-a4ed-425e-910f-8ad8ab966fe2",
+      "createdAt": "2022-06-28T00:48:41.982Z",
+      "username": "lskdsljl",
+      "name": "slkdLSDKJ sdf",
+      "authId": "tv5ntyLJeLfLc4jc0IolqO1aGjf2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "46",
+    "uuid": "637eccc6-fb09-4f1b-91d0-21df5a98b700",
+    "fbid": "uE3alKIMZeT7p27bK0beUCcB56N2",
+    "createdAt": "2022-06-28T00:51:37.625Z",
+    "name": "dwa dwa's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "46",
+    "members": [
+      {
+        "id": "68",
+        "uuid": "c5e6d08a-bb20-479b-a824-a0d7b389ac62",
+        "createdAt": "2022-06-28T00:51:38.829Z",
+        "userId": "37",
+        "communityId": "46",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:38.829Z"
+      },
+      {
+        "id": "69",
+        "uuid": "1ed3dd00-5ff5-4da2-97b8-fdd678192f20",
+        "createdAt": "2022-06-28T00:51:39.375Z",
+        "userId": "46",
+        "communityId": "46",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:39.375Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "72",
+        "uuid": "c66530b4-39b3-4265-b4cd-3b3a8163f514",
+        "fbId": "uE3alKIMZeT7p27bK0beUCcB56N2",
+        "createdAt": "2022-06-28T00:51:39.256Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "46",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "46",
+      "uuid": "bab807ab-3347-4895-9016-5945b8ef1730",
+      "createdAt": "2022-06-28T00:48:42.823Z",
+      "username": "dawdaw",
+      "name": "dwa dwa",
+      "authId": "uE3alKIMZeT7p27bK0beUCcB56N2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "47",
+    "uuid": "fab64d44-9c1c-4e50-9125-3cd89133dc43",
+    "fbid": "vBYptDhpmDZg3h3kfQ7JEFnhEif1",
+    "createdAt": "2022-06-28T00:51:40.013Z",
+    "name": "Sam's Backchannel",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "47",
+    "members": [
+      {
+        "id": "70",
+        "uuid": "1a31f3db-58f9-4724-99a8-5183033c20a7",
+        "createdAt": "2022-06-28T00:51:41.410Z",
+        "userId": "23",
+        "communityId": "47",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:41.410Z"
+      },
+      {
+        "id": "71",
+        "uuid": "061185c6-ce67-4336-8c55-2eea5f641ae8",
+        "createdAt": "2022-06-28T00:51:41.974Z",
+        "userId": "26",
+        "communityId": "47",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:41.974Z"
+      },
+      {
+        "id": "72",
+        "uuid": "37dd38d4-65ee-4d9b-a164-012cf5b79dae",
+        "createdAt": "2022-06-28T00:51:42.561Z",
+        "userId": "30",
+        "communityId": "47",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:42.561Z"
+      },
+      {
+        "id": "73",
+        "uuid": "b4aec50d-dbf4-4a59-a2f8-3aff2a869aca",
+        "createdAt": "2022-06-28T00:51:43.125Z",
+        "userId": "37",
+        "communityId": "47",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:43.125Z"
+      },
+      {
+        "id": "75",
+        "uuid": "e5ea39ef-aa8e-4347-ac77-21e64827a64f",
+        "createdAt": "2022-06-28T00:51:44.256Z",
+        "userId": "47",
+        "communityId": "47",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:44.256Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "73",
+        "uuid": "6c6c4049-48a7-4b7a-b5d9-965996784df2",
+        "fbId": "6rmGOToCWbyoZPxmx2Dx",
+        "createdAt": "2022-06-28T00:51:41.718Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "dwdawda",
+        "description": "ddd",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "74",
+        "uuid": "2facc672-7fec-4576-b3a3-bc3964c73757",
+        "fbId": "3INGHyhPqCEiFNHvlhKG",
+        "createdAt": "2022-06-28T00:51:41.722Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "dwada",
+        "description": "dwadawdadad",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "SUBSCRIBER"
+      },
+      {
+        "id": "75",
+        "uuid": "d3d60234-1fe3-4e3b-b6fa-dc59d83bc47d",
+        "fbId": "uwoGx6hqwtn7mkrZ9gQt",
+        "createdAt": "2022-06-28T00:51:41.718Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "BBB",
+        "description": "",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "SUBSCRIBER"
+      },
+      {
+        "id": "76",
+        "uuid": "be272472-4ec3-46dc-a385-22978f2cb9be",
+        "fbId": "7Z118utTvi2Kj7mejU41",
+        "createdAt": "2022-06-28T00:51:41.722Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "subs can view",
+        "description": "",
+        "communityId": "47",
+        "readPermission": "SUBSCRIBER",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "77",
+        "uuid": "71853f40-b0a2-4f93-8253-8dab020ee9e4",
+        "fbId": "M5iZZofInVv9JVabbHAD",
+        "createdAt": "2022-06-28T00:51:41.784Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "CCC",
+        "description": "Sometuing cool",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "NONE"
+      },
+      {
+        "id": "78",
+        "uuid": "2abe8be9-08bf-4bd3-a074-eef5d929ec3c",
+        "fbId": "gCDv0f8nRgJJSS4Kdtv3",
+        "createdAt": "2022-06-28T00:51:41.837Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "zzzzz",
+        "description": "",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "79",
+        "uuid": "c89b57fe-5d47-40e9-b8b1-159ae567d92c",
+        "fbId": "qwpff10QesiZ6vYrDpG4",
+        "createdAt": "2022-06-28T00:51:41.973Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "AAAAA",
+        "description": "",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "MEMBER"
+      },
+      {
+        "id": "80",
+        "uuid": "5c232e7e-e75b-4e41-be05-286e4768b053",
+        "fbId": "vBYptDhpmDZg3h3kfQ7JEFnhEif1",
+        "createdAt": "2022-06-28T00:51:42.036Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "47",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "47",
+      "uuid": "8204e4e6-791d-47fe-b9f5-a637d58cd47c",
+      "createdAt": "2022-06-28T00:48:43.628Z",
+      "username": "metruzanca",
+      "name": "Metru",
+      "authId": "vBYptDhpmDZg3h3kfQ7JEFnhEif1",
+      "bio": "I’m just a guy who’s a developer for fun."
+    }
+  },
+  {
+    "id": "48",
+    "uuid": "b8303d7e-d1cc-4216-b04f-6441cbfe48e7",
+    "fbid": "vVm0AKTXCwSpJwy4mfD78tPh65s2",
+    "createdAt": "2022-06-28T00:51:44.872Z",
+    "name": "lkdsf lksdf's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "48",
+    "members": [
+      {
+        "id": "76",
+        "uuid": "969d246c-78a8-468a-bd33-5a47db3b0062",
+        "createdAt": "2022-06-28T00:51:46.089Z",
+        "userId": "48",
+        "communityId": "48",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:46.089Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "81",
+        "uuid": "780c767f-1a51-4e84-81b8-a0c8e59d0d63",
+        "fbId": "vVm0AKTXCwSpJwy4mfD78tPh65s2",
+        "createdAt": "2022-06-28T00:51:46.508Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "48",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "48",
+      "uuid": "dc46fae8-5830-4a20-ab7e-de5867770399",
+      "createdAt": "2022-06-28T00:48:45.066Z",
+      "username": "28",
+      "name": "lkdsf lksdf",
+      "authId": "vVm0AKTXCwSpJwy4mfD78tPh65s2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "49",
+    "uuid": "23ea92cb-5a10-4307-bbb8-ec0e7d05ea1b",
+    "fbid": "yYZx5lklnAct8rP0NOgo8MlyNjE2",
+    "createdAt": "2022-06-28T00:51:46.730Z",
+    "name": "Regression Two's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "49",
+    "members": [
+      {
+        "id": "77",
+        "uuid": "b2000d67-64cc-4b40-bb25-bb6c90b4b3d5",
+        "createdAt": "2022-06-28T00:51:48.082Z",
+        "userId": "37",
+        "communityId": "49",
+        "role": "MEMBER",
+        "updated": "2022-06-28T00:51:48.082Z"
+      },
+      {
+        "id": "78",
+        "uuid": "d108aa9c-a72d-4f46-a059-c146af727c9f",
+        "createdAt": "2022-06-28T00:51:48.650Z",
+        "userId": "49",
+        "communityId": "49",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:48.650Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "82",
+        "uuid": "39cc17a9-f5f2-4b1b-9584-04205f5d2c7c",
+        "fbId": "yYZx5lklnAct8rP0NOgo8MlyNjE2",
+        "createdAt": "2022-06-28T00:51:48.461Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "49",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      },
+      {
+        "id": "83",
+        "uuid": "0720befa-85e2-4dd3-9293-6e8563893815",
+        "fbId": "RKCJe9pRZsW3xDzLnGHn",
+        "createdAt": "2022-06-28T00:51:48.493Z",
+        "type": "CHAT",
+        "hidden": false,
+        "name": "Private As Fuck",
+        "description": "",
+        "communityId": "49",
+        "readPermission": "MODERATOR",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "49",
+      "uuid": "28059cbe-64eb-4212-8005-f15669ad27ed",
+      "createdAt": "2022-06-28T00:48:45.846Z",
+      "username": "regressiontestagain",
+      "name": "Regression Two",
+      "authId": "yYZx5lklnAct8rP0NOgo8MlyNjE2",
+      "bio": ""
+    }
+  },
+  {
+    "id": "50",
+    "uuid": "163dfd9e-50ee-4da8-bc12-b2faf74993b3",
+    "fbid": "zsz6fWTkogZV4FM61NJJZWuNd3z2",
+    "createdAt": "2022-06-28T00:51:49.264Z",
+    "name": "sam fuydad's Space",
+    "description": "",
+    "allowJoin": true,
+    "ownerId": "50",
+    "members": [
+      {
+        "id": "79",
+        "uuid": "1b2ec515-3656-45c7-8a0f-f075041838ac",
+        "createdAt": "2022-06-28T00:51:50.536Z",
+        "userId": "50",
+        "communityId": "50",
+        "role": "ADMIN",
+        "updated": "2022-06-28T00:51:50.536Z"
+      }
+    ],
+    "channels": [
+      {
+        "id": "84",
+        "uuid": "4f199564-4c08-4e0e-a2e1-d65f61393a2c",
+        "fbId": "zsz6fWTkogZV4FM61NJJZWuNd3z2",
+        "createdAt": "2022-06-28T00:51:50.933Z",
+        "type": "PROFILE",
+        "hidden": true,
+        "name": "Profile",
+        "description": "Any content you post here will be shown publically. This channel sets your public brand.",
+        "communityId": "50",
+        "readPermission": "NONE",
+        "writePermission": "MODERATOR"
+      }
+    ],
+    "owner": {
+      "id": "50",
+      "uuid": "40760b4e-e77c-498d-8664-51cd6758b81b",
+      "createdAt": "2022-06-28T00:48:47.362Z",
+      "username": "fuckyes",
+      "name": "sam fuydad",
+      "authId": "zsz6fWTkogZV4FM61NJJZWuNd3z2",
+      "bio": ""
+    }
+  }
+]

@@ -1,0 +1,209 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
+// Copyright 2021 NewSocial Inc. - All Rights Reserved
+// Unauthorized copying of this file, via any medium is strictly prohibited
+// Proprietary and confidential
+// Author(s): See Git History
+
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+import { FireDB, paths } from 'api/firebase';
+import { getAllFollowedUsers, getAllRecentUsers } from 'api/userAPI';
+import axios from 'lib/axios';
+import { PostDocument } from 'types/documents';
+import { Sort } from 'types/feed';
+import { Post } from 'types/prisma';
+
+import { RootState } from './store';
+import { OldUser } from './userSlice';
+
+const NAMESPACE = 'feed';
+
+export enum FilterOptions {
+  DISCOVER = 'discover',
+  RECENT = 'recent',
+  FOLLOWING = 'following',
+  COMMUNITY = 'community',
+}
+
+type FetchPostsPayload = {
+  sorting?: Sort,
+  count?: number,
+  // TODO Pagination probably
+};
+
+
+export const setFeaturedPost = createAsyncThunk(
+  `${NAMESPACE}/setFeaturedPost`,
+  async (postId: string | undefined) => {
+    return postId;
+  },
+);
+
+export const fetchPosts = createAsyncThunk(
+  `${NAMESPACE}/fetchPosts`,
+  async (newFilter : FilterOptions, { getState }) => {
+    const { feed } = getState() as RootState;
+    const myFilter : string = newFilter || feed.filter;
+    const { data } = await axios().get(`/posts/feed?filter=${myFilter}`);
+    return { ...feed.posts, [myFilter]: data || [] };
+  });
+
+// export const setFilter = createAsyncThunk(
+//   `${NAMESPACE}/setFilter`,
+//   async (newFilter : FilterOptions, { }) => {
+//     //Done in a thunk so we can run a promise train 
+//     return newFilter;
+//   });
+// export const fetchPosts = createAsyncThunk(
+//   `${NAMESPACE}/fetchPosts`,
+//   async (payload: FetchPostsPayload, thunkAPI) => {
+//     const { user, feed } = thunkAPI.getState() as RootState;
+//     if (user.authId && feed.followedUsers) {
+//       let searchList : string[] = [];
+//       switch (payload.sorting) {
+//         case Sort.Memberships:
+//           searchList = user.memberships?.map((membership) => membership.id) || [];
+//           break;
+//         default: 
+//           searchList = feed.followedUsers.map((value)=> value.id);
+//           break;
+//       }
+      
+//       //TODO this if feels out of place. Might be able to do something better
+//       if (payload?.sorting === Sort.Memberships) {
+        
+//       }
+//       thunkAPI.dispatch(clearPosts());
+//       const posts = await getPosts(
+//         searchList,
+//         payload?.sorting,
+//         user.memberships,
+//       );
+//       return posts;
+//     }
+//     return [];
+//   },
+// );
+
+export const deletePost = createAsyncThunk(
+  `${NAMESPACE}/deletePost`,
+  async (post: PostDocument) => {
+    const docPath = paths.posts(post.community, post.channel);
+    const postTable = new FireDB<PostDocument>(docPath);
+    await postTable.deleteDoc(post.id as string).catch(console.log);
+    return post.id;
+  },
+);
+
+export const fetchMorePosts = createAsyncThunk(
+  `${NAMESPACE}/fetchMorePosts`,
+  async (payload: FetchPostsPayload, thunkAPI) => {
+    // const { user, feed } = thunkAPI.getState() as RootState;
+    // if (user.isLoggedIn && feed.followedUsers) {
+    //   const posts = await getMorePosts(
+    //     feed.posts[feed.posts.length - 1].id || '',
+    //     feed.followedUsers.map((value)=> value.id),
+    //     payload?.sorting,
+    //     user.memberships,
+    //     payload?.count,
+    //   );
+    //   return posts;
+    // }
+    // return [];
+  },
+);
+
+
+/** Users fetched this way are memoized */
+export const fetchFollowedUsers = createAsyncThunk(
+  `${NAMESPACE}/fetchFollowedUsers`,
+  async (payload : string, thunkAPI) => {
+    const {  } = thunkAPI.getState() as RootState;
+    return getAllFollowedUsers(payload);
+  },
+);
+
+/** Users fetched this way are memoized */
+export const fetchRecentUsers = createAsyncThunk(
+  `${NAMESPACE}/fetchRecetUsers`,
+  async (payload : string, thunkAPI) => {
+    const {  } = thunkAPI.getState() as RootState;
+    return getAllRecentUsers(payload);
+  },
+);
+
+type FeedPosts = {
+  [FilterOptions.DISCOVER]: Post[],
+  [FilterOptions.RECENT]: Post[],
+  [FilterOptions.FOLLOWING]: Post[],
+  [FilterOptions.COMMUNITY]: Post[],
+};
+
+type FeedState = {
+  filter: FilterOptions;
+  posts: FeedPosts;
+
+  discoverModalOpen: boolean;
+  // posts: PostUnion[];
+  followedUsers: OldUser[];
+  recentUsers: OldUser[];
+  userCache: Record<string, OldUser>
+  featuredPost?: string,
+};
+
+
+
+const initialState: FeedState = {
+  filter: FilterOptions.DISCOVER,
+  posts: <FeedPosts>{},
+
+  discoverModalOpen: false,
+  
+  followedUsers: [],
+  recentUsers: [],
+  userCache: {},
+  featuredPost: undefined,
+};
+
+const feedSlice = createSlice({
+  name: NAMESPACE,
+  initialState,
+  reducers: {
+    toggleDiscoverModal(state, action: PayloadAction<boolean>) {
+      state.discoverModalOpen = action.payload || !state.discoverModalOpen;
+    },
+    setFilter(state, action: PayloadAction<FilterOptions>) {
+      state.filter = action.payload || FilterOptions.DISCOVER;
+    },
+    clearPosts(state) {
+      state.posts = initialState.posts;
+    },
+  },
+  extraReducers: builder => {
+    builder.addCase(fetchPosts.fulfilled, (state, action) => {
+      state.posts = action.payload;
+    });
+    builder.addCase(fetchMorePosts.fulfilled, (state, action) => {
+      //@ts-ignore https://redux-toolkit.js.org/usage/immer-reducers
+      state.posts.push(...action.payload);
+    });
+    builder.addCase(fetchFollowedUsers.fulfilled, (state, action) => {
+      state.followedUsers = action.payload;
+    });
+    builder.addCase(fetchRecentUsers.fulfilled, (state, action) => {
+      state.recentUsers = action.payload;
+    });
+    builder.addCase(setFeaturedPost.fulfilled, (state, action) => {
+      state.featuredPost = action.payload;
+    });
+    // builder.addCase(deletePost.fulfilled, (state, action) => {
+    //   state.posts = state.posts.filter(post => {
+    //     return post.id !== action.payload;
+    //   });
+    //   toast.error('Post has been deleted');
+    // });
+  },
+});
+
+export default feedSlice.reducer;
+export const { setFilter, toggleDiscoverModal, clearPosts } = feedSlice.actions;

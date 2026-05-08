@@ -1,0 +1,43 @@
+{
+  "projects": {
+    "default": "newsocial-prototype",
+    "development": "newsocial-prototype",
+    "production ": "backchannel-production-live"
+  },
+  "targets": {
+    "newsocial-prototype": {
+      "hosting": {
+        "development": [
+          "backchannel-development"
+        ]
+      },
+      "storage": {
+        "developer": [
+          "backchannel-development"
+        ]
+      },
+      "database": {
+        "developer": [
+          "backchannel-development"
+        ]
+      }
+    },
+    "backchannel-production-live": {
+      "hosting": {
+        "production": [
+          "backchannel-production-live"
+        ]
+      },
+      "database": {
+        "production": [
+          "backchannel-production-live"
+        ]
+      },
+      "storage": {
+        "production": [
+          "backchannel-production-live"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "Typescript Test": {
+    "prefix": "test.ts",
+    "body": [
+      "describe('${1:module name}', () => {",
+      "  it('${2:should do this}', () => {",
+      "    ${3:expect(1 === 1).toEqual(true);}",
+      "  })",
+      "});"
+    ],
+    "description": "Typescript Test"
+  },
+  // TODO test.tsx snippet for react component testing
+}

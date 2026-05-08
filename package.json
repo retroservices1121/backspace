@@ -1,0 +1,21 @@
+{
+  "name": "backspace",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev:web": "pnpm --filter @backspace/web dev",
+    "dev:admin": "pnpm --filter @backspace/admin dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @backspace/db generate",
+    "db:migrate": "pnpm --filter @backspace/db migrate",
+    "db:studio": "pnpm --filter @backspace/db studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

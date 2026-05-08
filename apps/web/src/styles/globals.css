@@ -1,0 +1,112 @@
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 32px;
+  line-height: 32px;
+  /* color: ${({ theme }) => theme.fontFocus}; */
+}
+
+h2 {
+  font-weight: bold;
+  font-size: 24px;
+  line-height: 32px;
+  /* color: ${({ theme }) => theme.fontFocus}; */
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 20px;
+  line-height: 26px;
+  /* color: ${({ theme }) => theme.fontPrimary}; */
+}
+
+h4 {
+  font-weight: normal;
+  font-size: 16px;
+  line-height: 20px;
+  /* Acolor: ${({ theme }) => theme.fontTertiary}; */
+}
+
+h5 {
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 20px;
+  /* Acolor: ${({ theme }) => theme.fontTertiary}; */
+}
+
+h6 {
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 20px;
+  /* Acolor: ${({ theme }) => theme.fontTertiary}; */
+}
+
+p {
+  /* Acolor: ${({ theme }) => theme.fontSecondary}; */
+  font-size: 16px;
+  line-height: 24px;
+}
+
+a {
+  /* Acolor: ${({ theme }) => theme.primary}; */
+  text-decoration: underline;
+}
+
+/* https://tailwindcss.com/docs/adding-custom-styles */
+
+@layer components {
+
+  .btn {
+    @apply bg-primary text-white rounded-lg w-fit h-fit flex justify-center items-center font-bold text-xs py-3 px-5;
+  }
+  
+  .btn-tab {
+    @apply bg-none w-full justify-start;
+  }
+
+  .clickable {
+    cursor: pointer;
+    /* TODO add color from theme */
+  }
+  .clickable:hover {
+    @apply bg-primary;
+  }
+
+  /* Based on old Flex, Col and Row components */
+  .col { @apply flex flex-col; }
+  .row { @apply flex flex-row; }
+  .full { @apply h-full w-full; }
+  .center { @apply flex justify-center items-center; }
+}
+
+@layer utilities {
+  .hide-scroll {
+    scrollbar-width: none;
+  }
+  .hide-scroll::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+  }
+}
