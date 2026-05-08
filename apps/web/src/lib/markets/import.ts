@@ -6,11 +6,15 @@
 // PostMarketCard — can read directly from Postgres without making
 // per-render network calls to Polymarket.
 //
-// This is a manual-sweep importer for now (admin-triggered through
-// POST /api/admin/import-polymarket). A scheduled cron path can wrap
-// this same function once we decide on a refresh cadence; the
-// per-request `maxPages` cap exists so a single Vercel function
-// invocation stays inside its timeout budget.
+// Two trigger paths today:
+//   - Manual: POST /api/admin/import-polymarket (admin-gated, ad-hoc).
+//   - Scheduled: POST /api/cron/import-polymarket (Railway cron,
+//     gated on the CRON_SECRET header).
+// The per-request `maxPages` cap is a soft budget so any single
+// invocation finishes promptly — set conservatively for the cron
+// path so each tick fits well inside the request timeout regardless
+// of host (Railway has no fixed cap but unbounded loops still wedge
+// the worker).
 //
 // Builder docs: https://docs.polymarket.com/builders/overview
 //   - Catalog endpoint: GET /markets/keyset (cursor-based)
@@ -36,8 +40,7 @@ export type ImportSummary = {
 };
 
 export type ImportOptions = {
-  /** Stop after this many pages. Default 25 — fits comfortably inside
-   *  a 60s Vercel function with 100 markets/page. */
+  /** Stop after this many pages. Default 25. */
   maxPages?: number;
   /** Markets per page. Default 100. Polymarket caps at 1000. */
   pageSize?: number;

@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "npx vercel env pull",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -114,7 +113,6 @@
     "jest-environment-jsdom": "^28.1.1",
     "postcss": "^8.4.12",
     "tailwindcss": "^3.0.23",
-    "typescript": "^4.6.4",
-    "vercel": "^27.2.0"
+    "typescript": "^4.6.4"
   }
 }
