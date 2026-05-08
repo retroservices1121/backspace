@@ -39,8 +39,10 @@ import { Space } from 'styles/layout';
 
 import CloseIcon from '../../../public/graphics/commonicons/close.svg';
 
-//TODO move stripe public key
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_KEY || '');
+// NEXT_PUBLIC_ prefix is required for Next.js to expose env vars to
+// the browser. The legacy REACT_APP_ name was a CRA-era leftover and
+// silently resolved to undefined here.
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 
 type StripeFormProps = {
