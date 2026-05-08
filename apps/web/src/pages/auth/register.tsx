@@ -1,69 +1,47 @@
-// Copyright 2021 NewSocial Inc.
-// Author(s): Samuele Zanca
-
-import React from 'react';
-import { useEffect } from 'react';
+// Privy does not distinguish login from register — same modal, same flow.
+// We keep /auth/register as a separate URL so existing inbound links still
+// resolve, but it just opens the Privy modal like /auth/login.
+import React, { useEffect } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
-import { useSelector } from 'react-redux';
+import useAuthentication from '@src/hooks/useAuthenticate';
+import { AuthStatus } from '@src/store/authSlice';
+import { usePrivy } from '@privy-io/react-auth';
 import AuthLayout from 'layouts/authLayout';
 import { useRouter } from 'next/router';
 
-import GoogleSSO from 'components/Auth/GoogleSSO';
-import RegisterForm from 'components/Auth/RegisterForm';
 import { APP } from 'pages';
 import { setPageTitle } from 'store/appSlice';
-import { RootState, useAppDispatch } from 'store/store';
-import { createUser } from 'store/userSlice';
-import { Separator } from 'styles/Dividers';
-import { RegisterFormState } from 'types/auth';
-import { openInNewTab } from 'utils/common_utils';
-import { PRIVACY_URL, TOS_URL } from 'utils/constants';
+import { useAppDispatch } from 'store/store';
+import { Button } from 'styles/form';
 
 const pageTitle = 'Create Account';
 
-const Register: ReactLayoutComponentType = ({}) => {
-  const router = useRouter();
+const Register: ReactLayoutComponentType = () => {
   const dispatch = useAppDispatch();
-  const { id : uid } = useSelector((state: RootState) => state.user);
-  //FIXME: figure out how to share form data between resister & login
-  //const location = useLocation<RegisterFormState>();
+  const router = useRouter();
+  const authStatus = useAuthentication();
+  const { ready, authenticated, login } = usePrivy();
 
   dispatch(setPageTitle(pageTitle));
 
-  const handleRegister = async (formState : RegisterFormState) => {
-    await dispatch(createUser(formState)).then(() => router.push(APP.AUTH.ONBOARDING));
-  };
-
   useEffect(() => {
-    if (uid) {
+    if (authStatus === AuthStatus.SignedIn) {
       router.push(APP.AUTH.ONBOARDING);
     }
-  }, [ uid ]);
+  }, [authStatus]);
 
   return (
     <>
       <h1>{pageTitle}</h1>
-      <h5>Let's connect with your communites around the world!</h5>
+      <h5>Let's connect with your communities around the world!</h5>
 
-      <GoogleSSO />
-
-      <Separator>
-        Or Sign Up with Email
-      </Separator>
-
-      <RegisterForm
-        onSubmit={handleRegister}
-        //FIXME: figure out how to share form data between resister & login
-        //stateFromLogin={location?.state}
-        onNavigatePrivacy={() => openInNewTab(PRIVACY_URL)}
-        onNavigateTerms={() => openInNewTab(TOS_URL)}
-
-      />
+      <Button disabled={!ready || authenticated} onClick={login}>
+        Continue
+      </Button>
     </>
   );
 };
 
-//FIXME: Dylan I need yo help!!
 Register.Layout = AuthLayout;
 
 export default Register;

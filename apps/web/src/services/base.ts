@@ -1,19 +1,18 @@
 // Copyright 2022 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
 // Author(s): See Git History
-
 import { fetchBaseQuery } from '@reduxjs/toolkit/dist/query';
-import { RootState } from '@src/store/store';
 
-// Create our baseQuery instance
+import { getAuthCookie } from '@src/lib/cookies';
+
+// Privy access tokens are written to the auth cookie by useAuthenticate; lift
+// them off the cookie at request time instead of pulling a Firebase user
+// object out of redux.
 export const baseQuery = fetchBaseQuery({
   baseUrl: '/api/',
-  prepareHeaders: (headers, { getState }) => {
-    // By default, if we have a token in the store, let's use that for authenticated requests
-    const token = (getState() as RootState).auth.user?.getIdToken();
+  prepareHeaders: (headers) => {
+    const token = getAuthCookie();
     if (token) {
-      headers.set('authentication', `${token}`);
+      headers.set('authorization', `Bearer ${token}`);
     }
     return headers;
   },

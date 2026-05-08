@@ -1,60 +1,46 @@
-import React from 'react';
+// Privy is passwordless — there is no "forgot password" flow. Existing
+// inbound links land here and bounce to /auth/login.
+import React, { useEffect } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
-import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
 import AuthLayout from 'layouts/authLayout';
 import { useRouter } from 'next/router';
 
-import { resetPassword } from 'api/auth';
-import ForgotPassForm from 'components/Auth/ForgotPassForm';
-import { SwapFormSpan } from 'components/Auth/styles';
 import { APP } from 'pages';
 import { setPageTitle } from 'store/appSlice';
+import { useAppDispatch } from 'store/store';
 import { ClickableSpan } from 'styles/Buttons';
 import { Space } from 'styles/layout';
-import { ForgotPasswordState } from 'types/auth';
 
-const pageTitle = 'Forgot Password';
+const pageTitle = 'Sign in';
 
 const Forgot: ReactLayoutComponentType = () => {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+
   dispatch(setPageTitle(pageTitle));
 
-  const handleResetPassword = (formState: ForgotPasswordState) => {
-    resetPassword(formState)
-      .then(() => toast.info('Password reset email has been sent.'))
-      .catch(() => toast.error('User with that email doesn\'t exist.'));
-  };
+  useEffect(() => {
+    const t = setTimeout(() => router.push(APP.AUTH.LOGIN), 4000);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <>
       <h1>{pageTitle}</h1>
-      <h5>Let's connect with your communites around the world!</h5>
+      <h5>
+        Sign-in is passwordless — you'll get a one-time code by email, or you
+        can connect with Google or a wallet.
+      </h5>
 
       <Space direction="column" />
-
-      <ForgotPassForm
-        onSubmit={handleResetPassword}
-      />
 
       <ClickableSpan onClick={() => router.push(APP.AUTH.LOGIN)}>
-        I know my password
+        Continue to sign in
       </ClickableSpan>
-
-      <Space direction="column" />
-
-      <SwapFormSpan>
-        {'Not a member yet? '}
-        <ClickableSpan onClick={() => router.push(APP.AUTH.REGISTER)}>
-          Create an Account
-        </ClickableSpan>
-      </SwapFormSpan>
     </>
   );
 };
 
-//FIXME: Dylan I need yo help!!
 Forgot.Layout = AuthLayout;
 
 export default Forgot;

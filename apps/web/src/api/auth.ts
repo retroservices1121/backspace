@@ -1,75 +1,20 @@
+// NOTE: The Firebase-Auth flow that used to live here (registerUser,
+// logoutUser, updateUserPassword, resetPassword) was removed during the Privy
+// migration on 2026-05-08. Sign-in is now driven by `usePrivy()` from the
+// auth pages directly.
+//
+// The username and onboarding helpers below still talk to Firestore — they
+// are part of the open Firebase-cleanup item (api/* → api2/*) and will be
+// rewritten to hit Postgres via @backspace/db.
 import { toast } from 'react-toastify';
-import {
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signOut,
-} from '@firebase/auth';
-import {  signInWithEmailAndPassword } from 'firebase/auth';
-import { updatePassword } from 'firebase/auth';
 import { where } from 'firebase/firestore';
-import log from 'loglevel';
 
 import { fireStorage } from 'api/firebase';
-import go from 'lib/async';
-import logEvent, { EventMessages } from 'lib/events';
-import { ForgotPasswordState, OnboardingFields, OnboardingFormState, RegisterFormState } from 'types/auth';
+import { OnboardingFields, OnboardingFormState } from 'types/auth';
 import { PrivateUserDocument, UserDocument, UserDocumentMeta } from 'types/documents';
 import { isDevelopment } from 'utils/common_utils';
-import { auth } from 'utils/firebase';
 
 import { setFollowUser, updateUserInfo, updateUserPrivateInfo, UserTable } from './userAPI';
-
-export const registerUser = async ({ email, password } : RegisterFormState) => {
-  logEvent(EventMessages.Auth.New);
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential;
-  } catch (error) {
-    //@ts-ignore
-    if (error.code == 'auth/email-already-in-use') {
-      const response = await go(signInWithEmailAndPassword(auth, email, password));
-      if (response.type === 'error') {
-        toast.error('Please check your email and password.');
-        throw response.error;
-      }
-    }
-    console.error('Could not create account', error);
-    throw new Error('Could not create account');
-  }
-};
-
-export function logoutUser() {
-  logEvent(EventMessages.Auth.Logout);
-  return signOut(auth).catch(console.error);
-}
-
-export const updateUserPassword = (newPassword : string) => {
-  logEvent(EventMessages.Auth.PasswordChange);
-  const user = auth.currentUser;
-  if (user) {
-    return updatePassword(user, newPassword).then(() => {
-      return true;
-    }).catch((error) => {
-      console.error(error);
-      return false;
-    });
-  } else {
-    return false;
-  }
-
-};
-
-export function resetPassword({ email }: ForgotPasswordState) {
-  logEvent(EventMessages.Auth.PasswordReset);
-  return sendPasswordResetEmail(auth, email)
-    .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      log.error(`Forgot Password | ${event} ${errorCode} ${errorMessage}`);
-      // We throw after handling, so that the UI can also react to the error
-      throw error;
-    });
-}
 
 //TODO Move these functions somewhere else. I just don't want to collide with Sam's work in User atm
 export async function isUsernameAvailable(uid: string, username: string) {

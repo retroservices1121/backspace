@@ -7,24 +7,11 @@ import { toast } from 'react-toastify';
 import { Community, MediaUse, Member, PlatformUserType, Private, UserState } from '@prisma/client';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from '@src/lib/axios';
-import {
-  browserLocalPersistence,
-  browserSessionPersistence,
-  setPersistence,
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
 
-import { logoutUser } from 'api/auth';
-import { registerUser as createUserAPI } from 'api/auth';
 import { setPushToken } from 'api/push';
-import go from 'lib/async';
 import logEvent, { EventMessages, setAnalyticsUserId } from 'lib/events';
-import { toggleAuthLoader } from 'store/loadSlice';
-import { LoginFormState, OnboardingFields, OnboardingFormState, RegisterFormState } from 'types/auth';
 import { MemberDocument, UserDocument, WithId } from 'types/documents';
 import { User } from 'types/prisma';
-//import { useRouter } from 'next/router';
-import { auth as fbAuth } from 'utils/firebase';
 
 import { fetchFollowedUsers } from './feedSlice';
 import { RootState } from './store';
@@ -100,10 +87,11 @@ function populateStateFromObject(object: any, state: UserSliceType) {
 
 export const logout = createAsyncThunk(
   `${NAMESPACE}/logout`,
-  // The required message is to help debug tracking down what caused a forced logout
+  // The required message is to help debug tracking down what caused a forced
+  // logout. The actual Privy session teardown happens in the component that
+  // dispatches this — `usePrivy().logout()` is a hook, not a thunk-callable.
   async (message: string) => {
     console.log(message);
-    await logoutUser();
   },
 );
 
@@ -120,9 +108,8 @@ export const updateMemberships = createAsyncThunk(
 
 export const fetchUserBase = createAsyncThunk<User, string>(
   `${NAMESPACE}/fetchUserBase`,
-  async (authId, { getState }) => {
-    const { auth } = getState() as RootState;
-    const { data } = await axios(auth.user?.getIdToken()).get(`/user?authId=${authId}`);
+  async (authId) => {
+    const { data } = await axios().get(`/user?authId=${authId}`);
     return data;
   },
 );
@@ -172,46 +159,12 @@ const login = createAsyncThunk<void, string>(
   },
 );
 
-/** Called by the login form */
-export const formLogin = createAsyncThunk<void, LoginFormState>(
-  `${NAMESPACE}/loginForm`,
-  async ({ email, password, rememberMe }, { dispatch }) => {
-    if (rememberMe) {
-      setPersistence(fbAuth, browserLocalPersistence);
-    } else {
-      setPersistence(fbAuth, browserSessionPersistence);
-    }
-
-    dispatch(toggleAuthLoader(true));
-    const response = await go(signInWithEmailAndPassword(fbAuth, email, password));
-    dispatch(toggleAuthLoader(false));
-    if (response.type === 'error') {
-      toast.error('Please check your email and password.');
-      // Idk which of these 2 is better
-      // return thunkAPI.rejectWithValue(response.error);
-      throw response.error;
-    }
-
-    await dispatch(login(response.data.user.uid));
-  },
-);
-
-/** Called on app startup by onAuthStateChanged */
+/** Called on app startup once Privy resolves an authenticated session. */
 export const autoLogin = createAsyncThunk(
   `${NAMESPACE}/autologin`,
   async (authId: string, thunkAPI) => {
     await thunkAPI.dispatch(login(authId));
     setPushToken(authId);
-  },
-);
-
-export const createUser = createAsyncThunk(
-  `${NAMESPACE}/createUser`,
-  async (formState : RegisterFormState, thunkAPI) => {
-    thunkAPI.dispatch(toggleAuthLoader(true));
-    const { user } = await createUserAPI(formState);
-    thunkAPI.dispatch(toggleAuthLoader(false));
-    return user.uid;
   },
 );
 
