@@ -10,8 +10,8 @@
 
 import { useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { setConnected } from '@src/api/presence';
 import { removeAuthCookie, setAuthCookie } from '@src/lib/cookies';
+import { announcePresence, disconnectPresence } from '@src/lib/presence';
 import { APP } from '@src/pages';
 import { AuthStatus, clearAuthSlice, setAuthId, setEmail, setStatus } from '@src/store/authSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@src/store/store';
@@ -41,7 +41,7 @@ export default function useAuthentication() {
       dispatch(setAuthId(did));
       if (email) dispatch(setEmail(email));
       dispatch(autoLogin(did));
-      setConnected(did);
+      void announcePresence(did);
       // Privy's getAccessToken returns a JWT verified by @backspace/auth
       // server-side. Store it as a cookie so SSR / middleware can read it.
       getAccessToken().then((token) => {
@@ -52,6 +52,7 @@ export default function useAuthentication() {
       removeAuthCookie();
       dispatch(clearAuthSlice());
       dispatch(logout('privy unauthenticated'));
+      disconnectPresence();
     }
   }, [ready, authenticated, user]);
 

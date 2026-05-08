@@ -1,32 +1,46 @@
 // Copyright 2021 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
 // Author(s): See Git History
-
+//
+// Online status / friend presence. Migrated off the Firebase Realtime
+// Database `subscribeToStatusChanges` listener onto Ably presence
+// (lib/presence.ts) on 2026-05-08.
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Unsubscribe } from 'firebase/firestore';
 
-import { subscribeToStatusChanges } from 'api/userAPI';
+import { subscribePresence } from '@src/lib/presence';
 import { OnlinePresence } from 'types/documents';
 import { User } from 'types/prisma';
 
+import { RootState } from './store';
+
 const NAMESPACE = 'users';
 
+let unsubStatuses: () => void = () => {};
 
-let unsubStatuses: Unsubscribe = async () => {};
-
+/**
+ * Subscribe to global presence updates and project them into
+ * `state.users.onlineStatus`. The thunk reads the current user's authId
+ * (set by useAuthenticate after Privy resolves) so the Ably connection
+ * shares the per-DID client that announcePresence already opened.
+ */
 export const initStatusListeners = createAsyncThunk(
   `${NAMESPACE}/initStatusListeners`,
   async (_, thunkAPI) => {
     unsubStatuses();
-    // Dispatch order requires the following eslint disable
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    unsubStatuses = await subscribeToStatusChanges((updates) => thunkAPI.dispatch(updateSome(updates)));
+    const state = thunkAPI.getState() as RootState;
+    const did = state.auth.authId;
+    if (!did) {
+      // Not signed in — nothing to subscribe to. Future autoLogin will
+      // re-dispatch this thunk once authId is set.
+      unsubStatuses = () => {};
+      return;
+    }
+    unsubStatuses = await subscribePresence(did, (members) =>
+      thunkAPI.dispatch(setOnlineStatus(members)),
+    );
   },
 );
 
 type UsersState = {
-  // TODO lets use a Record<string, OnlinePresence> instead. -Sam
   onlineStatus: Map<string, OnlinePresence>,
   users: Record<string, User>
 };
@@ -48,19 +62,17 @@ const usersSlice = createSlice({
         };
       }
     },
-    updateSome(state, action: PayloadAction<Map<string, OnlinePresence>>) {
-      const newThingy = state.onlineStatus?.forEach((value, key) => action.payload.set(key, value));
-      //@ts-ignore FIXME: BRENTON
-      state.onlineStatus = newThingy;
-      //state.onlineStatus = new Map([...state.onlineStatus, ...action.payload]);
+    // Replace the presence map wholesale — Ably gives us the full member
+    // list on every update so partial merging is unnecessary.
+    setOnlineStatus(state, { payload }: PayloadAction<Map<string, OnlinePresence>>) {
+      state.onlineStatus = payload;
     },
   },
-  extraReducers: () => {
-  },
+  extraReducers: () => {},
 });
 
 export default usersSlice.reducer;
-export const { updateSome } = usersSlice.actions;
+export const { upsertUsers, setOnlineStatus } = usersSlice.actions;
 
 export const usersActions = {
   ...usersSlice.actions,
