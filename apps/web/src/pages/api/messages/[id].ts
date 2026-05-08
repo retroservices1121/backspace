@@ -4,6 +4,7 @@
 // Author(s): See Git History
 
 import prisma from 'api2/prisma';
+import { ablyLite, buildChannelTopic, SubEvents } from 'lib/ably';
 import createHandler, { requireAuthMiddleware } from 'lib/nextconnect';
 import { paginate } from 'lib/pagination';
 import { Message } from 'types/prisma';
@@ -53,6 +54,16 @@ handler.post(async (req: Send, res) => {
     },
     include: Message.include,
   });
+
+  // Fan out to subscribers of this channel so other members see the
+  // message without polling. Failure to publish is non-fatal — the row
+  // landed in Postgres, the sender's optimistic insert is correct, and
+  // the next paginate will catch listeners back up.
+  try {
+    ablyLite().publish(buildChannelTopic(channelId), response, SubEvents.MESSAGE);
+  } catch (err) {
+    console.error('Ably publish failed for channel message', err);
+  }
 
   return res.json(response);
 });

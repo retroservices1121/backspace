@@ -45,6 +45,14 @@ export const buildSubscriptionChannel = (conversationId: bigint) => {
   return `${RealtimeCategories.CONVERSATION}[${conversationId}]`;
 };
 
+// Community-channel chat topic. The channel's UUID (stable across the
+// client/server boundary; the numeric id has had inconsistent treatment
+// in older message routes) keys the topic so subscribers and publishers
+// agree without sharing the BigInt id.
+export const buildChannelTopic = (channelUuid: string) => {
+  return `${RealtimeCategories.CHANNEL}[${channelUuid}]`;
+};
+
 const ably = new Ably.Realtime.Promise(KEY ?? 'unset:unset');
 
 useSingleton('ably_montoring', () => {
