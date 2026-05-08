@@ -1,81 +1,82 @@
-// Copyright 2021 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
-
-//import MediaAPI from 'api/mediaAPI';
+// Account settings — Postgres-backed via PATCH /api/user and PATCH
+// /api/private. The legacy Firestore writes (updateUserInfo /
+// updateUserPrivateInfo) and the fireStorage avatar/banner uploads were
+// removed during the Firebase cleanup pass; the original file mapped
+// `display_name` / `description` / `profile_image` to Firestore-only
+// columns that no longer exist.
+//
+// Avatar and banner uploads are not handled here yet — they use the same
+// `mediaStorage` + POST /api/media flow as useOnboarding and will land in
+// a follow-up. For now the form ignores ProfilePic/BannerPic file fields
+// and toasts a heads-up if the user tries to set one.
 import React from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import settingsLayout from '@src/layouts/settingsLayout';
+import axios from '@src/lib/axios';
 
-import { fireStorage } from 'api/firebase';
-import { updateUserInfo, updateUserPrivateInfo } from 'api/userAPI';
 import AccountForm from 'components/Settings/AccountForm';
 import { Container } from 'components/Settings/styledAgain';
 import { RootState } from 'store/store';
-import { Collections, PrivateUserDocument, UserDocument } from 'types/documents';
 import { AccountFields, AccountFormState } from 'types/settings';
 
+import type { UpdateUserBody } from '../api/user';
+import type { UpdatePrivateBody } from '../api/private';
+
 const Account: ReactLayoutComponentType = () => {
-  const uid = useSelector((state : RootState) => state.user.id);
+  const uid = useSelector((state: RootState) => state.user.id);
 
-  const handleSubmit = async (form : AccountFormState) => {
-    if (uid) {
-      let publicUpdate : Partial<UserDocument> = {};
-      if (form[AccountFields.Username]) {publicUpdate.username = form[AccountFields.Username];}
-      if (form[AccountFields.Description]) {publicUpdate.description = form[AccountFields.Description];}
-      if (form[AccountFields.Description] === '') {publicUpdate.description = '';} // Allow a user to clear their bio
-      if (form[AccountFields.DisplayName]) {
-        publicUpdate.display_name = form[AccountFields.DisplayName];
-        publicUpdate.search_name = form[AccountFields.DisplayName].toLocaleLowerCase();
+  const handleSubmit = async (form: AccountFormState) => {
+    if (!uid) {
+      toast.error('Error saving changes.');
+      return;
+    }
+
+    const userUpdate: UpdateUserBody = {};
+    if (form[AccountFields.Username]) userUpdate.username = form[AccountFields.Username];
+    if (form[AccountFields.DisplayName]) userUpdate.name = form[AccountFields.DisplayName];
+    // Allow clearing the bio explicitly; treat undefined as "no change".
+    if (typeof form[AccountFields.Description] === 'string') userUpdate.bio = form[AccountFields.Description];
+
+    const privateUpdate: UpdatePrivateBody = {};
+    if (form[AccountFields.Firstname]) privateUpdate.firstName = form[AccountFields.Firstname];
+    if (form[AccountFields.Lastname]) privateUpdate.lastName = form[AccountFields.Lastname];
+    if (form[AccountFields.PhoneNumber]) privateUpdate.phone = form[AccountFields.PhoneNumber];
+    const dob = form[AccountFields.DateOfBirth];
+    if (dob) {
+      privateUpdate.dobYear = dob.year;
+      privateUpdate.dobMonth = dob.month;
+      privateUpdate.dobDay = dob.day;
+    }
+
+    if (form[AccountFields.ProfilePic] instanceof File || form[AccountFields.BannerPic] instanceof File) {
+      toast.info('Avatar and banner uploads from settings are coming soon.');
+    }
+
+    try {
+      const requests: Promise<unknown>[] = [];
+      if (Object.keys(userUpdate).length > 0) {
+        requests.push(axios().patch('/user', userUpdate));
       }
-
-      if (form[AccountFields.ProfilePic] instanceof File) {
-        let media = form[AccountFields.ProfilePic] as File;
-        const profileMediaPath = `${Collections.Users}/${uid}/${media.name}`;
-        try {
-          await fireStorage.uploadFile(profileMediaPath, media);
-        } catch (error) {
-          toast.error('Banner limit is 10MB');
-        }
-        publicUpdate.profile_image = profileMediaPath;
+      if (Object.keys(privateUpdate).length > 0) {
+        requests.push(axios().patch('/private', privateUpdate));
       }
-
-      let bannerMediaPath = '';
-      if (form[AccountFields.BannerPic] instanceof File) {
-        let media = form[AccountFields.BannerPic] as File;
-        //TODO need unique media name so it doesn't overwrite something with the same name
-        bannerMediaPath = `${Collections.Users}/${uid}/${media.name}`;
-        try {
-          await fireStorage.uploadFile(bannerMediaPath, media);
-        } catch (error) {
-          toast.error('Profile picture limit is 10MB');
-        }
-        publicUpdate.banner_image = bannerMediaPath;
+      if (requests.length === 0) {
+        toast.info('No changes to save.');
+        return;
       }
-      //FIXME implementation needed
-      throw new Error('NOT IMPLEMENTED');
-      // updateUserInfo(uid, publicUpdate);
-
-      // Update user's private document
-      let privateUpdate : Partial<PrivateUserDocument> = {};
-      if (form[AccountFields.Firstname]) {privateUpdate.first_name = form[AccountFields.Firstname];}
-      if (form[AccountFields.Lastname]) {privateUpdate.last_name = form[AccountFields.Lastname];}
-      if (form[AccountFields.PhoneNumber]) {privateUpdate.phone_number = form[AccountFields.PhoneNumber];}
-      if (form[AccountFields.DateOfBirth]) {privateUpdate.dob = form[AccountFields.DateOfBirth];}
-      // updateUserPrivateInfo(uid, privateUpdate);
+      await Promise.all(requests);
       toast.info('Saved');
-    } else {
-      console.log('missing uid');
+    } catch (error) {
+      console.error(error);
       toast.error('Error saving changes.');
     }
   };
 
   return (
     <Container>
-      <AccountForm onSubmit={handleSubmit}/>
+      <AccountForm onSubmit={handleSubmit} />
     </Container>
   );
 };

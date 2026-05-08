@@ -4,10 +4,18 @@
 // Author(s): See Git History
 
 import { Permissions, Prisma, User } from '@prisma/client';
-import { createUser, getUserByAuthId, getUserById, getUserByUsername } from '@src/api2/user';
-import createHandler from '@src/lib/nextconnect';
+import { createUser, getUserByAuthId, getUserById, getUserByUsername, updateUser } from '@src/api2/user';
+import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { isDevelopment } from '@src/utils/common_utils';
 import { resolve } from 'path';
+
+// Body of PATCH /api/user — every field optional. The handler only writes
+// the keys the caller actually sent, so the form can submit any subset.
+export type UpdateUserBody = {
+  username?: string;
+  name?: string;
+  bio?: string;
+};
 
 const handler = createHandler();
 
@@ -101,5 +109,22 @@ handler
 
     res.json(user || null);
   });
+
+// PATCH updates the authenticated user's row. Identity comes from the Privy
+// token (req.authId), never from the body — the form cannot impersonate.
+handler.use(requireAuthMiddleware).patch(async (req, res) => {
+  const body = req.body as UpdateUserBody;
+  const me = await getUserByAuthId(req.authId, false);
+  if (!me) {
+    res.status(404).end('User not found');
+    return;
+  }
+  const update: Prisma.UserUpdateInput = {};
+  if (typeof body.username === 'string') update.username = body.username;
+  if (typeof body.name === 'string') update.name = body.name;
+  if (typeof body.bio === 'string') update.bio = body.bio;
+  const updated = await updateUser(me.id, update);
+  res.json(updated);
+});
 
 export default handler;

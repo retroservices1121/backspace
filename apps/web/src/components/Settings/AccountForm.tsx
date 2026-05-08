@@ -9,7 +9,6 @@ import useUser from '@src/hooks/useUser';
 import { ErrorMessage, Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 
-import { getUserPrivateById } from 'api/userAPI';
 import { FormDatePicker } from 'components/DatePicker/DatePicker';
 import FormInput from 'components/FormInput';
 import UploadBanner from 'components/Settings/UploadBanner';

@@ -10,6 +10,13 @@ import { paths } from 'api/firebase';
 
 // THIS HOOK IS A MONKEYPATCH TO A PROBLEM THAT IS GOING TO BE REFACTORED SHORTLY
 // ASK BEFORE USING THIS. -unfortunately, sam
+//
+// 2026-05-08 cleanup note: this is one of the surviving Firebase-Storage
+// readers (Bucket B). Communities still serve avatars/banners out of the
+// legacy Firebase Storage bucket; the Postgres Community model has
+// avatar/banner Media relations that should drive this flow once the R2
+// migration lands. Replace this hook with a Prisma-backed lookup
+// (community.avatar.path → api2/storage.pathToURL) at that time.
 export function useCommunityMedia(id: string) {
   const [banner, setBanner] = useState('');
   const [profile, setProfile] = useState('');

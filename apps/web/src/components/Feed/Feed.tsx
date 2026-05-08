@@ -39,10 +39,10 @@ function useFeaturedPost() {
   useEffect(() => {
     const postQuery = query.get('post');
     if (!isEmpty(postQuery)) {
-      // Postgres-backed lookup; replaces the legacy Firestore getPostByID.
-      // Backend route lands with the next /api/posts/[id] PR.
+      // Postgres-backed lookup. The post route is /api/post (singular)
+      // with id as a query param — see pages/api/post/index.ts.
       axios()
-        .get(`/posts/${postQuery as string}`)
+        .get(`/post?id=${postQuery as string}`)
         .then(({ data: post }) => {
           if (post) {
             //@ts-ignore FIXME: StaticImage

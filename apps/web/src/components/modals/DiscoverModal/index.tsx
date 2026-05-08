@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 
-import { updateUserInfo } from 'api/userAPI';
 import Modal from 'components/ModalV2';
 import { toggleDiscoverModal } from 'store/feedSlice';
 import { RootState } from 'store/store';
