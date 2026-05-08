@@ -49,4 +49,38 @@ export async function getPrivyUserId(
   return claims.userId; // alias for `sub` in privy SDK
 }
 
+/**
+ * Resolve the user's primary email address from a Privy access token.
+ *
+ * The JWT claims do not include the email, so this calls
+ * `client.getUser({idToken})` (the rate-limit-friendly variant) and walks
+ * the linked accounts in priority order:
+ *
+ *   1. The dedicated `email` link (set when the user signs in via OTP).
+ *   2. Any OAuth provider that exposes an email — Google, Apple, GitHub,
+ *      LinkedIn, Discord. We trust whichever one we find first; matching
+ *      `Private.email` is case-insensitive at the call site.
+ *
+ * Returns null if no email is reachable (e.g. wallet-only login).
+ *
+ * Used by the claim-your-account flow to match a fresh Privy session
+ * against an existing legacy User row whose `Private.email` was set when
+ * the legacy Firestore→Postgres migration ran.
+ */
+export async function getPrivyUserEmail(
+  idToken: string,
+  cfg: PrivyConfig,
+): Promise<string | null> {
+  const user = await client(cfg).getUser({ idToken });
+  return (
+    user.email?.address ??
+    user.google?.email ??
+    user.apple?.email ??
+    user.github?.email ??
+    user.linkedin?.email ??
+    user.discord?.email ??
+    null
+  );
+}
+
 export type { AuthTokenClaims };

@@ -35,7 +35,15 @@ export type OldUser = UserDocument & {
 // (success OR failure). Bootstrapping logic in useAuthenticate uses it to
 // distinguish "the user has no DB row yet, send them to onboarding" from
 // "the fetch hasn't happened, hold off."
-type UserSliceType = User.Self & { fetchAttempted: boolean };
+//
+// `bootstrapping` is the broader "autoLogin pipeline is still running"
+// gate. It is set true on entry to autoLogin and false in `finally`, so
+// the onboarding redirect cannot fire in between the initial fetch and
+// the claim-your-account attempt.
+type UserSliceType = User.Self & {
+  fetchAttempted: boolean;
+  bootstrapping: boolean;
+};
 //TODO this is annoying to maintain but it's nice to have empty arrays
 const initialState : UserSliceType = {
   id: undefined,
@@ -62,6 +70,7 @@ const initialState : UserSliceType = {
   communities: [],
 
   fetchAttempted: false,
+  bootstrapping: false,
 };
 
 // const initialState : UserSliceType = {
@@ -139,38 +148,64 @@ const login = createAsyncThunk<void, string>(
     logEvent(EventMessages.Auth.Login, { uid: authId });
     setAnalyticsUserId(authId);
     try {
-      dispatch(fetchUser(authId)).then( () => {
-        // dispatch(subscribeRecentNotifications());
-        dispatch(fetchFollowedUsers(authId));
-        dispatch(initStatusListeners());
-      });
-      // const user = await dispatch(fetchUser(authId)).unwrap();
-      // if (!user.interests) {
-      //   dispatch(toggleDiscoverModal(true));
-      // }
-      // await dispatch(initStatusListeners());
-      // return {
-      //   ...user,
-      //   // In case the user from fetchUser isn't "ready", we need to maintain the userId in redux.
-      //   id: authId,
-      // };
-
+      // Await the user fetch so callers (autoLogin) can read state.user
+      // synchronously after this thunk resolves. Side-effect dispatches
+      // can stay fire-and-forget — they don't gate the login flow.
+      const userPromise = dispatch(fetchUser(authId));
+      dispatch(fetchFollowedUsers(authId));
+      dispatch(initStatusListeners());
+      await userPromise;
     } catch (error) {
       toast.error("Something went wrong, couldn't log you in.");
       console.error(error);
-      // If "localStorage login" failed, to avoid a auth de-sync, lets log them out of firebase.
       dispatch(logout('login error'));
       throw error;
     }
   },
 );
 
-/** Called on app startup once Privy resolves an authenticated session. */
+/**
+ * Called on app startup once Privy resolves an authenticated session.
+ *
+ * Three states need to be untangled here:
+ *   1. Returning user — User row keyed by Privy DID exists in Postgres.
+ *      `login()` populates state.user; nothing else to do.
+ *   2. Returning legacy user — row exists keyed by their old Firebase
+ *      UID, with `Private.email` matching the email Privy verified.
+ *      The first /user/self returns null. We POST /api/auth/claim, which
+ *      atomically rewrites User.authId to the Privy DID. We then re-fetch.
+ *   3. Brand-new user — no row anywhere. Claim returns no_match, the
+ *      user lands on /auth/onboarding (useAuthenticate redirect once
+ *      `bootstrapping` flips false), and useOnboarding creates the row.
+ *
+ * `bootstrapping` is held true for the whole pipeline so the onboarding
+ * redirect cannot fire between the initial fetch and the claim attempt.
+ */
 export const autoLogin = createAsyncThunk(
   `${NAMESPACE}/autologin`,
   async (authId: string, thunkAPI) => {
-    await thunkAPI.dispatch(login(authId));
-    setPushToken(authId);
+    thunkAPI.dispatch(setBootstrapping(true));
+    try {
+      await thunkAPI.dispatch(login(authId));
+      setPushToken(authId);
+
+      const afterLogin = thunkAPI.getState() as RootState;
+      if (afterLogin.user.id) return; // case 1 — done.
+
+      // Cases 2 / 3: no row found by Privy DID. Try to claim a legacy row.
+      try {
+        const { data } = await axios().post('/auth/claim');
+        if (data?.claimed) {
+          await thunkAPI.dispatch(fetchUser(authId));
+        }
+      } catch (err) {
+        // Network or server error — log and let the user fall through to
+        // onboarding. A future autoLogin (next page load) will retry.
+        console.warn('Claim attempt failed', err);
+      }
+    } finally {
+      thunkAPI.dispatch(setBootstrapping(false));
+    }
   },
 );
 
@@ -195,6 +230,9 @@ export const userSlice = createSlice({
     /** @deprecated */
     addConversation(state, { payload }) {
       state.conversations = [payload, ...state.conversations];
+    },
+    setBootstrapping(state, { payload }) {
+      state.bootstrapping = payload;
     },
   },
   extraReducers: builder => {
@@ -226,6 +264,6 @@ export const userSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const { updateUserFields, setOnboarded } = userSlice.actions;
+export const { updateUserFields, setOnboarded, setBootstrapping } = userSlice.actions;
 
 export default userSlice.reducer;

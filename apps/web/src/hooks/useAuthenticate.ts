@@ -24,6 +24,7 @@ export default function useAuthentication() {
   const authState = useAppSelector((state: RootState) => state.auth.status);
   const userState = useAppSelector((state: RootState) => state.user.state);
   const fetchAttempted = useAppSelector((state: RootState) => state.user.fetchAttempted);
+  const bootstrapping = useAppSelector((state: RootState) => state.user.bootstrapping);
 
   const { ready, authenticated, user, getAccessToken } = usePrivy();
 
@@ -66,7 +67,7 @@ export default function useAuthentication() {
       return;
     }
     if (authState !== AuthStatus.SignedIn) return;
-    if (!fetchAttempted) return;
+    if (!fetchAttempted || bootstrapping) return;
     if (userState?.onboarded === true) return;
     if (router.pathname.includes('logout')) {
       console.log('User manually logging out, skipping redirect to onboarding');
@@ -74,7 +75,7 @@ export default function useAuthentication() {
     }
     if (router.pathname === APP.AUTH.ONBOARDING) return;
     router.push(APP.AUTH.ONBOARDING);
-  }, [authState, userState?.onboarded, fetchAttempted]);
+  }, [authState, userState?.onboarded, fetchAttempted, bootstrapping]);
 
   return authState;
 }

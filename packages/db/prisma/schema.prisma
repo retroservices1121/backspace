@@ -21,6 +21,11 @@ model User {
   username             String          @unique
   name                 String
   authId               String          @unique //Authentication Identifier
+  // Set on first successful claim of a legacy Firebase-Auth account by a
+  // Privy login that matched on email. Holds the prior `authId` (the
+  // Firebase UID) so the migration is auditable and reversible. Null for
+  // users created directly under Privy.
+  legacyAuthId         String?         @unique
   bio                  String          @default("")
   verified             Boolean         @default(false)
   featuredCommunity    Community?      @relation(name: "featuredCommunity", fields: [featuredCommunityId], references: [id])
