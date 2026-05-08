@@ -102,13 +102,12 @@ async function uploadUserMedia(
   type: typeof MediaUse.AVATAR | typeof MediaUse.BANNER,
 ) {
   const ms = mediaStorage(type);
-  const path = ms.getPath(userId, file.name);
-  const ok = await ms.uploadFile(path, file);
-  if (!ok) return;
+  const result = await ms.uploadFile(file, userId);
+  if (!result.ok) return;
   const body: CreateMediaBody = {
     type,
     host: ms.host,
-    path,
+    path: result.path,
     fileExtension: getFileExtension(file),
     ...(type === MediaUse.AVATAR
       ? { avatarUser: { connect: { authId } } }

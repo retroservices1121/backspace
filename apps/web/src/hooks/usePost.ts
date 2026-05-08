@@ -68,14 +68,13 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
   const createPost = async (formData: PostFormState, media: File) => {
     const ms = mediaStorage(MediaUse.POST);
     let mediaId = undefined;
-    if (media && media instanceof File) { 
-      const mediaPath = ms.getPath(user.uuid, media.name);
-      const upload = await ms.uploadFile(mediaPath, media);
-      if (upload) {
+    if (media && media instanceof File) {
+      const result = await ms.uploadFile(media, user.uuid);
+      if (result.ok) {
         const newMedia : CreateMediaBody = {
           type: MediaUse.POST,
           host: ms.host,
-          path: mediaPath,
+          path: result.path,
           fileExtension: getFileExtension(media),
         };
         const { data } = await axios.post('media', newMedia);

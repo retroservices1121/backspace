@@ -82,16 +82,14 @@ export const useOnboarding = () => {
     //On Success, add profile picture
     let profilePicture = formState[OnboardingFields.ProfilePic];
     const ms = mediaStorage(MediaUse.AVATAR);
-    let upload = false;
     // Use user supplied image
-    if (profilePicture && profilePicture instanceof File) { 
-      const mediaPath = ms.getPath(myUUID, profilePicture.name);
-      upload = await ms.uploadFile(mediaPath, profilePicture);
-      if (upload) {
+    if (profilePicture && profilePicture instanceof File) {
+      const result = await ms.uploadFile(profilePicture, myUUID);
+      if (result.ok) {
         const newMedia : CreateMediaBody = {
           type: MediaUse.AVATAR,
           host: ms.host,
-          path: mediaPath,
+          path: result.path,
           fileExtension: getFileExtension(profilePicture),
           avatarUser: {
             connect: {

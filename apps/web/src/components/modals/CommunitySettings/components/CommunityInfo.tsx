@@ -66,28 +66,23 @@ const CommunityInfo: React.FC<Props> = () => {
           render: 'Setting Avatar Image',
         });
         const ms = mediaStorage(MediaUse.COMMUNITY_AVATAR);
-        const path = ms.getPath(community.id.toString(), avatar.name);
-        const avatarUpload = await ms.uploadFile(path, avatar);
-        if (avatarUpload) { //if success, create database record
-          const mediaRecord = ms.getMediaRecord(path, avatar);
-          //No need to connect to user, backend does it with upsert
-          await axios.put(`/media?relationId=${community.id}`, mediaRecord );
+        const result = await ms.uploadFile(avatar, community.id.toString());
+        if (result.ok) {
+          const mediaRecord = ms.getMediaRecord(result.path, avatar);
+          await axios.put(`/media?relationId=${community.id}`, mediaRecord);
         } else {
           toast.error('Error uploading Avatar');
         }
-        
       }
       if (banner instanceof File) {
         toast.update(toastId, {
           render: 'Setting Banner Image',
         });
         const ms = mediaStorage(MediaUse.COMMUNITY_BANNER);
-        const path = ms.getPath(community.id.toString(), banner.name);
-        const bannerUpload = await ms.uploadFile(path, banner);
-        if (bannerUpload) { //if success, create database record
-          const mediaRecord = ms.getMediaRecord(path, banner);
-          //No need to connect to user, backend does it with upsert
-          await axios.put(`/media?relationId=${community.id}`, mediaRecord );
+        const result = await ms.uploadFile(banner, community.id.toString());
+        if (result.ok) {
+          const mediaRecord = ms.getMediaRecord(result.path, banner);
+          await axios.put(`/media?relationId=${community.id}`, mediaRecord);
         } else {
           toast.error('Error uploading Banner');
         }
