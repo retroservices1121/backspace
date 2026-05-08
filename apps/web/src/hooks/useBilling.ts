@@ -10,6 +10,7 @@ import { AuthStatus } from '@src/store/authSlice';
 import { selectHasAccount, selectHasCustomer } from '@src/store/billing/selectors';
 import { getMethods, getSubscriptions, updateBilling } from '@src/store/billingSlice';
 import { throttle } from 'lodash';
+import { toast } from 'react-toastify';
 
 import { toggleSubscribeModal } from 'store/appSlice';
 import { RootState, useAppDispatch, useAppSelector } from 'store/store';
@@ -44,8 +45,46 @@ export default function useBilling() {
     
   };
 
-  const purchaseSubscription = async (formState: PurchaseForm) => {
-
+  // The form's `tier` field carries the Stripe price ID (the form
+  // resolves SubscriptionTier → stripePriceId locally before submit).
+  // communityId + accountId come from the same useCommunityBilling
+  // payload that populated the form.
+  const purchaseSubscription = async (formState: PurchaseForm & {
+    communityId: string;
+    accountId: string;
+  }) => {
+    const { tier: priceId, communityId, accountId } = formState;
+    if (!priceId || !communityId || !accountId) {
+      toast.error('Subscription not yet available for this community.');
+      return;
+    }
+    const toastId = toast.loading('Subscribing…');
+    try {
+      const { data } = await axios.post('/billing/subscription', {
+        priceId,
+        communityId,
+        accountId,
+      });
+      toast.update(toastId, {
+        render: 'Subscribed!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 4000,
+      });
+      fetchSubscriptions();
+      dispatch(toggleSubscribeModal(false));
+      return data;
+    } catch (err) {
+      const msg = (err as any)?.response?.data
+        ?? (err as Error)?.message
+        ?? 'Failed to subscribe';
+      toast.update(toastId, {
+        render: typeof msg === 'string' ? msg : 'Failed to subscribe',
+        type: 'error',
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
   };
 
   const cancelSubscription = async (stripeId: string) => {

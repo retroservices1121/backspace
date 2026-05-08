@@ -15,11 +15,11 @@ import { APP } from 'pages';
 import { toggleSubscribeModal } from 'store/appSlice';
 import { RootState, useAppDispatch } from 'store/store';
 
-import PurchaseSubscriptionForm, { PurchaseForm } from './components/PurchaseSubscriptionForm';
+import PurchaseSubscriptionForm, { PurchaseSubmit } from './components/PurchaseSubscriptionForm';
 import { Container } from './styles';
 
 type Props = {
-  onSubmit: (formState: PurchaseForm) => void;
+  onSubmit: (formState: PurchaseSubmit) => void;
 };
 
 const PurchaseSubscription: React.FC<Props> = ({

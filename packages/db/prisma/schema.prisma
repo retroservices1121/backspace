@@ -421,10 +421,13 @@ model SubscriptionTier {
   community      Community     @relation(fields: [communityId], references: [id])
   communityId    BigInt
   subscription   Subscription[]
-  perks          String[]      
+  perks          String[]
   description    String        @default("")
   title          String        @default("Subscription Tier")
   price          Float         @default(4.99)
+  // Stripe price ID minted when the creator publishes the tier.
+  // Null until creator-side billing is live (then backfill or recreate).
+  stripePriceId  String?       @unique
 }
 
 model Billing {
