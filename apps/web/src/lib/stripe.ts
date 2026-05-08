@@ -84,15 +84,22 @@ export const CreateNewStripeAccount = async (uid : string, email: string, userna
   return account;
 };
 
-/** Generate an account link for a given stripe account */
-export const CreateAccountLink = async (stripeAccount : string) : Promise<Stripe.AccountLink> => {
-  let request : Stripe.AccountLinkCreateParams = {
+/** Generate an account link for a given stripe account. The caller
+ *  passes refresh/return URLs because they vary by environment
+ *  (localhost in dev, the deployed origin in prod) — keeping them
+ *  out of this helper avoids an env coupling here. */
+export const CreateAccountLink = async (
+  stripeAccount: string,
+  refreshUrl: string,
+  returnUrl: string,
+): Promise<Stripe.AccountLink> => {
+  const request: Stripe.AccountLinkCreateParams = {
     account: stripeAccount,
-    refresh_url: 'https://backchannel.to/app/settings',
-    return_url: 'https://backchannel.to/app/settings',
+    refresh_url: refreshUrl,
+    return_url: returnUrl,
     type: 'account_onboarding',
   };
-  const accountLink : Stripe.AccountLink = await stripe.accountLinks.create(request);
+  const accountLink: Stripe.AccountLink = await stripe.accountLinks.create(request);
   return accountLink;
 };
 

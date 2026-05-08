@@ -4,15 +4,9 @@
 // Stripe SDK) and api2/* (Postgres) directly, so this file becomes a
 // thin axios wrapper.
 //
-// User-side (customer flows) is fully wired:
-//   getStripeCustomer / createNewStripeCustomer / getStripeCards /
-//   deletePayment / setDefaultPayment / getAllSubscriptions /
-//   createSubscription / cancelSubscription / addSourceToCustomer
-//
-// Creator-side (Express accounts, payouts, tier prices) is stubbed —
-// the underlying server-side handlers don't exist yet. Calls toast and
-// return null. /settings/creator already handles the no-account state
-// gracefully so the page renders without exploding.
+// Both halves are now wired:
+//   user-side: customer / methods / subscription
+//   creator-side: account onboarding + tier publication
 import { toast } from 'react-toastify';
 import Stripe from 'stripe';
 
@@ -24,11 +18,6 @@ import { CommunityUnion } from './communityAPI';
 
 export type SubscriptionUnion = Stripe.Subscription & {
   community: CommunityDocument | CommunityUnion,
-};
-
-const creatorTodo = (label: string) => {
-  toast.info(`${label} is part of the creator-account flow, coming soon.`);
-  return null;
 };
 
 // User-side: fully wired.
@@ -139,42 +128,132 @@ export const cancelSubscription = async (
   }
 };
 
-// Creator-side: stubbed until /api/billing/account etc. land.
+// Creator-side: account onboarding.
 
-export const getStripeCreator = async (
-  _uid: string,
-): Promise<Stripe.Account | null> => null;
-
-export const getLoginLink = async (): Promise<Stripe.LoginLink | null> =>
-  creatorTodo('Stripe creator dashboard link');
-
-export const getNewAccountLink = async (): Promise<Stripe.AccountLink | null> =>
-  creatorTodo('Stripe onboarding link');
-
-export const getAccountLink = async (
-  _uid: string,
-): Promise<Stripe.AccountLink | null> =>
-  creatorTodo('Stripe onboarding link');
-
-export const createStripeAccount = async (): Promise<Stripe.AccountLink | null> => {
-  logEvent(EventMessages.Billing.NewCreator);
-  return creatorTodo('Creator account creation');
+export type CreatorAccountState = {
+  account: Stripe.Account | null;
+  link: Stripe.AccountLink | Stripe.LoginLink | null;
+  linkType: 'onboarding' | 'dashboard' | null;
 };
 
-export const forceUpdateStripeAccount = async (_uid: string) =>
-  creatorTodo('Creator account resync');
+export const getStripeCreator = async (
+  _uid?: string,
+): Promise<CreatorAccountState> => {
+  try {
+    const { data } = await axios().get('/billing/account');
+    return data as CreatorAccountState;
+  } catch (e) {
+    console.error(e);
+    return { account: null, link: null, linkType: null };
+  }
+};
 
-export const deleteTier = async (_communityId: string, _tierId: string) =>
-  creatorTodo('Subscription tier removal');
+export const createStripeAccount = async (
+  body: { fName?: string; lName?: string; dob?: { month: number; day: number; year: number } } = {},
+): Promise<{ account: Stripe.Account; accountLink: Stripe.AccountLink } | null> => {
+  logEvent(EventMessages.Billing.NewCreator);
+  try {
+    const { data } = await axios().post('/billing/account', body);
+    return data as { account: Stripe.Account; accountLink: Stripe.AccountLink };
+  } catch (e) {
+    console.error(e);
+    toast.error('Could not create creator account.');
+    return null;
+  }
+};
 
+// Re-issue an onboarding link for the existing account. The GET
+// route returns a fresh link each time (Stripe links expire fast —
+// a few minutes) so we just refetch.
+export const getNewAccountLink = async (): Promise<Stripe.AccountLink | null> => {
+  const state = await getStripeCreator();
+  if (state.linkType === 'onboarding') return state.link as Stripe.AccountLink;
+  return null;
+};
+
+export const getAccountLink = getNewAccountLink;
+
+// Stripe Express dashboard login link. Same GET route — when the
+// account is fully onboarded the route returns a LoginLink instead.
+export const getLoginLink = async (): Promise<Stripe.LoginLink | null> => {
+  const state = await getStripeCreator();
+  if (state.linkType === 'dashboard') return state.link as Stripe.LoginLink;
+  return null;
+};
+
+// "Force update" used to be a Cloud Function that re-pulled the
+// Stripe account state. Now GET /api/billing/account always returns
+// the live state, so this just delegates and surfaces the account.
+export const forceUpdateStripeAccount = async (_uid?: string): Promise<Stripe.Account | null> => {
+  const state = await getStripeCreator();
+  return state.account;
+};
+
+// Creator-side: tier publication.
+
+export type TierPayload = {
+  id: string;
+  uuid: string;
+  title: string;
+  description: string;
+  perks: string[];
+  price: number;
+  stripePriceId: string | null;
+};
+
+export const createTier = async (
+  communityId: string,
+  body: { title: string; description?: string; perks?: string[]; priceUsd: number },
+): Promise<TierPayload | null> => {
+  try {
+    const { data } = await axios().post(`/community/${communityId}/tiers`, body);
+    return data?.tier ?? null;
+  } catch (e) {
+    console.error(e);
+    toast.error('Could not create tier.');
+    return null;
+  }
+};
+
+export const updateTier = async (
+  communityId: string,
+  tierId: string,
+  body: { title?: string; description?: string; perks?: string[]; priceUsd?: number },
+): Promise<TierPayload | null> => {
+  try {
+    const { data } = await axios().patch(`/community/${communityId}/tiers/${tierId}`, body);
+    return data?.tier ?? null;
+  } catch (e) {
+    console.error(e);
+    toast.error('Could not update tier.');
+    return null;
+  }
+};
+
+export const deleteTier = async (
+  communityId: string,
+  tierId: string,
+): Promise<boolean> => {
+  try {
+    await axios().delete(`/community/${communityId}/tiers/${tierId}`);
+    return true;
+  } catch (e) {
+    console.error(e);
+    toast.error('Could not delete tier.');
+    return false;
+  }
+};
+
+// Legacy aliases for callers that haven't been updated yet. New
+// callers should use `createTier`/`updateTier` directly with priceUsd.
 export const createNewPrice = async (
-  _price: number,
-  _communityId: string,
+  price: number,
+  communityId: string,
   _tierId: string,
-): Promise<Stripe.Price | null> => creatorTodo('Tier pricing');
+): Promise<TierPayload | null> => createTier(communityId, { title: 'Tier', priceUsd: price });
 
 export const updatePrice = async (
-  _price: number,
-  _communityId: string,
-  _tierId: string,
-): Promise<Stripe.Price | null> => creatorTodo('Tier pricing');
+  price: number,
+  communityId: string,
+  tierId: string,
+): Promise<TierPayload | null> => updateTier(communityId, tierId, { priceUsd: price });
