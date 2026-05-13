@@ -6,6 +6,7 @@ import {
   validateUsernameFormat,
 } from '@backspace/usernames';
 
+import { sendWaitlistConfirmation } from '@src/lib/email';
 import { hashIp } from '@src/lib/hashIp';
 import prisma from '@src/lib/prisma';
 import { checkRateLimit, clientIp } from '@src/lib/rateLimit';
@@ -240,6 +241,26 @@ export default async function handler(
     prisma.waitlistEntry.count(),
   ]);
   const position = olderCount + 1;
+
+  // First-time signups get a confirmation email. Fire-and-forget so a
+  // Resend hiccup never blocks the success state. Returning users who
+  // re-submit (existing row) don't get re-emailed — avoids accidentally
+  // training people to expect a fresh email per visit.
+  if (!existing) {
+    const fwdHost = req.headers['x-forwarded-host'];
+    const host =
+      (typeof fwdHost === 'string' ? fwdHost : Array.isArray(fwdHost) ? fwdHost[0] : null) ??
+      req.headers.host ??
+      'backspacethat.com';
+    void sendWaitlistConfirmation({
+      to: emailRaw,
+      handle: usernameDisplay ?? usernameLower ?? null,
+      position,
+      total,
+      referralCode,
+      origin: host,
+    });
+  }
 
   return res.status(200).json({
     ok: true,

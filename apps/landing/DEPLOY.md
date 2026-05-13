@@ -35,7 +35,19 @@ swap the workspace filter.
 | --- | --- |
 | `DATABASE_URL` | Same Postgres as `apps/web`. Reservations land in the `WaitlistEntry` table; the social app's user-create flow reads it back. |
 | `IP_HASH_SALT` | Optional. Salt for the SHA-256 of submitter IPs stored in `WaitlistEntry.ipHash`. Defaults to a built-in string if unset; set a real value with `openssl rand -hex 16` so prod hashes aren't derivable from the source. **Server-only.** |
+| `RESEND_API_KEY` | **Server-only.** Resend API key for the confirmation email sent on first-time waitlist signup. Get one at https://resend.com/api-keys. If unset, the API still works — sends silently no-op with a console warning. |
+| `EMAIL_FROM` | Sender address for confirmation emails. Must be on a domain verified in Resend (https://resend.com/domains). Default `Backspace <hello@backspacethat.com>` — set this once you have a verified domain. Format: `"Display Name <local@verified-domain>"`. |
 | `NODE_ENV` | Set to `production` by Railway automatically. |
+
+### Resend setup (one-time)
+
+1. Sign up at https://resend.com and create a project.
+2. Verify the sending domain (DNS records: SPF / DKIM / DMARC). The Resend dashboard walks you through it.
+3. Generate an API key → set `RESEND_API_KEY` on the Railway service.
+4. Set `EMAIL_FROM` to an address on the verified domain (e.g. `hello@backspacethat.com`).
+5. Redeploy.
+
+Email is sent **fire-and-forget after a successful first-time signup** — repeat submits from the same email do not re-trigger the email. Failures are logged to Railway's stdout but do not surface to the user (the row is already saved).
 
 ## Domain
 
