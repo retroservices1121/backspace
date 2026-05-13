@@ -816,10 +816,34 @@ function Background() {
 // ─────────────────────────────────────────────────────────────────────
 export default function Home() {
   const [state, setState] = useState<SignupState | null>(null);
+  const [liveTotal, setLiveTotal] = useState<number | null>(null);
+
   // Hydrate localStorage after mount so the server-rendered HTML
   // doesn't mismatch with the client.
   useEffect(() => {
     setState(loadState());
+  }, []);
+
+  // Pull the real signup count for the meta line. Edge-cached for 30s
+  // so a viral hit doesn't fan out N queries. State stays null until
+  // the fetch resolves; the meta line hides until then to avoid a
+  // flash of "0 already on the list" before real data lands.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/stats');
+        if (!res.ok) return;
+        const json = (await res.json()) as { total?: number };
+        if (cancelled) return;
+        if (typeof json.total === 'number') setLiveTotal(json.total);
+      } catch {
+        // best-effort — leave liveTotal null and just don't render
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const reset = () => {
@@ -827,12 +851,26 @@ export default function Home() {
     setState(null);
   };
 
+  // What the meta line should show. After signup, the user's own row
+  // is reflected in state.total (returned from POST /api/waitlist).
+  // Otherwise use the live fetched count.
+  const totalForMeta = state ? state.total : liveTotal;
+
   return (
     <>
       <Background />
 
       <div className="topbar fade">
         <Logo />
+        <a
+          className="sicon"
+          href="https://x.com/backspacehq"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Backspace on X"
+        >
+          {Ic.xLogo()}
+        </a>
       </div>
 
       <main className="hero">
@@ -869,22 +907,28 @@ export default function Home() {
           <HeroForm onComplete={setState} />
         )}
 
-        <div className="meta-line fade d3">
-          <div className="avatars">
-            <span className="av" />
-            <span className="av" />
-            <span className="av" />
-            <span className="av" />
+        {totalForMeta !== null && (
+          <div className="meta-line fade d3">
+            <div className="avatars">
+              <span className="av" />
+              <span className="av" />
+              <span className="av" />
+              <span className="av" />
+            </div>
+            <span>
+              {totalForMeta === 0 ? (
+                <>Be the first to reserve a handle</>
+              ) : (
+                <>
+                  <b style={{ color: '#fff', fontWeight: 500 }}>
+                    {totalForMeta.toLocaleString()}
+                  </b>{' '}
+                  already on the list
+                </>
+              )}
+            </span>
           </div>
-          <span>
-            <b style={{ color: '#fff', fontWeight: 500 }}>
-              {state ? state.total.toLocaleString() : '32,847'}
-            </b>{' '}
-            already on the list
-          </span>
-          <span className="sep" />
-          <span>Backed by paradigm-class funds</span>
-        </div>
+        )}
       </main>
 
       <div className="ribbon">
@@ -914,11 +958,6 @@ export default function Home() {
 
       <footer>
         <div>© 2026 Backspace Labs · v0.4.2-beta</div>
-        <div className="socials">
-          <a className="sicon" href="#" aria-label="X">
-            {Ic.xLogo()}
-          </a>
-        </div>
       </footer>
 
       <div className="giant fill" aria-hidden="true">
