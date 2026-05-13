@@ -227,6 +227,10 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
     | { kind: 'invalid'; msg: string }
     | { kind: 'taken'; msg: string }
     | { kind: 'ok' }
+    // Local format passed but the availability endpoint didn't return
+    // (network error, 500, etc). We still let the user submit — the
+    // server revalidates on POST anyway and returns a clear 409.
+    | { kind: 'unknown' }
   >({ kind: 'empty' });
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -267,6 +271,12 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
           `/api/username/check?u=${encodeURIComponent(handle)}`,
           { signal: ctrl.signal },
         );
+        if (!res.ok) {
+          // Endpoint is up but errored — fall back to "unknown" so the
+          // user isn't locked out by a server-side hiccup.
+          if (!ctrl.signal.aborted) setCheckState({ kind: 'unknown' });
+          return;
+        }
         const json = (await res.json()) as CheckResponse;
         if (ctrl.signal.aborted) return;
         if (json.available) {
@@ -276,7 +286,9 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
         }
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
-        setCheckState({ kind: 'empty' });
+        // Network failure or JSON parse error — treat as unknown so
+        // the user can still submit; the server will re-validate.
+        setCheckState({ kind: 'unknown' });
       } finally {
         if (!ctrl.signal.aborted) setChecking(false);
       }
@@ -287,9 +299,15 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
     };
   }, [handle, formatCheck]);
 
-  const handleValid = checkState.kind === 'ok';
+  // Submit gate: local format must pass, email must be valid, and we
+  // must not have an *explicit* "taken/invalid" verdict from the API.
+  // A still-pending check or a failed check doesn't block — the server
+  // is the final arbiter on POST and will 409 if needed.
+  const localFormatOk = formatCheck?.ok === true;
+  const explicitlyBad =
+    checkState.kind === 'taken' || checkState.kind === 'invalid';
   const emailValid = validateEmail(email);
-  const canSubmit = handleValid && emailValid && !checking && !submitting;
+  const canSubmit = localFormatOk && !explicitlyBad && emailValid && !submitting;
 
   function toggleInterest(k: string) {
     setInterests((prev) => {
@@ -374,6 +392,13 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
         <span className="status ok">
           <span className="sdot" />
           available
+        </span>
+      );
+    if (checkState.kind === 'unknown')
+      return (
+        <span className="status checking">
+          <span className="sdot" />
+          format ok
         </span>
       );
     return null;
