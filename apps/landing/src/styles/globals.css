@@ -1007,7 +1007,42 @@ footer .socials {
   }
 }
 
-/* responsive */
+/* responsive
+   ──────────────────────────────────────────────────────────────────────
+   Two breakpoints:
+   - 768px: hide busy network nodes/tags so the form has breathing room,
+            bump input font-size to 16px so iOS Safari doesn't zoom on
+            focus.
+   - 520px: phone-sized — tighter padding, smaller headline, stacked
+            handle-card and climb rows, no giant wordmark.
+*/
+@media (max-width: 768px) {
+  /* Floating market-card backdrop is too dense for narrow viewports —
+     they were positioned by %-of-viewport so on a phone they end up
+     overlapping the form. Keep the grid + noise + spotlight. */
+  .net .node,
+  .net .tag {
+    display: none;
+  }
+  /* Prevent iOS Safari from zooming on input focus. 16px is the
+     minimum that suppresses the zoom. */
+  .field input {
+    font-size: 16px;
+  }
+  /* The card head's "Reserve your handle" + counter can collide at
+     narrow widths — let them stack. */
+  .card-head {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  /* Ribbon: trim the gap so the four pillars don't blow out. */
+  .ribbon {
+    gap: 18px;
+    padding: 18px 16px 8px;
+    margin-top: 40px;
+  }
+}
+
 @media (max-width: 520px) {
   .topbar {
     padding: 16px;
@@ -1015,10 +1050,50 @@ footer .socials {
   .hero {
     padding: 30px 18px 40px;
   }
+  .pill {
+    font-size: 11px;
+  }
+  h1.title {
+    font-size: clamp(36px, 9vw, 64px);
+    line-height: 1;
+    margin-top: 14px;
+  }
+  .subtitle {
+    margin-top: 16px;
+  }
+  .card {
+    padding: 18px;
+    margin-top: 24px;
+  }
   .ladder {
     grid-template-columns: 1fr;
   }
+  /* The "@handle / RESERVED" row gets cramped on phones — let the
+     tag drop under the handle if needed. */
+  .handle-card {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  /* "Each referral moves ~150 spots up" + two action chips on one
+     line is tight; stack them. */
+  .climb {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  /* Avatars stack feels a bit large on phones. */
+  .av {
+    width: 18px;
+    height: 18px;
+  }
+  /* Giant "backspace" watermark clamp lower bound is 140px which is
+     larger than the available width — it just creates visual noise
+     on phones. Hide it. */
+  .giant {
+    display: none;
+  }
   footer {
     padding: 18px;
+    font-size: 11px;
   }
 }
