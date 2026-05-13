@@ -115,18 +115,29 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
     usernameDisplay = normalizeUsername(usernameRaw);
   }
 
-  // If the caller already exists in the waitlist, treat this as an
-  // update — they may be back to claim a handle they didn't pick the
-  // first time. Re-claiming the same handle is a no-op.
-  const existing = await prisma.waitlistEntry.findUnique({
-    where: { email: emailRaw },
-  });
-  if (existing?.claimedAt) {
-    return res.status(409).json({
-      ok: false,
-      error: 'That email already has an account on Backspace.',
-      field: 'email',
+  // Idempotency: if this exact email + handle pair already has a row,
+  // return it as-is instead of inserting again. Covers double-submits
+  // and refresh-during-loading.
+  if (usernameLower) {
+    const dup = await prisma.waitlistEntry.findFirst({
+      where: { email: emailRaw, usernameLower },
+      select: { referralCode: true, createdAt: true },
     });
+    if (dup) {
+      const [olderCount, total] = await prisma.$transaction([
+        prisma.waitlistEntry.count({
+          where: { createdAt: { lt: dup.createdAt } },
+        }),
+        prisma.waitlistEntry.count(),
+      ]);
+      return res.status(200).json({
+        ok: true,
+        referralCode: dup.referralCode,
+        alreadyOnList: true,
+        position: olderCount + 1,
+        total,
+      });
+    }
   }
 
   if (usernameLower) {
@@ -161,7 +172,10 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
         field: 'username',
       });
     }
-    if (waitlistTaken && waitlistTaken.email !== emailRaw) {
+    if (waitlistTaken) {
+      // Either someone else has it (different email) or this caller
+      // already has it (handled by the dup-check above, so this is
+      // the someone-else branch).
       return res.status(409).json({
         ok: false,
         error: 'Someone else got it first.',
@@ -172,7 +186,7 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
 
   let referredById: bigint | null = null;
   if (referrerCode) {
-    const referrer = await prisma.waitlistEntry.findUnique({
+    const referrer = await prisma.waitlistEntry.findFirst({
       where: { referralCode: referrerCode },
       select: { id: true },
     });
@@ -180,14 +194,13 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
   }
 
   // Generate a referral code. Collision odds on an 8-char (28^8 ≈ 3.8e11)
-  // alphabet are negligible; one retry is a safety net not a strategy.
+  // alphabet are negligible.
   let referralCode = newReferralCode();
 
   let createdAt: Date;
   try {
-    const upserted = await prisma.waitlistEntry.upsert({
-      where: { email: emailRaw },
-      create: {
+    const created = await prisma.waitlistEntry.create({
+      data: {
         email: emailRaw,
         usernameLower: usernameLower ?? undefined,
         usernameDisplay: usernameDisplay ?? undefined,
@@ -196,52 +209,24 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
         ipHash: hashIp(ip),
         interests,
       },
-      update: {
-        // Only let an existing entry adopt a username if it didn't have
-        // one yet — preserves the original reservation if any.
-        ...(usernameLower && !existing?.usernameLower
-          ? { usernameLower, usernameDisplay }
-          : {}),
-        // Always merge in interests so a returning visitor can update
-        // their picks.
-        ...(interests.length > 0 ? { interests } : {}),
-      },
       select: { referralCode: true, createdAt: true },
     });
-    referralCode = upserted.referralCode;
-    createdAt = upserted.createdAt;
+    referralCode = created.referralCode;
+    createdAt = created.createdAt;
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === 'P2002'
     ) {
-      // Race on the username unique index. Retry once with the username
-      // dropped so the email still gets registered, then surface the
-      // conflict to the user.
-      try {
-        const fallback = await prisma.waitlistEntry.upsert({
-          where: { email: emailRaw },
-          create: {
-            email: emailRaw,
-            referralCode,
-            referredById: referredById ?? undefined,
-            ipHash: hashIp(ip),
-          },
-          update: {},
-          select: { referralCode: true },
-        });
-        return res.status(409).json({
-          ok: false,
-          error: 'Someone else got it first.',
-          field: 'username',
-        });
-      } catch {
-        return res
-          .status(500)
-          .json({ ok: false, error: 'Could not save. Try again.' });
-      }
+      // Race on the username unique index — someone else inserted the
+      // same handle between our pre-check and the create.
+      return res.status(409).json({
+        ok: false,
+        error: 'Someone else got it first.',
+        field: 'username',
+      });
     }
-    console.error('waitlist upsert failed', err);
+    console.error('waitlist create failed', err);
     return res
       .status(500)
       .json({ ok: false, error: 'Could not save. Try again.' });
@@ -257,30 +242,33 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
   ]);
   const position = olderCount + 1;
 
-  // First-time signups get a confirmation email. Fire-and-forget so a
-  // Resend hiccup never blocks the success state. Returning users who
-  // re-submit (existing row) don't get re-emailed — avoids accidentally
-  // training people to expect a fresh email per visit.
-  if (!existing) {
-    const fwdHost = req.headers['x-forwarded-host'];
-    const host =
-      (typeof fwdHost === 'string' ? fwdHost : Array.isArray(fwdHost) ? fwdHost[0] : null) ??
-      req.headers.host ??
-      'backspacethat.com';
-    void sendWaitlistConfirmation({
-      to: emailRaw,
-      handle: usernameDisplay ?? usernameLower ?? null,
-      position,
-      total,
-      referralCode,
-      origin: host,
-    });
-  }
+  // Every successful create gets a confirmation email — including
+  // additional handles the same email reserves. The idempotent
+  // dup-check path returned earlier, so we won't double-email on
+  // double-submit. Fire-and-forget so a Resend hiccup never blocks
+  // the success state.
+  const fwdHost = req.headers['x-forwarded-host'];
+  const host =
+    (typeof fwdHost === 'string'
+      ? fwdHost
+      : Array.isArray(fwdHost)
+      ? fwdHost[0]
+      : null) ??
+    req.headers.host ??
+    'wait.backspace.to';
+  void sendWaitlistConfirmation({
+    to: emailRaw,
+    handle: usernameDisplay ?? usernameLower ?? null,
+    position,
+    total,
+    referralCode,
+    origin: host,
+  });
 
   return res.status(200).json({
     ok: true,
     referralCode,
-    alreadyOnList: Boolean(existing),
+    alreadyOnList: false,
     position,
     total,
   });

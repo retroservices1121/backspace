@@ -84,12 +84,19 @@ handler
     }
     const user = await createUser(body);
     if (user) {
-      // Honor a matching waitlist reservation, if any. Best-effort —
-      // a failure here must not block the signup.
-      if (callerEmail) {
+      // Honor the matching waitlist reservation, if any. We only
+      // claim the one row whose email + handle both match the new
+      // User — leaves any other reservations under the same email
+      // (a person can reserve multiple handles) unclaimed so they
+      // can be claimed on future signups.
+      if (callerEmail && requestedUsernameLower) {
         try {
           await prisma.waitlistEntry.updateMany({
-            where: { email: callerEmail, claimedAt: null },
+            where: {
+              email: callerEmail,
+              usernameLower: requestedUsernameLower,
+              claimedAt: null,
+            },
             data: { claimedAt: new Date() },
           });
         } catch (e) {
