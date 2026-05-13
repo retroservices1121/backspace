@@ -255,7 +255,7 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
       ? fwdHost[0]
       : null) ??
     req.headers.host ??
-    'wait.backspace.to';
+    'waitlist.backspace.to';
   void sendWaitlistConfirmation({
     to: emailRaw,
     handle: usernameDisplay ?? usernameLower ?? null,

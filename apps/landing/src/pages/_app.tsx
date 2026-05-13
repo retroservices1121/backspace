@@ -7,7 +7,7 @@ import '../styles/globals.css';
 // Overridable per-environment in case the landing moves; default
 // matches the prod subdomain.
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://wait.backspace.to';
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://waitlist.backspace.to';
 const OG_IMAGE = `${SITE_URL}/og.png`;
 const DESCRIPTION =
   'The new social layer for markets. Reserve your handle before launch.';
@@ -35,7 +35,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:image:alt" content="Backspace — the new social layer for markets" />
 
         {/* Twitter / X Card. summary_large_image renders the OG image
-            as a hero card when wait.backspace.to/* URLs are shared. */}
+            as a hero card when waitlist.backspace.to/* URLs are shared. */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@backspacehq" />
         <meta name="twitter:creator" content="@backspacehq" />
