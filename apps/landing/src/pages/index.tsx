@@ -672,7 +672,7 @@ function NetworkBackdrop() {
       w: 160,
       h: 108,
       label: 'BTC/USD',
-      tint: 'linear-gradient(135deg,#FF8800,#5822FB)',
+      image: '/assets/thumbnails/btcusd.png',
       anim: 0,
     },
     {
@@ -681,7 +681,7 @@ function NetworkBackdrop() {
       w: 140,
       h: 140,
       label: 'Geopolitics',
-      tint: 'linear-gradient(135deg,#ff5470,#FF8800)',
+      image: '/assets/thumbnails/geopolitics.png',
       anim: 1,
     },
     {
@@ -690,7 +690,7 @@ function NetworkBackdrop() {
       w: 140,
       h: 160,
       label: 'Tech',
-      tint: 'linear-gradient(160deg,#1C70F5,#0EAD69)',
+      image: '/assets/thumbnails/tech.png',
       anim: 2,
     },
     {
@@ -699,7 +699,7 @@ function NetworkBackdrop() {
       w: 130,
       h: 170,
       label: 'Fed',
-      tint: 'linear-gradient(160deg,#5822FB,#1C70F5)',
+      image: '/assets/thumbnails/fed.png',
       anim: 3,
     },
     {
@@ -708,7 +708,7 @@ function NetworkBackdrop() {
       w: 120,
       h: 150,
       label: 'AI',
-      tint: 'linear-gradient(160deg,#0EAD69,#1C70F5)',
+      image: '/assets/thumbnails/ai.png',
       anim: 4,
     },
     {
@@ -717,7 +717,7 @@ function NetworkBackdrop() {
       w: 150,
       h: 118,
       label: 'Defense',
-      tint: 'linear-gradient(160deg,#1B263B,#5822FB)',
+      image: '/assets/thumbnails/defense.png',
       anim: 5,
     },
     {
@@ -726,7 +726,7 @@ function NetworkBackdrop() {
       w: 120,
       h: 100,
       label: 'Energy',
-      tint: 'linear-gradient(160deg,#FF8800,#ff5470)',
+      image: '/assets/thumbnails/energy.png',
       anim: 1,
     },
     {
@@ -735,7 +735,7 @@ function NetworkBackdrop() {
       w: 150,
       h: 130,
       label: 'Politics',
-      tint: 'linear-gradient(160deg,#ff5470,#5822FB)',
+      image: '/assets/thumbnails/politics.png',
       anim: 2,
     },
     {
@@ -744,7 +744,7 @@ function NetworkBackdrop() {
       w: 110,
       h: 96,
       label: 'Culture',
-      tint: 'linear-gradient(160deg,#5822FB,#0EAD69)',
+      image: '/assets/thumbnails/culture.png',
       anim: 0,
     },
   ];
@@ -807,8 +807,8 @@ function NetworkBackdrop() {
             transform: `rotate(${(i % 2 ? -1 : 1) * (1 + (i % 3))}deg)`,
           }}
         >
-          <div className="ph" />
-          <div className="tint" style={{ background: n.tint, opacity: 0.55 }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={n.image} alt="" loading="lazy" decoding="async" />
           <div className="lbl">{n.label}</div>
         </div>
       ))}
