@@ -40,37 +40,16 @@ handler.use(requireAuthMiddleware).get(async (req, res) => {
     return;
   }
 
-  // One email can have multiple reservations now — return the
-  // oldest unclaimed one with a handle, which is the most likely
-  // candidate for pre-filling the onboarding form. If everything's
-  // already claimed, fall back to the most recent.
-  const entry =
-    (await prisma.waitlistEntry.findFirst({
-      where: {
-        email: email.toLowerCase(),
-        claimedAt: null,
-        usernameLower: { not: null },
-      },
-      orderBy: { createdAt: 'asc' },
-      select: {
-        email: true,
-        usernameLower: true,
-        usernameDisplay: true,
-        claimedAt: true,
-        referralCode: true,
-      },
-    })) ??
-    (await prisma.waitlistEntry.findFirst({
-      where: { email: email.toLowerCase() },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        email: true,
-        usernameLower: true,
-        usernameDisplay: true,
-        claimedAt: true,
-        referralCode: true,
-      },
-    }));
+  const entry = await prisma.waitlistEntry.findUnique({
+    where: { email: email.toLowerCase() },
+    select: {
+      email: true,
+      usernameLower: true,
+      usernameDisplay: true,
+      claimedAt: true,
+      referralCode: true,
+    },
+  });
   if (!entry) {
     const body: WaitlistMeResponse = { found: false };
     res.json(body);

@@ -115,29 +115,43 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
     usernameDisplay = normalizeUsername(usernameRaw);
   }
 
-  // Idempotency: if this exact email + handle pair already has a row,
-  // return it as-is instead of inserting again. Covers double-submits
-  // and refresh-during-loading.
-  if (usernameLower) {
-    const dup = await prisma.waitlistEntry.findFirst({
-      where: { email: emailRaw, usernameLower },
-      select: { referralCode: true, createdAt: true },
-    });
-    if (dup) {
-      const [olderCount, total] = await prisma.$transaction([
-        prisma.waitlistEntry.count({
-          where: { createdAt: { lt: dup.createdAt } },
-        }),
-        prisma.waitlistEntry.count(),
-      ]);
-      return res.status(200).json({
-        ok: true,
-        referralCode: dup.referralCode,
-        alreadyOnList: true,
-        position: olderCount + 1,
-        total,
+  // One handle per email. If this email already has a row, return
+  // it as-is when the submitted handle matches (covers double-submit
+  // / refresh-during-loading), or 409 when they're trying to pick a
+  // different handle.
+  const existingForEmail = await prisma.waitlistEntry.findUnique({
+    where: { email: emailRaw },
+    select: {
+      referralCode: true,
+      createdAt: true,
+      usernameLower: true,
+    },
+  });
+  if (existingForEmail) {
+    if (
+      usernameLower &&
+      existingForEmail.usernameLower &&
+      existingForEmail.usernameLower !== usernameLower
+    ) {
+      return res.status(409).json({
+        ok: false,
+        error: `That email already reserved @${existingForEmail.usernameLower}.`,
+        field: 'email',
       });
     }
+    const [olderCount, total] = await prisma.$transaction([
+      prisma.waitlistEntry.count({
+        where: { createdAt: { lt: existingForEmail.createdAt } },
+      }),
+      prisma.waitlistEntry.count(),
+    ]);
+    return res.status(200).json({
+      ok: true,
+      referralCode: existingForEmail.referralCode,
+      alreadyOnList: true,
+      position: olderCount + 1,
+      total,
+    });
   }
 
   if (usernameLower) {
@@ -218,8 +232,18 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === 'P2002'
     ) {
-      // Race on the username unique index — someone else inserted the
-      // same handle between our pre-check and the create.
+      // Prisma sets meta.target to the violated constraint's column(s).
+      // Disambiguate: email collision (a concurrent request from the
+      // same email won the insert race) vs username collision.
+      const target = (err.meta as { target?: string[] } | undefined)?.target;
+      const hitEmail = Array.isArray(target) && target.includes('email');
+      if (hitEmail) {
+        return res.status(409).json({
+          ok: false,
+          error: 'That email already reserved a handle.',
+          field: 'email',
+        });
+      }
       return res.status(409).json({
         ok: false,
         error: 'Someone else got it first.',

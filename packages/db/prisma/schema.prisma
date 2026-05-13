@@ -92,15 +92,15 @@ model ReservedUser {
 model WaitlistEntry {
   id              BigInt          @id @default(autoincrement())
   uuid            String          @unique @default(uuid())
-  // Not unique — one email can reserve multiple handles. Each
-  // reservation is its own row. Uniqueness lives on usernameLower.
-  email           String
+  // One email = one handle. The unique constraint is enforced by the
+  // database and surfaced in the API as a friendly 409 on resubmit.
+  email           String          @unique
   usernameLower   String?         @unique
   usernameDisplay String?
   createdAt       DateTime        @default(now())
-  // Per-handle: stamped when this *specific* handle is used to
-  // create a User row in apps/web. Other reservations under the
-  // same email stay null and can be claimed later.
+  // Stamped when this handle is used to create a User row in
+  // apps/web. With one row per email, this also marks "this email
+  // has finished the funnel."
   claimedAt       DateTime?
   referralCode    String          @unique
   referredBy      WaitlistEntry?  @relation(name: "waitlistReferrer", fields: [referredById], references: [id])
@@ -111,8 +111,6 @@ model WaitlistEntry {
   // (e.g. ['markets','crypto','community','trading']). Used for
   // segmentation in launch comms.
   interests       String[]        @default([])
-
-  @@index([email])
 }
 // User connection and connection status (i.e. online vs offline)
 model Connections {

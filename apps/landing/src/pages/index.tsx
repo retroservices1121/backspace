@@ -551,13 +551,7 @@ function HeroForm({
 }
 
 // ─────────────────────────────────────────────────────────────────────
-function SuccessCard({
-  state,
-  onReserveAnother,
-}: {
-  state: SignupState;
-  onReserveAnother: () => void;
-}) {
+function SuccessCard({ state }: { state: SignupState }) {
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState('backspacethat.com');
 
@@ -635,14 +629,6 @@ function SuccessCard({
         <div className="climb fade d5">
           <span>
             Each referral moves you <b>~150 spots</b> up.
-          </span>
-          <span
-            className="mb"
-            onClick={onReserveAnother}
-            role="button"
-            tabIndex={0}
-          >
-            Reserve another handle
           </span>
         </div>
       </div>
@@ -929,10 +915,7 @@ export default function Home() {
         </p>
 
         {state ? (
-          <SuccessCard
-            state={state}
-            onReserveAnother={() => setState(null)}
-          />
+          <SuccessCard state={state} />
         ) : (
           <HeroForm onComplete={setState} referralCode={referralCode} />
         )}
