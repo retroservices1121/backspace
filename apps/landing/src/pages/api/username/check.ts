@@ -19,6 +19,22 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Available | Unavailable | { error: string }>,
 ) {
+  try {
+    return await run(req, res);
+  } catch (err) {
+    // Catch-all so a Prisma failure (missing DATABASE_URL, unreachable
+    // DB, etc.) returns structured JSON rather than Next's default 500
+    // HTML page — the client falls back to "unknown" on this status
+    // and still lets the user submit.
+    console.error('[username/check] unhandled error', err);
+    return res.status(500).json({ error: 'Check failed.' });
+  }
+}
+
+async function run(
+  req: NextApiRequest,
+  res: NextApiResponse<Available | Unavailable | { error: string }>,
+) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method not allowed' });

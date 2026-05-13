@@ -40,6 +40,21 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Ok | Err>,
 ) {
+  try {
+    return await run(req, res);
+  } catch (err) {
+    // Any uncaught error (notably Prisma failures from a missing
+    // DATABASE_URL or unreachable DB) — log it and respond with a
+    // structured JSON so the client surfaces "Could not save" instead
+    // of falling into the generic "Network error" catch.
+    console.error('[waitlist] unhandled error', err);
+    return res
+      .status(500)
+      .json({ ok: false, error: 'Could not save. Try again.' });
+  }
+}
+
+async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
