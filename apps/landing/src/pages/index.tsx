@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   REJECTION_COPY,
@@ -216,7 +217,13 @@ function Dots() {
 // ─────────────────────────────────────────────────────────────────────
 // Hero form. Live availability check is debounced 300ms; submit hits
 // POST /api/waitlist and stores the response in localStorage.
-function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
+function HeroForm({
+  onComplete,
+  referralCode,
+}: {
+  onComplete: (s: SignupState) => void;
+  referralCode: string | null;
+}) {
   const [handle, setHandle] = useState('');
   const [email, setEmail] = useState('');
   const [interests, setInterests] = useState<Set<string>>(
@@ -335,6 +342,9 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
           email: email.trim(),
           username: normalizeUsername(handle),
           interests: [...interests],
+          // Server normalises this; we just forward whatever the URL
+          // carried so the inviter gets credited on submit.
+          r: referralCode ?? undefined,
         }),
       });
       const json = (await res.json()) as SubmitResponse;
@@ -805,8 +815,26 @@ function Background() {
 
 // ─────────────────────────────────────────────────────────────────────
 export default function Home() {
+  const router = useRouter();
   const [state, setState] = useState<SignupState | null>(null);
   const [liveTotal, setLiveTotal] = useState<number | null>(null);
+
+  // Capture the referral code from either the dynamic path
+  // (/r/ABCDEFGH → query.code) or a `?r=ABCDEFGH` querystring on `/`.
+  // Normalise to uppercase alphanumeric so it matches the format the
+  // server expects, and cap at 16 chars defensively.
+  const rawCode = router.query.code ?? router.query.r;
+  const referralCode = useMemo(() => {
+    const v =
+      typeof rawCode === 'string'
+        ? rawCode
+        : Array.isArray(rawCode)
+        ? rawCode[0]
+        : null;
+    if (!v) return null;
+    const norm = v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+    return norm || null;
+  }, [rawCode]);
 
   // Hydrate localStorage after mount so the server-rendered HTML
   // doesn't mismatch with the client.
@@ -889,7 +917,7 @@ export default function Home() {
         {state ? (
           <SuccessCard state={state} />
         ) : (
-          <HeroForm onComplete={setState} />
+          <HeroForm onComplete={setState} referralCode={referralCode} />
         )}
 
         {totalForMeta !== null && (
