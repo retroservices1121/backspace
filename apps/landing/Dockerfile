@@ -17,7 +17,12 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 # package's manifest visible at install time.
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+# Only install what the landing app actually needs — @backspace/landing
+# plus its workspace dependencies (@backspace/db, @backspace/usernames)
+# plus their npm deps. Skips firebase/stripe/etc from apps/web, which
+# saves ~80% install time and shrinks the network surface area that
+# would otherwise occasionally trip on transient npm-registry hiccups.
+RUN pnpm install --frozen-lockfile --filter @backspace/landing...
 RUN pnpm --filter @backspace/db generate
 RUN pnpm --filter @backspace/landing build
 

@@ -16,7 +16,10 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 # at install time.
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+# Scope the install to @backspace/web and its workspace + npm deps.
+# Skips landing-only deps like resend, and avoids reinstalling deps for
+# apps/admin or apps/mobile that this service does not run.
+RUN pnpm install --frozen-lockfile --filter @backspace/web...
 RUN pnpm --filter @backspace/db generate
 RUN pnpm --filter @backspace/web build
 
