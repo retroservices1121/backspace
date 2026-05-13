@@ -95,6 +95,10 @@ model WaitlistEntry {
   referredById    BigInt?
   referred        WaitlistEntry[] @relation(name: "waitlistReferrer")
   ipHash          String?
+  // Free-form interest tags from the landing page chips
+  // (e.g. ['markets','crypto','community','trading']). Used for
+  // segmentation in launch comms.
+  interests       String[]        @default([])
 }
 // User connection and connection status (i.e. online vs offline)
 model Connections {

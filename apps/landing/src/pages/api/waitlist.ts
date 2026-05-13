@@ -11,8 +11,24 @@ import prisma from '@src/lib/prisma';
 import { checkRateLimit, clientIp } from '@src/lib/rateLimit';
 import { newReferralCode } from '@src/lib/referralCode';
 
-type Ok = { ok: true; referralCode: string; alreadyOnList: boolean };
+type Ok = {
+  ok: true;
+  referralCode: string;
+  alreadyOnList: boolean;
+  position: number;
+  total: number;
+};
 type Err = { ok: false; error: string; field?: 'email' | 'username' };
+
+// The four chip values the landing page exposes. Anything else gets
+// dropped silently — we don't want a misbehaving client to seed
+// arbitrary strings into the segmentation column.
+const ALLOWED_INTERESTS: ReadonlySet<string> = new Set([
+  'markets',
+  'crypto',
+  'community',
+  'trading',
+]);
 
 // Conservative email shape check. We don't try to be RFC-perfect — the
 // confirmation email is the real test of whether the address works.
@@ -40,12 +56,27 @@ export default async function handler(
       .json({ ok: false, error: 'Too many attempts. Try again later.' });
   }
 
-  const body = req.body as { email?: unknown; username?: unknown; r?: unknown };
+  const body = req.body as {
+    email?: unknown;
+    username?: unknown;
+    r?: unknown;
+    interests?: unknown;
+  };
   const emailRaw =
     typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const usernameRaw = typeof body.username === 'string' ? body.username : '';
   const referrerCode =
     typeof body.r === 'string' ? body.r.trim().toUpperCase() : '';
+  const interests = Array.isArray(body.interests)
+    ? Array.from(
+        new Set(
+          body.interests
+            .filter((x): x is string => typeof x === 'string')
+            .map((x) => x.trim().toLowerCase())
+            .filter((x) => ALLOWED_INTERESTS.has(x)),
+        ),
+      )
+    : [];
 
   if (!emailRaw || !EMAIL_REGEX.test(emailRaw) || emailRaw.length > EMAIL_MAX_LENGTH) {
     return res
@@ -136,6 +167,7 @@ export default async function handler(
   // alphabet are negligible; one retry is a safety net not a strategy.
   let referralCode = newReferralCode();
 
+  let createdAt: Date;
   try {
     const upserted = await prisma.waitlistEntry.upsert({
       where: { email: emailRaw },
@@ -146,6 +178,7 @@ export default async function handler(
         referralCode,
         referredById: referredById ?? undefined,
         ipHash: hashIp(ip),
+        interests,
       },
       update: {
         // Only let an existing entry adopt a username if it didn't have
@@ -153,10 +186,14 @@ export default async function handler(
         ...(usernameLower && !existing?.usernameLower
           ? { usernameLower, usernameDisplay }
           : {}),
+        // Always merge in interests so a returning visitor can update
+        // their picks.
+        ...(interests.length > 0 ? { interests } : {}),
       },
-      select: { referralCode: true },
+      select: { referralCode: true, createdAt: true },
     });
     referralCode = upserted.referralCode;
+    createdAt = upserted.createdAt;
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -194,9 +231,21 @@ export default async function handler(
       .json({ ok: false, error: 'Could not save. Try again.' });
   }
 
+  // Position = (rows older than this one) + 1. Total = all rows.
+  // Running them in a transaction keeps the two numbers consistent.
+  const [olderCount, total] = await prisma.$transaction([
+    prisma.waitlistEntry.count({
+      where: { createdAt: { lt: createdAt } },
+    }),
+    prisma.waitlistEntry.count(),
+  ]);
+  const position = olderCount + 1;
+
   return res.status(200).json({
     ok: true,
     referralCode,
     alreadyOnList: Boolean(existing),
+    position,
+    total,
   });
 }
