@@ -11,21 +11,27 @@ Create a new service in the same Railway project as `apps/web` and
 Next 12 — required because Next 12's TypeScript dependency check is
 incompatible with current `@types/react` packages).
 
+The repo ships a parameterized `railpack.json` at the root. It pins
+Node + pnpm and uses an `$APP_FILTER` env var so the same config works
+for every Railway service in this monorepo (web / landing / admin).
+
 | Setting | Value |
 | --- | --- |
-| Root directory | repo root (the monorepo) |
-| Build command | `pnpm install --frozen-lockfile && pnpm --filter @backspace/db generate && pnpm --filter @backspace/landing build` |
-| Start command | `pnpm --filter @backspace/landing start` |
-| Watch paths | `apps/landing/**`, `packages/db/**`, `packages/usernames/**` |
+| Root directory | `/` — repo root. **Must not** be `apps/landing/` (pnpm needs `pnpm-workspace.yaml` at root and can't see workspace siblings otherwise). |
+| Install / Build / Start commands | **Leave blank.** `railpack.json` provides them. |
+| Watch paths | `apps/landing/**`, `packages/**` |
 | Port | `3001` (or set `PORT` env and Next will pick it up) |
+| Env var: `APP_FILTER` | `@backspace/landing` — tells `railpack.json` which workspace package to build/start. |
 
-If Railway auto-detects pnpm workspaces, the build command may
-simplify — adjust based on what the dashboard reports.
+The web and admin services would use the same `railpack.json` with
+`APP_FILTER=@backspace/web` and `APP_FILTER=@backspace/admin`
+respectively.
 
 ## Environment variables
 
 | Var | Notes |
 | --- | --- |
+| `APP_FILTER` | `@backspace/landing`. Tells `railpack.json` what to build/run. Mandatory — without it the parameterized command fails. |
 | `DATABASE_URL` | Same Postgres as `apps/web`. Reservations land in the `WaitlistEntry` table; the social app's user-create flow reads it back. |
 | `IP_HASH_SALT` | Optional. Salt for the SHA-256 of submitter IPs stored in `WaitlistEntry.ipHash`. Defaults to a built-in string if unset; set a real value with `openssl rand -hex 16` so prod hashes aren't derivable from the source. **Server-only.** |
 | `NODE_ENV` | Set to `production` by Railway automatically. |
