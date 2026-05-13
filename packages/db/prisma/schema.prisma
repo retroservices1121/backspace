@@ -1,8 +1,15 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearch", "fullTextIndex"]
+  // `native` picks up the local dev machine (Windows/Mac/etc) and
+  // `debian-openssl-3.0.x` is what the production Docker image runs
+  // (node:22-bookworm-slim = Debian 12 = OpenSSL 3). Without the
+  // explicit target, Prisma 5.x copied an OpenSSL 1.1 binary that
+  // bookworm-slim can't load (libssl.so.1.1: cannot open shared
+  // object file).
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 // Commented out because Vercel cannot handle
 // generator erd {
