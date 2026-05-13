@@ -541,15 +541,7 @@ function HeroForm({ onComplete }: { onComplete: (s: SignupState) => void }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-function SuccessCard({
-  state,
-  setState,
-  reset,
-}: {
-  state: SignupState;
-  setState: React.Dispatch<React.SetStateAction<SignupState | null>>;
-  reset: () => void;
-}) {
+function SuccessCard({ state }: { state: SignupState }) {
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState('backspacethat.com');
 
@@ -559,25 +551,6 @@ function SuccessCard({
   }, []);
 
   const refUrl = `${origin}/r/${state.referralCode}`;
-
-  // "Simulate referral" is intentionally still a client-only nudge —
-  // the real-position update arrives next time we POST /api/waitlist
-  // with this user's referral code consumed.
-  const climb = () => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const n: SignupState = {
-        ...prev,
-        referrals: prev.referrals + 1,
-        position: Math.max(
-          1,
-          prev.position - Math.floor(120 + Math.random() * 180),
-        ),
-      };
-      saveState(n);
-      return n;
-    });
-  };
 
   const copy = () => {
     navigator.clipboard?.writeText('https://' + refUrl);
@@ -647,14 +620,6 @@ function SuccessCard({
           <span>
             Each referral moves you <b>~150 spots</b> up.
           </span>
-          <div className="moves">
-            <span className="mb" onClick={climb}>
-              Simulate referral
-            </span>
-            <span className="mb" onClick={reset}>
-              Start over
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -871,11 +836,6 @@ export default function Home() {
     };
   }, []);
 
-  const reset = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setState(null);
-  };
-
   // What the meta line should show. After signup, the user's own row
   // is reflected in state.total (returned from POST /api/waitlist).
   // Otherwise use the live fetched count.
@@ -927,7 +887,7 @@ export default function Home() {
         </p>
 
         {state ? (
-          <SuccessCard state={state} setState={setState} reset={reset} />
+          <SuccessCard state={state} />
         ) : (
           <HeroForm onComplete={setState} />
         )}

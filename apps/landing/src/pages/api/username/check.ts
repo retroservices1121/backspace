@@ -96,7 +96,7 @@ async function run(
     return res.status(200).json({
       available: false,
       reason: 'reserved',
-      message: 'Someone else got there first.',
+      message: 'Someone else got it first.',
     });
   }
 

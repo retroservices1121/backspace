@@ -164,7 +164,7 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
     if (waitlistTaken && waitlistTaken.email !== emailRaw) {
       return res.status(409).json({
         ok: false,
-        error: 'Someone else just claimed that username.',
+        error: 'Someone else got it first.',
         field: 'username',
       });
     }
@@ -232,7 +232,7 @@ async function run(req: NextApiRequest, res: NextApiResponse<Ok | Err>) {
         });
         return res.status(409).json({
           ok: false,
-          error: 'Someone else just claimed that username.',
+          error: 'Someone else got it first.',
           field: 'username',
         });
       } catch {
