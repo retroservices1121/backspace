@@ -3,7 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MediaUse } from '@prisma/client';
 import { useAxios } from '@src/hooks/useAxios';
 import useUser from '@src/hooks/useUser';
@@ -18,25 +18,42 @@ import { RootState,  useAppSelector } from 'store/store';
 import { OnboardingFields, OnboardingFormState } from 'types/auth';
 
 export const useOnboarding = () => {
-  const axios = useAxios(); 
+  const axios = useAxios();
   const { user } = useUser();
   const auth  = useAppSelector((state: RootState) => state.auth);
   const [isOnboarded, setIsOnboarded] = useState<boolean>(user?.state?.onboarded);
+  const [reservedUsername, setReservedUsername] = useState<string | null>(null);
+
+  // If this email pre-claimed a username on the landing-page waitlist,
+  // surface it so the form can pre-fill. The check endpoint already
+  // treats the caller's own reservation as available, so they can submit
+  // it without a conflict.
+  useEffect(() => {
+    if (!auth?.authId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await axios.get('waitlist/me');
+        if (cancelled) return;
+        if (data?.found && data.username) {
+          setReservedUsername(data.username);
+        }
+      } catch {
+        // Anonymous, or no Privy email — nothing to pre-fill.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth?.authId]);
 
   const checkUsername = async (username: string) => {
-    const func1 = axios.get(`user?username=${username}`);
-    const func2 = axios.get(`reserveduser?username=${username}`);
-    
-    const userResult = (await func1).data;
-    const reservedResult = (await func2).data;
-    const available = userResult.id ? userResult.id === user.id : true;
-    const isReserved = reservedResult ? reservedResult.length > 0 : false;
-
-    if (!available || isReserved) {
-      return false;
-    } else {
-      return true;
-    }
+    // /api/waitlist/check is the consolidated check: format + User table
+    // + ReservedUser + WaitlistEntry (excluding caller's own reservation).
+    const { data } = await axios.get(
+      `waitlist/check?u=${encodeURIComponent(username)}`,
+    );
+    return Boolean(data?.available);
   };
 
   const submitOnboarding = async (formState: OnboardingFormState) => {
@@ -123,5 +140,6 @@ export const useOnboarding = () => {
     isOnboarded,
     checkUsername,
     submit: submitOnboarding,
+    reservedUsername,
   };
 };

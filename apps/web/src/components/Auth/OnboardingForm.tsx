@@ -47,12 +47,23 @@ const INITIAL_STATE: OnboardingFormState = {
   [OnboardingFields.DateOfBirth]: null,
 };
 
-const OnboardingForm: FormType<OnboardingFormState> = ({
+type OnboardingFormProps = Parameters<FormType<OnboardingFormState>>[0] & {
+  initialUsername?: string | null;
+};
+
+const OnboardingForm = ({
   onSubmit,
-}) => (
+  initialUsername,
+}: OnboardingFormProps) => (
   <Formik
     onSubmit={onSubmit}
-    initialValues={INITIAL_STATE}
+    initialValues={{
+      ...INITIAL_STATE,
+      ...(initialUsername
+        ? { [OnboardingFields.Username]: initialUsername }
+        : {}),
+    }}
+    enableReinitialize
     validationSchema={OnboardingSchema}
   >
     <Form>

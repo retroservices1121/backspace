@@ -83,6 +83,7 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
 
       <OnboardingForm
         onSubmit={handleSubmitOnboarding}
+        initialUsername={onboard.reservedUsername}
       />
     </>
   );

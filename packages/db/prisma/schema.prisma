@@ -76,8 +76,25 @@ model User {
 // used to mark a username as taken/forbidden without creating a full user
 model ReservedUser {
   id                   BigInt          @id @unique @default(autoincrement())
-  uuid                 String          @unique @default(uuid()) 
+  uuid                 String          @unique @default(uuid())
   username             String          @unique
+}
+// Pre-launch waitlist. One row per email. `usernameLower` is the
+// case-folded reservation; a real User row created later with the same
+// email + username flips `claimedAt`. Referral graph is kept in-table.
+model WaitlistEntry {
+  id              BigInt          @id @default(autoincrement())
+  uuid            String          @unique @default(uuid())
+  email           String          @unique
+  usernameLower   String?         @unique
+  usernameDisplay String?
+  createdAt       DateTime        @default(now())
+  claimedAt       DateTime?
+  referralCode    String          @unique
+  referredBy      WaitlistEntry?  @relation(name: "waitlistReferrer", fields: [referredById], references: [id])
+  referredById    BigInt?
+  referred        WaitlistEntry[] @relation(name: "waitlistReferrer")
+  ipHash          String?
 }
 // User connection and connection status (i.e. online vs offline)
 model Connections {
