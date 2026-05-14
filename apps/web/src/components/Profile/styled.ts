@@ -64,13 +64,15 @@ export const ProfileContent = styled(Layout)`
   padding: 10px;
 `;
 
-export const ProfileImage = styled.div`
+// $org squares off the frame (matching the Avatar's 10% radius) so an
+// ORG account's square avatar isn't ringed by a leftover circle.
+export const ProfileImage = styled.div<{ $org?: boolean }>`
   position: absolute;
   top: calc(${bannerHeight}/3);
   left: 10%;
   border: 5px solid var(--backgroundLight);
   box-sizing: border-box;
-  border-radius: 50%;
+  border-radius: ${({ $org }) => ($org ? '10%' : '50%')};
   object-fit: cover;
 `;
 

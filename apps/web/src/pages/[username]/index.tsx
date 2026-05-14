@@ -178,7 +178,7 @@ function Profile() {
      <Container key={`profile-${profileUsername}`}>
        <ProfileContent>
          <Banner img={banner} key={`banner-for-${profileUsername}`}>
-           <ProfileImage>
+           <ProfileImage $org={profile.accountType === 'ORG'}>
              <Avatar
                type={AvatarTypes.Profile}
                size={170}
