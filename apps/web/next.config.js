@@ -1,5 +1,16 @@
+// Workspace packages ship raw TypeScript via `main: ./src/index.ts`.
+// Next 12 doesn't transpile node_modules by default, so imports of
+// @backspace/* hit webpack as untyped TS and fail to parse. Next 13.1
+// added `transpilePackages` natively; for 12 we need this shim.
+const withTM = require('next-transpile-modules')([
+  '@backspace/auth',
+  '@backspace/db',
+  '@backspace/markets',
+  '@backspace/usernames',
+]);
+
 /** @type {import('next').NextConfig} */
-module.exports = {
+module.exports = withTM({
   reactStrictMode: true,
 
   // Next 12's verifyTypeScriptSetup tries to require.resolve(
@@ -45,4 +56,4 @@ module.exports = {
     }
     return config;
   },
-};
+});
