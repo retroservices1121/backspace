@@ -3,7 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icons from 'icons';
 
 import { legacyFirebasePathToURL } from '@src/api2/storage';
@@ -28,20 +28,28 @@ const UploadPfp: Input<File, Props> = ({
 }) => { 
   const fileUploadRef = useRef<HTMLInputElement>(null);
 
-  //Show current profile image if available
+  //Show current profile image if available. Resolve in an effect —
+  //doing it in the render body kicked off an async setState on every
+  //render, which loops and freezes the page.
   const [previewURL, setPreviewURL] = useState('');
-  if (preview) legacyFirebasePathToURL(preview).then((str) => setPreviewURL(str));
-
   useEffect(() => {
-    if (preview) legacyFirebasePathToURL(preview).then((str) => {
-      setPreviewURL(str);
-    });
+    if (preview) legacyFirebasePathToURL(preview).then(setPreviewURL);
   }, [preview]);
+
+  // Blob URL for the just-picked file. Memoized + revoked so we don't
+  // mint (and leak) a fresh object URL on every render.
+  const objectUrl = useMemo(
+    () => (value ? URL.createObjectURL(value) : ''),
+    [value],
+  );
+  useEffect(() => () => {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  }, [objectUrl]);
 
   return (
     <Container $direction="column" $center>
-      {value || previewURL ? (
-        <img src={value ? URL.createObjectURL(value) : previewURL} />
+      {objectUrl || previewURL ? (
+        <img src={objectUrl || previewURL} />
       ) : (
         <Flex $direction="column" $center>
           <Icon $solid as={CameraIcon}/>
