@@ -31,10 +31,16 @@ export const AttachButton = styled.button`
   svg {
     width: 20px;
     height: 20px;
+    /* upload.svg is a stroke-based icon (fill="none") and ships with an
+       invalid stroke="current" — without an explicit stroke here it
+       draws nothing and the button looks empty. */
+    fill: none;
+    stroke: ${({ theme }) => theme.primary};
   }
 
   &:hover {
     background-color: ${({ theme }) => theme.backgroundLight};
+    svg { stroke: ${({ theme }) => theme.fontFocus}; }
   }
 `;
 
