@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ReactLoading from 'react-loading';
 import { useSelector } from 'react-redux';
 import useMedia from '@src/hooks/useMedia';
 import useUser from '@src/hooks/useUser';
@@ -55,9 +54,9 @@ export const NavButtons = ({ toggleCreatePost, createPostOpen, path }: any) => {
       </>
       <Link href={APP.PROFILE.USERNAME(user.username)}>
         <NavButton selected={path === APP.PROFILE.USERNAME(user.username)} selectedColor='primary'>
-          {avatar != undefined 
-            ? <Avatar src={avatar || placeholderProfile} alt="me" />
-            : <ReactLoading width={20} height={20} type="spinningBubbles"/>}
+          {/* Always render the avatar; fall back to the placeholder
+              while it resolves or if it can't. Never an endless spinner. */}
+          <Avatar src={avatar || placeholderProfile} alt="me" />
         </NavButton>
       </Link>
     </Row>

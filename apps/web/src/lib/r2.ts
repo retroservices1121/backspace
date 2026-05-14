@@ -48,7 +48,12 @@ export function r2Bucket(): string {
 }
 
 export function r2PublicOrigin(): string {
-  const origin = process.env.R2_PUBLIC_URL;
+  // The read origin is a public CDN URL, not a secret — and media URLs
+  // are built in the browser (useMedia -> mediaToURL), so it MUST be
+  // available client-side. Server-only R2_PUBLIC_URL is undefined in
+  // the bundle; prefer the NEXT_PUBLIC_ copy, fall back for SSR/API.
+  const origin =
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? process.env.R2_PUBLIC_URL;
   if (!origin) throw new Error('R2_PUBLIC_URL not configured');
   return origin.replace(/\/$/, '');
 }

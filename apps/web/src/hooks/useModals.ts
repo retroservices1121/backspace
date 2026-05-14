@@ -3,8 +3,10 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import { toggleDrawer, togglePostModal, toggleSubscribeModal } from 'store/appSlice';
+import { toggleDrawer, toggleSubscribeModal } from 'store/appSlice';
+import { toggleModal } from 'store/modalSlice';
 import { useAppDispatch } from 'store/store';
+import { Modals } from 'utils/constants';
 
 // TODO Will become the new modal
 export default function useModals() {
@@ -13,7 +15,11 @@ export default function useModals() {
 
   return {
     toggleDrawer: () => dispatch(toggleDrawer()),
-    togglePost: () => dispatch(togglePostModal()),
-    toggleSubscribe: () => dispatch(toggleSubscribeModal()), 
+    // The CreatePost modal lives in the new modalSlice system (registered
+    // by components/CreatePost/index.tsx via useRegisterModal). The old
+    // appSlice.postModalOpen flag this used to dispatch was a dead end —
+    // nothing rendered the composer off it, so the FAB did nothing.
+    togglePost: () => dispatch(toggleModal(Modals.CreatePost, true)),
+    toggleSubscribe: () => dispatch(toggleSubscribeModal()),
   };
 }
