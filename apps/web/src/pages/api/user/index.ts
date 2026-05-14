@@ -9,13 +9,18 @@ import { normalizeUsername } from '@backspace/usernames';
 import prisma from '@src/api2/prisma';
 import { createUser, getUserByAuthId, getUserById, getUserByUsername, updateUser } from '@src/api2/user';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
-import { isDevelopment } from '@src/utils/common_utils';
 import { resolve } from 'path';
 
 const PRIVY_CFG = {
   appId: process.env.PRIVY_APP_ID!,
   appSecret: process.env.PRIVY_APP_SECRET!,
 };
+
+// Official accounts every new user auto-follows on signup so they get
+// product updates in their feed from day one. Resolved by username at
+// signup time, so a handle that hasn't onboarded yet is just skipped.
+// Keep in sync with packages/db/scripts/backfill-auto-follows.cjs.
+const AUTO_FOLLOW_USERNAMES = ['jp', 'backspace'];
 
 // Body of PATCH /api/user — every field optional. The handler only writes
 // the keys the caller actually sent, so the form can submit any subset.
@@ -138,18 +143,22 @@ handler
         console.error(`Failed to create billing doc ${error}`);
       }
 
-      //Add founder follows
+      // Auto-follow the official accounts. Users can unfollow manually
+      // from the profile page afterwards — this only seeds the follow
+      // at signup, it is not enforced.
       try { // in a try-catch since not vital
-        const faizId = isDevelopment() ? 10 : undefined;
-        const dylanId = isDevelopment() ? 37 : undefined;
-        await prisma.follow.createMany({
-          data: [
-            { followerId: user.id, accountId: faizId },
-            { followerId: user.id, accountId: dylanId },
-          ],
+        const officialAccounts = await prisma.user.findMany({
+          where: { username: { in: AUTO_FOLLOW_USERNAMES } },
+          select: { id: true },
         });
+        const follows = officialAccounts
+          .filter((account) => account.id !== user.id)
+          .map((account) => ({ followerId: user.id, accountId: account.id }));
+        if (follows.length > 0) {
+          await prisma.follow.createMany({ data: follows, skipDuplicates: true });
+        }
       } catch (error) {
-        console.warn('Failed to autofollow founders');
+        console.warn('Failed to auto-follow official accounts');
         console.error(error);
       }
 
