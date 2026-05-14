@@ -828,10 +828,30 @@ function Background() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Looping marquee of recently-reserved handles. CSS animates the track
+// from 0 → -50%; duplicating the list inside the track makes the seam
+// invisible (when the first copy scrolls fully out, the second copy
+// is exactly where the first one started).
+function HandleMarquee({ handles }: { handles: string[] }) {
+  const doubled = [...handles, ...handles];
+  return (
+    <div className="marquee fade d3" aria-hidden="true">
+      <div className="marquee-track">
+        {doubled.map((h, i) => (
+          <span key={i} className="marquee-pill">
+            @{h}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [state, setState] = useState<SignupState | null>(null);
   const [liveTotal, setLiveTotal] = useState<number | null>(null);
+  const [recentHandles, setRecentHandles] = useState<string[]>([]);
 
   // Capture the referral code from either the dynamic path
   // (/r/ABCDEFGH → query.code) or a `?r=ABCDEFGH` querystring on `/`.
@@ -866,9 +886,14 @@ export default function Home() {
       try {
         const res = await fetch('/api/stats');
         if (!res.ok) return;
-        const json = (await res.json()) as { total?: number };
+        const json = (await res.json()) as {
+          total?: number;
+          recentHandles?: string[];
+        };
         if (cancelled) return;
         if (typeof json.total === 'number') setLiveTotal(json.total);
+        if (Array.isArray(json.recentHandles))
+          setRecentHandles(json.recentHandles);
       } catch {
         // best-effort — leave liveTotal null and just don't render
       }
@@ -958,6 +983,10 @@ export default function Home() {
               )}
             </span>
           </div>
+        )}
+
+        {recentHandles.length >= 4 && (
+          <HandleMarquee handles={recentHandles} />
         )}
       </main>
 
