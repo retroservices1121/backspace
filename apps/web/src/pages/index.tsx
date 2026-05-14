@@ -38,6 +38,9 @@ export const APP = {
   COMMUNITY: {
     INDEX: `${baseRoute}/community`,
   },
+  PORTFOLIO: {
+    INDEX: `${baseRoute}/portfolio`,
+  },
   SETTINGS: {
     INDEX: settingsRoute,
     ACCOUNT: `${settingsRoute}/account`,

@@ -44,6 +44,11 @@ export const NavButtons = ({ toggleCreatePost, createPostOpen, path }: any) => {
           <Icons.Chat active={path === APP.MESSAGES.INDEX} />
         </NavButton>
       </Link>
+      <Link href={APP.PORTFOLIO.INDEX}>
+        <NavButton color='backgroundLight' selected={path === APP.PORTFOLIO.INDEX} selectedColor='primary'>
+          <Icons.Portfolio active={path === APP.PORTFOLIO.INDEX} />
+        </NavButton>
+      </Link>
       <>
         <NavButton color='backgroundLight'
           selected={openNotifications} selectedColor='primary'

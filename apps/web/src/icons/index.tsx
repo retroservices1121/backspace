@@ -21,6 +21,7 @@ import MenuIcon from 'icons/menu.svg';
 import MessageIcon from 'icons/message-dots.svg';
 import MoonIcon from 'icons/moon.svg';
 import BellIcon from 'icons/notification/bell.svg';
+import PortfolioIcon from 'icons/briefcase.svg';
 import PlusIcon from 'icons/plus.svg';
 import PlusBoxIcon from 'icons/plus-box.svg';
 import PostIcon from 'icons/post.svg';
@@ -155,6 +156,7 @@ class Icons {
   static Bell       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(BellIcon, option);
   static Plus       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(PlusIcon, option);
   static PlusBox    = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(PlusBoxIcon, option);
+  static Portfolio  = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(PortfolioIcon, option);
   static Post       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(PostIcon, option);
   static Refresh    = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(RefreshIcon, option);
   static Send       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(SendIcon, option);
