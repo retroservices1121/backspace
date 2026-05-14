@@ -35,6 +35,9 @@ type Props = {
     side: Side;
     shares: string;
   }) => Promise<void> | void;
+  // Trade-gating UI injected by the connector (PostMarketCard /
+  // CatalogMarketCard) — keeps MarketCard presentational and Privy-free.
+  readinessSlot?: React.ReactNode;
 };
 
 function pct(p: string | null) {
@@ -60,6 +63,7 @@ export function MarketCard({
   walletConnected,
   walletBalanceUsd,
   onTrade,
+  readinessSlot,
 }: Props) {
   const [selectedOutcome, setSelectedOutcome] = useState(market.outcomes[0]?.externalId);
   const [side, setSide] = useState<Side>('BUY');
@@ -184,6 +188,8 @@ export function MarketCard({
           </span>
           <span>max payout: ${maxPayout}</span>
         </div>
+
+        {readinessSlot}
 
         <button
           onClick={handleSubmit}

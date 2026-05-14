@@ -19,6 +19,7 @@ export enum Tabs {
   Appearance = 'Appearance',
   Billing = 'Billing',
   Creator = 'Creator',
+  Wallet = 'Wallet',
 }
 
 export type SettingOption = {
@@ -66,6 +67,12 @@ export const Settings = {
     title: 'Creator',
     description: 'Activate and edit your community.',
     icon: CommunityIcon,
+    iconFill: true,
+  },
+  Wallet: {
+    title: 'Wallet',
+    description: 'Fund your trading wallet and enable markets.',
+    icon: BillingIcon,
     iconFill: true,
   },
 };

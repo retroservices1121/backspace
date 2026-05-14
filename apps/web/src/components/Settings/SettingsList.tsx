@@ -15,7 +15,7 @@ type Props = {
 };
 
 const SettingsList: React.FC<Props> = ({ activeTab, setActive }) => {
-  const list = [Tabs.Account, Tabs.Notifications, Tabs.Security,  Tabs.Appearance, Tabs.Billing, Tabs.Creator];
+  const list = [Tabs.Account, Tabs.Notifications, Tabs.Security,  Tabs.Appearance, Tabs.Billing, Tabs.Creator, Tabs.Wallet];
 
   const generateSettingsOptions = () => {
     return list.map((value) => {
