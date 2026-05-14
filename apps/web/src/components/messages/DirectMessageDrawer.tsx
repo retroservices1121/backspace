@@ -10,6 +10,7 @@ import ConversationItem from 'components/ConversationList';
 import Drawer from 'components/Drawer';
 import Icons from 'icons';
 import { ClickableSpan } from 'styles/Buttons';
+import constants from 'styles/Globals';
 import { Space } from 'styles/layout';
 import { Conversation } from 'types/prisma';
 
@@ -18,7 +19,9 @@ export default function DirectMessageDrawer() {
 
   const handleConversationClick = (id: bigint) => () => {
     actions.changeConversation(id);
-    if (window.innerWidth <= 760) {
+    // Below the sm breakpoint the drawer is a fixed overlay — close it
+    // on selection so the conversation pane is visible.
+    if (window.innerWidth <= parseInt(constants.SMALLSCREEN_WIDTH, 10)) {
       actions.toggleDrawer();
     }
   };

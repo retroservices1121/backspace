@@ -21,9 +21,13 @@ const constants = {
   DRAWER_WIDTH: '362px',
   DRAWER_TAB: '20px',
 
-  // Screen Sizing Thresholds
-  SMALLSCREEN_WIDTH: '450px',
-  MEDIUMSCREEN_WIDTH: '750px',
+  // Screen Sizing Thresholds — kept numerically aligned with Tailwind's
+  // `sm`/`md` screens (tailwind.config.js) so the styled-components and
+  // Tailwind halves of the app agree on where "mobile" ends. Tailwind's
+  // `sm:` is min-width 640 ("640 and up"); our mediaQuery.sm is
+  // max-width 640 ("below 640") — complementary at the same line.
+  SMALLSCREEN_WIDTH: '640px',
+  MEDIUMSCREEN_WIDTH: '768px',
 };
 
 const BaseIcon = styled.svg<SVGProps>`
@@ -74,9 +78,12 @@ export const LargeIcon = styled(Icon)`
 `;
 
 
+// Aligned with Tailwind's `sm`/`md` screen values (see tailwind.config.js).
+// Keep these in sync — divergence silently breaks any view that mixes a
+// Tailwind responsive class with a styled-component mediaQuery override.
 const breakPoints = {
-  sm: '450px',
-  md: '750px',
+  sm: '640px',
+  md: '768px',
 };
 
 export const disableScrollbar = css`

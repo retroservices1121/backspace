@@ -9,6 +9,7 @@ import useUser from '@src/hooks/useUser';
 
 import useCommunity from 'hooks/entities/useCommunities';
 import useModals from 'hooks/useModals';
+import constants from 'styles/Globals';
 
 import ChannelItem from './ChannelItem';
 import CreateChannelModal from './CreateChannel';
@@ -31,7 +32,9 @@ const ChannelList: React.VFC<Props> = () => {
           locked={ch.readPermission > role}
           active={ch.uuid === channel?.uuid}
           handler={() => {
-            if (window.innerWidth <= 760) {
+            // Below the sm breakpoint the drawer is a fixed overlay —
+            // close it on selection so the channel feed is visible.
+            if (window.innerWidth <= parseInt(constants.SMALLSCREEN_WIDTH, 10)) {
               toggleDrawer();
             }
             changeChannel(ch.uuid);

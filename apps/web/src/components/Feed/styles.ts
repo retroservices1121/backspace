@@ -18,8 +18,7 @@ export const Container = styled(OldRow)`
   overflow-y: auto;
   ${disableScrollbar};
   ${mediaQuery.sm} {
-    justify-content: start;
-    width: fit-content;
+    width: 100%;
   };
 `;
 
@@ -33,6 +32,9 @@ export const FeedContainer = styled.div`
   ${mediaQuery.sm} {
     width: 100%;
     max-width: 100vw;
+    // Drop the desktop min-width so the feed can shrink to the
+    // viewport instead of forcing horizontal scroll on phones.
+    min-width: 0;
   }
 `;
 

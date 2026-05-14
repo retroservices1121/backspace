@@ -9,6 +9,13 @@ export const Layout = styled(OldRow)`
   width: 100%;
   max-width: 1080px;
   margin: 0px auto;
+  // On phones the side drawer goes position:fixed, so the content
+  // should top-/left-align and run full width rather than sit
+  // vertically centered in a desktop-proportioned row.
+  ${mediaQuery.sm} {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
 `;
 
 // Actually need to decide/figure out what are some good sizes, this is a placeholder

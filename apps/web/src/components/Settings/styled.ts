@@ -74,11 +74,14 @@ export const OptionBlock = styled.div<Props>`
 /** BILLING */
 export const PaymentContainer = styled(OldCol)`
   width: 300px;
+  // Shrink to fit narrow viewports instead of forcing horizontal
+  // scroll; still caps at 300px on desktop.
+  max-width: 100%;
   height: 129px;
   border: 1px solid ${({ theme }) => theme.backgroundLight};
   border-radius: 10px;
   padding: 20px;
-  margin: 10px 20px;
+  margin: 10px;
 `;
 
 export const AddPaymentContainer = styled(PaymentContainer)`
