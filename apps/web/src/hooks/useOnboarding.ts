@@ -71,6 +71,11 @@ export const useOnboarding = () => {
     }
     //Create private
     //TODO don't use prisma directly
+    // Date of birth is optional on the form — only send it when the
+    // user actually picked one. Reading .year off a null DateOfBirth
+    // threw mid-submit, after the User row was created but before
+    // Private/UserState, leaving a half-onboarded account.
+    const dob = formState[OnboardingFields.DateOfBirth];
     const newPrivateUser : CreatePrivateUserBody = {
       user: {
         connect: {
@@ -80,9 +85,9 @@ export const useOnboarding = () => {
       firstName: formState[OnboardingFields.Firstname],
       lastName: formState[OnboardingFields.Lastname],
       email: auth.email,
-      dobYear: formState[OnboardingFields.DateOfBirth].year,
-      dobMonth: formState[OnboardingFields.DateOfBirth].month,
-      dobDay: formState[OnboardingFields.DateOfBirth].day,
+      ...(dob
+        ? { dobYear: dob.year, dobMonth: dob.month, dobDay: dob.day }
+        : {}),
     };
     const submitPrivate = axios.post('private', newPrivateUser);
     //Create userstate
