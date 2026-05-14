@@ -20,6 +20,8 @@ declare module 'styled-components' {
     backgroundDark: string;
     dividerColor: string;
     iconColor: string;
+    verified: string;
+    verifiedOrg: string;
     colorScheme: string;
     none: string;
     error: string;

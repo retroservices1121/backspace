@@ -177,7 +177,12 @@ function Profile() {
        <ProfileContent>
          <Banner img={banner} key={`banner-for-${profileUsername}`}>
            <ProfileImage>
-             <Avatar type={AvatarTypes.Profile} size={170} circle image={avatar} />
+             <Avatar
+               type={AvatarTypes.Profile}
+               size={170}
+               circle={profile.accountType !== 'ORG'}
+               image={avatar}
+             />
            </ProfileImage>
          </Banner>
 
@@ -188,7 +193,11 @@ function Profile() {
              <OldRow centerY={true}>
                <h4>@{profileUsername}</h4>
                {profile.verified && (
-                 <VerificationIcon $solid={true} $color='primary' as={Verified} />
+                 <VerificationIcon
+                   $solid={true}
+                   $color={profile.accountType === 'ORG' ? 'verifiedOrg' : 'verified'}
+                   as={Verified}
+                 />
                )}
              </OldRow>
 

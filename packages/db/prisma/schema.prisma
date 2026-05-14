@@ -35,6 +35,10 @@ model User {
   legacyAuthId         String?         @unique
   bio                  String          @default("")
   verified             Boolean         @default(false)
+  // PERSON vs ORG. ORG accounts render a gold badge + square avatar.
+  // Affiliation linking (X-style "affiliated to") is intentionally not
+  // modelled yet — add a self-relation here when orgs actually need it.
+  accountType          AccountType     @default(PERSON)
   featuredCommunity    Community?      @relation(name: "featuredCommunity", fields: [featuredCommunityId], references: [id])
   featuredCommunityId  BigInt?
   state                UserState?
@@ -510,6 +514,11 @@ enum PlatformUserType {
   MODERATOR
   ELEVATED
   ADMIN
+}
+
+enum AccountType {
+  PERSON
+  ORG
 }
 
 // The order of these is used to implicitly set the "power" of the role

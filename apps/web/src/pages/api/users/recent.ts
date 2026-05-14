@@ -43,6 +43,7 @@ handler
         name: true,
         bio: true,
         verified: true,
+        accountType: true,
         createdAt: true,
         avatar: { select: { id: true, host: true, path: true, type: true } },
       },
@@ -56,6 +57,7 @@ handler
         name: u.name,
         bio: u.bio,
         verified: u.verified,
+        accountType: u.accountType,
         avatar: u.avatar
           ? {
             id: u.avatar.id.toString(),

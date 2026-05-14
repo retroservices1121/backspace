@@ -53,8 +53,9 @@ export default function MediaPostHeader({ post, followAction, options }: HeaderP
       {/* Avatars & Usernames */}
       <div className="flex cursor-pointer">
         <div onClick={clickBehavior}>
-          <Avatar 
-            type={AvatarTypes.Profile} size={45} circle 
+          <Avatar
+            type={AvatarTypes.Profile} size={45}
+            circle={author.accountType !== 'ORG'}
             image={authorAvatar} />
         </div>
         
@@ -66,7 +67,9 @@ export default function MediaPostHeader({ post, followAction, options }: HeaderP
             <ClickableSpan onClick={() => router.push(author.username) }>
               @{author.username}
             </ClickableSpan>
-            {author.verified && <Icons.Verified color="primary" />}
+            {author.verified && (
+              <Icons.Verified color={author.accountType === 'ORG' ? 'verifiedOrg' : 'verified'} />
+            )}
           </div>
         </div>
       </div>
