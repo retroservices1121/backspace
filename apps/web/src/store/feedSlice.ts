@@ -55,15 +55,26 @@ export const fetchPosts = createAsyncThunk(
     return { ...feed.posts, [myFilter]: data || [] };
   });
 
-// Standalone catalog fetch for the MARKETS filter. Returns the active-
-// market snapshot from /api/markets — the response is already shaped
-// like MarketCardData so the feed renderer can hand it straight to
-// <MarketCard /> with no further mapping.
+// Standalone catalog fetch for the MARKETS filter — the active-market
+// snapshot from /api/markets. The API serializes dates as ISO strings;
+// MarketCard expects real Date objects (timeUntil() calls .getTime()),
+// so convert closesAt + outcome timestamps at the boundary — same shape
+// the single-market useMarket() hook produces.
 export const fetchMarkets = createAsyncThunk<MarketCardData[]>(
   `${NAMESPACE}/fetchMarkets`,
   async () => {
     const { data } = await axios().get('/markets');
-    return (data ?? []) as MarketCardData[];
+    const raw = Array.isArray(data) ? data : [];
+    return raw.map((m) => ({
+      ...m,
+      closesAt: new Date(m.closesAt),
+      outcomes: (m.outcomes ?? []).map(
+        (o: MarketCardData['outcomes'][number] & { lastPriceAt: string | null }) => ({
+          ...o,
+          lastPriceAt: o.lastPriceAt ? new Date(o.lastPriceAt) : null,
+        }),
+      ),
+    })) as MarketCardData[];
   },
 );
 
