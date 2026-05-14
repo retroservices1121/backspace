@@ -142,10 +142,16 @@ function Profile() {
       router.push(APP.AUTH.INDEX);
       return;
     }
-    if (profile.communities[0].fbid) {
-      await thisProfile.joinCommunity(profile.communities[0].id);
-      router.push(APP.COMMUNITY.INDEX);
+    const community = profile.communities?.[0];
+    if (!community) return;
+    // The old `fbid` guard meant this only worked for legacy migrated
+    // communities — a freshly created room has fbid:null, so the button
+    // did nothing. Join only if not already a member (owner included),
+    // then always navigate in.
+    if (!(membership?.role >= Permissions.MEMBER)) {
+      await thisProfile.joinCommunity(community.id);
     }
+    router.push(APP.COMMUNITY.INDEX);
   };
 
   //NOTE: Rendering Content
