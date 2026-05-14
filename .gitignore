@@ -27,6 +27,10 @@ dist/
 *-firebase-adminsdk-*.json
 pc-api-*.json
 gcp-*.json
+backchannel-production-*.json
+
+# legacy-user migration artifacts (contains real emails — PII)
+packages/db/scripts/users.json
 
 # prisma
 packages/db/.env
