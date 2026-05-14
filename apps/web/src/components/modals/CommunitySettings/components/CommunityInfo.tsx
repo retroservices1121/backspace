@@ -50,7 +50,7 @@ const CommunityInfo: React.FC<Props> = () => {
   const dispatch = useAppDispatch();
   const axios = useAxios();
   const settingModal = useModal(Modals.CommunitySettings);
-  const { current: { community } } = useCommunity();
+  const { current: { community }, run } = useCommunity();
 
   const handleUpdate = async (state: CommunityInfoState) => {
     
@@ -97,6 +97,9 @@ const CommunityInfo: React.FC<Props> = () => {
     };
     const update = await axios.put(`/community/${community.id}`, communityUpdate);
     if (update) {
+      // Re-fetch communities so the new name/description/images show
+      // immediately — without this the user has to refresh the page.
+      run.init();
       toast.update(toastId, {
         render: 'Successfully updated community',
         isLoading: false,

@@ -59,11 +59,38 @@ export async function findMediaByLinkedId(type: MediaUse, relationId: bigint, us
   return memoizedGetMedia(uniqueSearchFromType(type, relationId), includes);
 }
 
+// The relation connect that links a new Media row back to its owning
+// entity, derived from the media type + relationId. Mirrors
+// uniqueSearchFromType but produces a `connect` instead of a `where`.
+function relationConnectFromType(
+  type: MediaUse,
+  id: bigint,
+): Partial<Prisma.MediaCreateInput> {
+  switch (type) {
+    case MediaUse.AVATAR:
+      return { avatarUser: { connect: { id } } };
+    case MediaUse.BANNER:
+      return { bannerUser: { connect: { id } } };
+    case MediaUse.COMMUNITY_AVATAR:
+      return { avatarCommunity: { connect: { id } } };
+    case MediaUse.COMMUNITY_BANNER:
+      return { bannerCommunity: { connect: { id } } };
+    default:
+      return {};
+  }
+}
+
 export async function upsertMedia(type: MediaUse, relationId: bigint, createData: Prisma.MediaCreateInput) {
+  // The create path MUST link the new Media to its owning entity.
+  // Callers pass relationId in the query string but not always a
+  // relation connect in the body — without this, a first-time upsert
+  // creates an orphan Media row (null FK) and the avatar/banner never
+  // shows. The update path keeps the row's existing link, so
+  // createData alone is enough there.
   const update = await prisma.media.upsert({
     where: uniqueSearchFromType(type, relationId),
     update: createData,
-    create: createData,
+    create: { ...createData, ...relationConnectFromType(type, relationId) },
   }).catch((e) => console.error(`Failed to upcert media for ${type} id:${relationId} ${e}`));
   return update;
 }
