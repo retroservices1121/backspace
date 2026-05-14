@@ -29,6 +29,16 @@ COPY . .
 # Skips landing-only deps like resend, and avoids reinstalling deps for
 # apps/admin or apps/mobile that this service does not run.
 RUN pnpm install --frozen-lockfile --filter @backspace/web...
+
+# Next 12's verifyTypeScriptSetup pre-flight calls require.resolve(
+# '@types/react/index.d.ts'), which modern @types/react (17.0.83+)
+# blocks via an `exports` map. The check runs before
+# typescript.ignoreBuildErrors can suppress it, and fails the build
+# with the misleading "Please install @types/react" message even when
+# @types/react is fully installed. Strip the exports field as a
+# post-install fixup. See script header for full background.
+RUN node apps/web/scripts/fix-types-react-exports.cjs
+
 RUN pnpm --filter @backspace/db generate
 RUN pnpm --filter @backspace/web build
 
