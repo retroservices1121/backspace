@@ -44,7 +44,13 @@ const validate = async (token: string): Promise<string | null> => {
 
 export const onError: ErrorHandler<ExtReq, Res> = (err, req, res, next) => {
   console.error(err);
-  res.status(500).end(err);
+  // res.end() only accepts a string/Buffer — passing the Error object
+  // throws ERR_INVALID_ARG_TYPE *inside the error handler*, which
+  // escapes uncaught and can crash the process (Cloudflare then 502s).
+  // Serialize to a message and guard against double-send.
+  if (res.headersSent) return;
+  const message = err instanceof Error ? err.message : String(err);
+  res.status(500).json({ error: message });
 };
 
 export const onNoMatch: NoMatchHandler<ExtReq, Res> = (req, res) => {
