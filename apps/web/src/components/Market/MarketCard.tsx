@@ -14,11 +14,16 @@ export type MarketCardOutcome = {
 };
 
 export type MarketCardData = {
+  // The DB Market.id (as a string) — distinct from externalId, which is
+  // the venue's condition_id. Trade routes key on this.
+  id: string;
   venue: 'POLYMARKET' | 'AZURO' | 'INTERNAL';
   externalId: string;
   question: string;
   category: string | null;
   imageUrl: string | null;
+  // Polymarket negative-risk flag — needed per order at trade time.
+  negRisk: boolean;
   closesAt: Date;
   outcomes: MarketCardOutcome[];
 };

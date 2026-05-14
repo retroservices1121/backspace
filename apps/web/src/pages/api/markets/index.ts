@@ -38,6 +38,7 @@ handler.get(async (req, res) => {
 
   res.json(
     markets.map((m) => ({
+      id: m.id.toString(),
       venue: m.venue,
       externalId: m.externalId,
       question: m.question,
@@ -46,6 +47,7 @@ handler.get(async (req, res) => {
       imageUrl: m.imageUrl,
       chain: m.chain,
       contractAddress: m.contractAddress,
+      negRisk: m.negRisk,
       status: m.status,
       opensAt: m.opensAt,
       closesAt: m.closesAt,

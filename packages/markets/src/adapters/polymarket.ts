@@ -57,6 +57,7 @@ type RawMarket = {
   endDateIso?: string | null;
   startDate?: string | null;
   startDateIso?: string | null;
+  negRisk?: boolean;
   // Outcome triplet — each is a JSON-encoded string at the wire level.
   outcomes?: string;
   outcomePrices?: string;
@@ -197,6 +198,7 @@ function mapRawMarket(raw: RawMarket): VenueMarket | null {
     imageUrl: raw.image ?? raw.icon ?? null,
     chain: 'polygon',
     contractAddress: externalId, // conditionId is the on-chain identifier
+    negRisk: raw.negRisk === true,
     status: deriveStatus(raw),
     opensAt: parseDate(raw.startDate) ?? parseDate(raw.startDateIso),
     resolvedAt: raw.closed ? closesAt : null,

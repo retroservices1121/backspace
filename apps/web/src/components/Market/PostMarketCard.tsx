@@ -1,19 +1,19 @@
 // Connector component: drops into a feed post and renders <MarketCard /> if
-// the post has a marketId. Handles loading/error states and pulls wallet
-// state from Privy. The bare <MarketCard /> is presentational only.
+// the post has a marketId. Handles loading/error states; the trade path and
+// wallet gating come from useTrade + <WalletReadiness />. The bare
+// <MarketCard /> is presentational only.
 
-import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useMarket } from '@src/hooks/useMarket';
-import axios from '@src/lib/axios';
+import { useTrade } from '@src/hooks/useTrade';
+
 import { MarketCard } from './MarketCard';
+import { WalletReadiness } from './WalletReadiness';
 
 type Props = {
   marketId: bigint | string;
 };
 
 export function PostMarketCard({ marketId }: Props) {
-  const { authenticated } = usePrivy();
-  const { wallets } = useWallets();
   const market = useMarket(marketId);
 
   if (market.isLoading) {
@@ -29,33 +29,24 @@ export function PostMarketCard({ marketId }: Props) {
     );
   }
 
-  const walletConnected = authenticated && wallets.length > 0;
-  // Real balance fetch happens in Phase 4 (trade-from-timeline) when we wire
-  // the venue adapter's quote() into the UI; for now we know "wallet linked"
-  // but not "wallet funded" — display state, not enforcement.
-  const walletBalanceUsd = null;
+  return <TradeableMarketCard market={market.data} />;
+}
 
-  async function handleTrade(intent: {
-    outcomeExternalId: string;
-    side: 'BUY' | 'SELL';
-    shares: string;
-  }) {
-    // Trade submission flows through @backspace/markets quote() then submit().
-    // Server-side route /api/markets/[id]/trade is the natural mount point —
-    // not implemented in this slice; this stub posts the intent so the
-    // network call is visible end-to-end.
-    await axios().post(`/markets/${marketId}/trade`, intent).catch((e) => {
-      // eslint-disable-next-line no-console
-      console.warn('trade submit not yet implemented', e?.response?.status);
-    });
-  }
+// Split out so useTrade's hooks only run once market data has resolved.
+function TradeableMarketCard({
+  market,
+}: {
+  market: NonNullable<ReturnType<typeof useMarket>['data']>;
+}) {
+  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
 
   return (
     <MarketCard
-      market={market.data}
+      market={market}
       walletConnected={walletConnected}
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
+      readinessSlot={<WalletReadiness />}
     />
   );
 }

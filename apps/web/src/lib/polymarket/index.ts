@@ -11,7 +11,11 @@ export {
 } from './config';
 export { deriveSafeAddress } from './safe';
 export { getCollateralBalance, type CollateralBalance } from './fund';
-export { placeOrder, type PlaceOrderArgs } from './order';
+export {
+  placeOrder,
+  type PlaceOrderArgs,
+  type PlaceOrderResult,
+} from './order';
 export {
   initializeSession,
   loadStoredSession,

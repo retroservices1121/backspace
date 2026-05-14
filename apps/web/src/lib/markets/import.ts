@@ -115,6 +115,7 @@ async function upsertVenueMarket(vm: VenueMarket): Promise<boolean> {
     description: vm.description,
     category: vm.category,
     imageUrl: vm.imageUrl,
+    negRisk: vm.negRisk,
     status: vm.status as MarketStatus,
     opensAt: vm.opensAt,
     closesAt: vm.closesAt,

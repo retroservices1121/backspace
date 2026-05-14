@@ -640,6 +640,10 @@ model Market {
   description     String        @default("")
   category        String?
   imageUrl        String?
+  // Polymarket negative-risk market (multi-outcome event split into
+  // linked binary markets). The CLOB needs this flag per order — it
+  // routes through the NegRisk Exchange instead of the base Exchange.
+  negRisk         Boolean       @default(false)
   status          MarketStatus  @default(ACTIVE)
   opensAt         DateTime?
   closesAt        DateTime
@@ -705,8 +709,12 @@ model Trade {
   createdAt     DateTime  @default(now())
   user          User      @relation(fields: [userId], references: [id])
   userId        BigInt
-  position      Position  @relation(fields: [positionId], references: [id])
-  positionId    BigInt
+  // Nullable: trades recorded straight from the venue (Polymarket's
+  // CLOB) are an audit log — positions are read from the venue's Data
+  // API, not recomputed locally, so a Trade need not hang off a
+  // local Position row.
+  position      Position? @relation(fields: [positionId], references: [id])
+  positionId    BigInt?
   market        Market    @relation(fields: [marketId], references: [id])
   marketId      BigInt
   outcome       Outcome   @relation(fields: [outcomeId], references: [id])
@@ -718,7 +726,9 @@ model Trade {
   priceUsd      Decimal   @db.Decimal(18, 8)
   feeUsd        Decimal   @default(0) @db.Decimal(18, 8)
   txHash        String?
-  venueOrderId  String?
+  // Venue order id. Unique so re-POSTing the same executed order
+  // (double-submit, retry) is a dedupe no-op rather than a dupe row.
+  venueOrderId  String?   @unique
   @@index([userId, createdAt])
   @@index([marketId])
   @@index([txHash])

@@ -29,6 +29,9 @@ export type VenueMarket = VenueMarketRef & {
   imageUrl: string | null;
   chain: string | null;
   contractAddress: string | null;
+  // Polymarket negative-risk flag — orders on these markets route
+  // through the NegRisk Exchange. Non-Polymarket venues report false.
+  negRisk: boolean;
   status: 'ACTIVE' | 'FROZEN' | 'RESOLVED' | 'INVALIDATED';
   opensAt: Date | null;
   closesAt: Date;

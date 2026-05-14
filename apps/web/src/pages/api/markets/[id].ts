@@ -17,6 +17,7 @@ handler.get(async (req, res) => {
   if (!market) return res.status(HttpStatus.NOT_FOUND).end();
 
   res.json({
+    id: market.id.toString(),
     venue: market.venue,
     externalId: market.externalId,
     question: market.question,
@@ -25,6 +26,7 @@ handler.get(async (req, res) => {
     imageUrl: market.imageUrl,
     chain: market.chain,
     contractAddress: market.contractAddress,
+    negRisk: market.negRisk,
     status: market.status,
     opensAt: market.opensAt,
     closesAt: market.closesAt,

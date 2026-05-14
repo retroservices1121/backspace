@@ -1,35 +1,19 @@
-// Standalone catalog connector — same wallet wiring as PostMarketCard but
-// the market data comes pre-loaded from /api/markets (the MARKETS feed
-// filter pulls the whole catalog in one shot, so we skip the per-card
-// useMarket fetch).
+// Standalone catalog connector — the market data comes pre-loaded from
+// /api/markets (the MARKETS feed filter pulls the whole catalog in one
+// shot, so we skip the per-card useMarket fetch). Trade path + wallet
+// gating come from useTrade + <WalletReadiness />.
 
-import { usePrivy, useWallets } from '@privy-io/react-auth';
-import axios from '@src/lib/axios';
+import { useTrade } from '@src/hooks/useTrade';
+
 import { MarketCard, MarketCardData } from './MarketCard';
+import { WalletReadiness } from './WalletReadiness';
 
 type Props = {
   market: MarketCardData;
 };
 
 export function CatalogMarketCard({ market }: Props) {
-  const { authenticated } = usePrivy();
-  const { wallets } = useWallets();
-
-  const walletConnected = authenticated && wallets.length > 0;
-  const walletBalanceUsd = null;
-
-  async function handleTrade(intent: {
-    outcomeExternalId: string;
-    side: 'BUY' | 'SELL';
-    shares: string;
-  }) {
-    await axios()
-      .post(`/markets/${market.externalId}/trade`, intent)
-      .catch((e) => {
-        // eslint-disable-next-line no-console
-        console.warn('trade submit not yet implemented', e?.response?.status);
-      });
-  }
+  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
 
   return (
     <MarketCard
@@ -37,6 +21,7 @@ export function CatalogMarketCard({ market }: Props) {
       walletConnected={walletConnected}
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
+      readinessSlot={<WalletReadiness />}
     />
   );
 }
