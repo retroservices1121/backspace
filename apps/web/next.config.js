@@ -10,6 +10,15 @@ module.exports = {
   // skip Next's own pre-build check.
   typescript: { ignoreBuildErrors: true },
 
+  // Next 12.1.4's static-image-import handling probes image dimensions
+  // through `squoosh`, which loads its WASM via fetch(barePath). Node
+  // 18+ undici rejects non-URL fetch targets and the build dies with
+  // "TypeError: Failed to parse URL from .../mozjpeg_node_dec.wasm".
+  // Switching imports to plain URL strings sidesteps squoosh entirely.
+  // Call sites read these as src URLs already; no StaticImageData
+  // shape was being used meaningfully.
+  images: { disableStaticImages: true },
+
   webpack: (config, options) => {
     config.module.rules.push({
       test: /\.(ogg|mp3|wav|mpe?g)$/i,

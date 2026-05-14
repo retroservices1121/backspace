@@ -56,7 +56,7 @@ export const NavButtons = ({ toggleCreatePost, createPostOpen, path }: any) => {
       <Link href={APP.PROFILE.USERNAME(user.username)}>
         <NavButton selected={path === APP.PROFILE.USERNAME(user.username)} selectedColor='primary'>
           {avatar != undefined 
-            ? <Avatar src={avatar || placeholderProfile.src} alt="me" /> 
+            ? <Avatar src={avatar || placeholderProfile} alt="me" />
             : <ReactLoading width={20} height={20} type="spinningBubbles"/>}
         </NavButton>
       </Link>
