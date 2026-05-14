@@ -33,6 +33,13 @@ module.exports = {
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
+    // disableStaticImages removes Next's built-in image asset rule, so
+    // raster image imports need an explicit loader. Webpack 5
+    // asset/resource emits the file and exports its public URL string.
+    config.module.rules.push({
+      test: /\.(png|jpe?g|gif|webp|avif|ico)$/i,
+      type: 'asset/resource',
+    });
     if (!options.isServer) {
       config.resolve.fallback.fs = false;
     }
