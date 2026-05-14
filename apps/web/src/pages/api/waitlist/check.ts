@@ -3,7 +3,7 @@
 // reservation is treated as "available" — so a user who reserved their
 // handle on the landing page can submit it through onboarding without
 // hitting their own conflict.
-import { getPrivyUserEmail } from '@backspace/auth';
+import { getPrivyUserEmailById } from '@backspace/auth';
 import {
   REJECTION_COPY,
   type UsernameRejection,
@@ -44,11 +44,11 @@ handler.get(async (req, res) => {
 
   // Resolve the caller's email (best-effort — anonymous callers fall
   // through to the strictest "no own-reservation match" check).
+  // req.authId is the verified Privy DID set by the createHandler
+  // middleware; resolve the email from it rather than the access token.
   let callerEmail: string | null = null;
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice('Bearer '.length);
-    callerEmail = await getPrivyUserEmail(token, PRIVY_CFG).catch(() => null);
+  if (req.authId) {
+    callerEmail = await getPrivyUserEmailById(req.authId, PRIVY_CFG).catch(() => null);
     if (callerEmail) callerEmail = callerEmail.toLowerCase();
   }
 

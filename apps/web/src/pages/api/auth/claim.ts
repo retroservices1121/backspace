@@ -17,7 +17,7 @@
 // caller cannot impersonate someone else's email.
 
 import { Prisma } from '@prisma/client';
-import { getPrivyUserEmail } from '@backspace/auth';
+import { getPrivyUserEmailById } from '@backspace/auth';
 import prisma from '@src/api2/prisma';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 
@@ -50,14 +50,10 @@ handler.use(requireAuthMiddleware).post(async (req, res) => {
     return;
   }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).end('Missing bearer token');
-    return;
-  }
-  const token = authHeader.slice('Bearer '.length);
-
-  const email = await getPrivyUserEmail(token, PRIVY_CFG).catch((err) => {
+  // privyDid (= req.authId) is the verified DID from requireAuthMiddleware.
+  // Resolve the email from it server-side; the access token is not an
+  // identity token and cannot be passed to the getUser({ idToken }) path.
+  const email = await getPrivyUserEmailById(privyDid, PRIVY_CFG).catch((err) => {
     console.error('Privy getUser failed during claim', err);
     return null;
   });

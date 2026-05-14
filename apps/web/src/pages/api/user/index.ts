@@ -4,7 +4,7 @@
 // Author(s): See Git History
 
 import { Permissions, Prisma, User } from '@prisma/client';
-import { getPrivyUserEmail } from '@backspace/auth';
+import { getPrivyUserEmailById } from '@backspace/auth';
 import { normalizeUsername } from '@backspace/usernames';
 import { createUser, getUserByAuthId, getUserById, getUserByUsername, updateUser } from '@src/api2/user';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
@@ -53,11 +53,11 @@ handler
     // a waitlist reservation. Anonymous callers skip this — they cannot
     // be matched to any reservation and the unique constraint on
     // User.username is the final guardrail anyway.
+    // req.authId is the verified Privy DID set by the createHandler
+    // middleware. Resolve the email from it, not the access token.
     let callerEmail: string | null = null;
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice('Bearer '.length);
-      callerEmail = await getPrivyUserEmail(token, PRIVY_CFG).catch(() => null);
+    if (req.authId) {
+      callerEmail = await getPrivyUserEmailById(req.authId, PRIVY_CFG).catch(() => null);
       if (callerEmail) callerEmail = callerEmail.toLowerCase();
     }
     // Block: if someone else reserved this exact handle on the waitlist

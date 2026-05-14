@@ -83,4 +83,31 @@ export async function getPrivyUserEmail(
   );
 }
 
+/**
+ * Resolve the user's primary email address from their verified Privy
+ * DID (`did:privy:...`).
+ *
+ * Use this when you already have a verified DID — e.g. from
+ * `verifyPrivyToken` on the request's *access* token. The access token
+ * is NOT an identity token, so it cannot be passed to
+ * `getPrivyUserEmail`'s `getUser({ idToken })` path; doing so throws.
+ * This fetches the user record from Privy's API by id instead, walking
+ * the same linked-account priority order.
+ */
+export async function getPrivyUserEmailById(
+  userId: string,
+  cfg: PrivyConfig,
+): Promise<string | null> {
+  const user = await client(cfg).getUser(userId);
+  return (
+    user.email?.address ??
+    user.google?.email ??
+    user.apple?.email ??
+    user.github?.email ??
+    user.linkedin?.email ??
+    user.discord?.email ??
+    null
+  );
+}
+
 export type { AuthTokenClaims };

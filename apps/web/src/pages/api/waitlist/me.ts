@@ -1,7 +1,7 @@
 // Returns the caller's waitlist row, if any. Email comes from the
 // Privy access token server-side — never the client — so a logged-in
 // user cannot read another email's reservation.
-import { getPrivyUserEmail } from '@backspace/auth';
+import { getPrivyUserEmailById } from '@backspace/auth';
 import prisma from '@src/api2/prisma';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 
@@ -23,14 +23,10 @@ export type WaitlistMeResponse =
 const handler = createHandler();
 
 handler.use(requireAuthMiddleware).get(async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).end('Missing bearer token');
-    return;
-  }
-  const token = authHeader.slice('Bearer '.length);
-
-  const email = await getPrivyUserEmail(token, PRIVY_CFG).catch((err) => {
+  // req.authId is guaranteed by requireAuthMiddleware — the verified
+  // Privy DID. Resolve the email from that, not the access token (the
+  // access token is not an identity token and getUser rejects it).
+  const email = await getPrivyUserEmailById(req.authId, PRIVY_CFG).catch((err) => {
     console.error('Privy getUser failed during waitlist/me', err);
     return null;
   });
