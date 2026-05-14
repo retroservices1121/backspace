@@ -1,0 +1,38 @@
+# Scheduled Polymarket catalog import.
+#
+# Hits the web service's cron route on a schedule — the route itself
+# (apps/web/src/pages/api/cron/import-polymarket.ts) does the work and
+# owns the DATABASE_URL. This workflow is just the scheduler.
+#
+# Setup: add a repo secret CRON_SECRET (Settings -> Secrets and
+# variables -> Actions) with the same value as the web service's
+# CRON_SECRET env var.
+name: Polymarket catalog import
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub scheduled runs are best-effort and may
+    # lag a few minutes under load — fine for a catalog refresh.
+    - cron: '*/15 * * * *'
+  # Lets you trigger a run by hand from the Actions tab (useful for
+  # testing the secret + endpoint without waiting for the schedule).
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger import
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET repo secret is not set" >&2
+            exit 1
+          fi
+          # -f: non-zero exit on HTTP >=400 so a failed import fails the
+          # job. -sS: quiet but still print errors. The summary JSON is
+          # echoed to the run log.
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://backspace.to/api/cron/import-polymarket
