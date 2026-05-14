@@ -28,6 +28,7 @@ import { FormType } from 'types/forms';
 import { PostFormFields, PostFormState } from 'types/post';
 import { FormDebug } from 'utils/FormDebug';
 
+import MediaUploadArea from '../MediaUploadArea';
 import UserTile from '../User/UserTile';
 import { CancelButton, ColoredSpan, Option as OptionSection } from './styled';
 
@@ -69,10 +70,11 @@ const CreatePostSchema = Yup.object().shape({
 type Props = {
   onCancel: () => void;
   onTouched: () => void;
+  setMedia: (media: File | undefined) => void;
 };
 
 const CreatePostForm: FormType<PostFormState, Props> = ({
-  onSubmit, onCancel, onTouched,
+  onSubmit, onCancel, onTouched, setMedia,
 }) => {
   const { user } = useUser();
   const post = useAppSelector((state: RootState) => state.post);
@@ -129,8 +131,8 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
           onChange={({ touched }) => Object.entries(touched).length > 0 && onTouched()}/>
         <FormDebug name={'CreatePostForm'} />
 
-        {/* Displays User info */}
-        <UserTile user={user} />
+        {/* Author: avatar + name, no follow/message action in the composer */}
+        <UserTile user={user} noAction />
 
         <div className="max-w-prose max-h-96 overflow-y-auto">
           <Field
@@ -141,16 +143,15 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
           />
         </div>
 
-        <FlexSpaceBetween>
-          <br/>
-          <div style={{ textAlign: 'right' }}>
-            {/* <h4>{values[PostFormFields.Caption].length}/2500</h4> */}
-            {values[PostFormFields.Caption] && errors[PostFormFields.Caption] &&
-            <ErrorMessage name={PostFormFields.Caption}>
-              {msg => `Post ${msg}`}
-            </ErrorMessage>}
-          </div>
-        </FlexSpaceBetween>
+        <div style={{ textAlign: 'right' }}>
+          {values[PostFormFields.Caption] && errors[PostFormFields.Caption] &&
+          <ErrorMessage name={PostFormFields.Caption}>
+            {msg => `Post ${msg}`}
+          </ErrorMessage>}
+        </div>
+
+        {/* Media attach + inline preview (new posts only) */}
+        {!post?.id && <MediaUploadArea setMedia={setMedia} />}
 
         <Space direction={'column'}/>
         {!post?.id && 

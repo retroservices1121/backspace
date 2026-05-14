@@ -9,16 +9,14 @@ import usePost from '@src/hooks/usePost';
 import { useModal } from '@src/lib/Modal';
 import { Confirm } from '@src/lib/Modal/layouts';
 import { RootState, useAppSelector } from '@src/store/store';
-import { ButtonLarge } from '@src/styles/Buttons';
 import { Modals } from '@src/utils/constants';
 
 import OverlayLoading from 'components/Loading/OverlayLoader';
 import Modal from 'components/ModalV2';
 import { PostFormState } from 'types/post';
 
-import MediaUploadArea from '../MediaUploadArea';
 import CreatePostForm from './CreatePostForm';
-import { ConfirmCancelButton, CreatePostContainer, PostOptions } from './styled';
+import { PostOptions } from './styled';
 
 type Props = {};
 
@@ -72,21 +70,17 @@ const CreatePost:React.FC<Props> = () => {
 
   return (
     <div className="max-h-screen overflow-auto">
-      <CreatePostContainer>
-        {submitLoading && <OverlayLoading text='Submitting Post...'/>}
-        {/* Left Side / Upload Area */}
-        {!post?.id &&
-          <MediaUploadArea setMedia={setMedia} />
-        }
-        {/* Right side / Input Fields */}
-        <PostOptions>
-          <CreatePostForm
-            onTouched={() => setTouched(true)}
-            onSubmit={handleSubmit}
-            onCancel={openConfirmModal}
-          />
-        </PostOptions>
-      </CreatePostContainer>
+      {submitLoading && <OverlayLoading text='Submitting Post...'/>}
+      {/* Single-column, X-style composer. Media attach lives inside the
+          form now, not as a separate side panel. */}
+      <PostOptions>
+        <CreatePostForm
+          onTouched={() => setTouched(true)}
+          onSubmit={handleSubmit}
+          onCancel={openConfirmModal}
+          setMedia={setMedia}
+        />
+      </PostOptions>
 
       {/* Confirm Cancel Modal */}
       <Modal

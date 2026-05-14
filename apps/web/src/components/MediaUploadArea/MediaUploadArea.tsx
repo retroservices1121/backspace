@@ -1,47 +1,40 @@
 // Copyright 2021 NewSocial Inc.
 // Author(s): Dylan Trafford
-// Description: User Select Media and Upload
+// Description: Compact, X-style media attach control for the composer.
+// A small icon button opens the file picker; once a file is chosen it
+// renders an inline preview with a remove control.
 
-import React, { useRef } from 'react';
-import { useState } from 'react';
-
-import { Button, ButtonLarge, LargeTextButton } from 'styles/Buttons';
-import { Col } from 'styles/Flex';
+import React, { useRef, useState } from 'react';
 
 //Icons
 import CloseIcon from '../../../public/graphics/commonicons/close.svg';
 import UploadIcon from '../../../public/graphics/commonicons/upload.svg';
-import { MediaPlayer, MediaPreview, MediaUploadIcon, RemoveMediaIcon, UploadInstructions } from './styled';
-
+import {
+  AttachButton,
+  MediaPlayer,
+  MediaPreview,
+  PreviewWrapper,
+  RemoveMediaIcon,
+} from './styled';
 
 type Props = {
-  setMedia: (media : File | undefined) => void;
+  setMedia: (media: File | undefined) => void;
 };
 
-const MediaUploadArea:React.FC<Props> = ({ setMedia }) => {
-
+const MediaUploadArea: React.FC<Props> = ({ setMedia }) => {
   const [previewMedia, setPreviewMedia] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
   const [mediaType, setMediaType] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const addMedia = (event : React.ChangeEvent<HTMLInputElement>) => {
-    let newMedia = undefined; //Default in case no files
-    if (event?.target?.files) {
-      newMedia = event.target.files[0];
-      let url = URL.createObjectURL(newMedia);
-      setPreviewMedia(url);
-      event.target.value = ''; // Clear event target so we can get a new file
-    } else {
-      setPreviewMedia('');
-    }
-    if (newMedia) {
-      if (newMedia.type.includes('video')) setMediaType('video');
-      if (newMedia.type.includes('image')) setMediaType('image');
-    }
-    setMedia(newMedia);
+  const addMedia = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    setPreviewMedia(URL.createObjectURL(file));
+    setMediaType(file.type.includes('video') ? 'video' : 'image');
+    event.target.value = ''; // allow re-selecting the same file later
+    setMedia(file);
   };
 
-  //eslint-disable-next-line
   const removeMedia = () => {
     setMedia(undefined);
     setPreviewMedia('');
@@ -50,42 +43,39 @@ const MediaUploadArea:React.FC<Props> = ({ setMedia }) => {
 
   return (
     <div>
-      <h2 className="text-center mt-12 sm:mt-24"> Create New Post </h2>
-      <div className='md:w-media md:max-h-media'>
-        {previewMedia && 
-          <RemoveMediaIcon 
-            $color='fontFocus' 
-            $solid $clickable 
+      <AttachButton
+        type="button"
+        title="Add photo or video"
+        onClick={() => inputRef.current?.click()}
+      >
+        <UploadIcon />
+      </AttachButton>
+      <input
+        type="file"
+        id="new-post-media-upload"
+        ref={inputRef}
+        name="file-upload"
+        accept="image/png, image/jpeg, image/gif, video/mp4, video/x-m4v, video/*"
+        style={{ display: 'none' }}
+        onChange={addMedia}
+      />
+      {previewMedia && (
+        <PreviewWrapper>
+          <RemoveMediaIcon
+            $color="fontFocus"
+            $solid
+            $clickable
             onClick={removeMedia}
-          ><CloseIcon /></RemoveMediaIcon>
-        }
-        {mediaType !== 'video' 
-          ? <MediaPreview show={previewMedia ? true : false} src={previewMedia} alt="Media Error" />
-          : <MediaPlayer width="100%" url={previewMedia} controls loop />
-        }
-        {!previewMedia &&
-          <Col className='justify-center align-center text-center w-full h-full m-auto'>
-            <MediaUploadIcon 
-              onClick={() => inputRef.current && inputRef.current.click()} 
-              $color="primary"><UploadIcon/>
-            </MediaUploadIcon>
-            <UploadInstructions>Select photo or video to upload</UploadInstructions>
-            <ButtonLarge
-              className='m-auto'
-              color="primary" onClick={() => inputRef.current && inputRef.current.click()}>Select Media to Upload
-            </ButtonLarge>
-            <input
-              type="file"
-              id="new-post-media-upload"
-              ref={inputRef}
-              name="file-upload"
-              accept="image/png, image/jpeg, image/gif, video/mp4, video/x-m4v, video/*"
-              style={{ display: 'none' }}
-              onChange={addMedia}
-            />
-          </Col>
-        }
-      </div>
+          >
+            <CloseIcon />
+          </RemoveMediaIcon>
+          {mediaType === 'video' ? (
+            <MediaPlayer width="100%" url={previewMedia} controls loop />
+          ) : (
+            <MediaPreview show src={previewMedia} alt="Selected media" />
+          )}
+        </PreviewWrapper>
+      )}
     </div>
   );
 };

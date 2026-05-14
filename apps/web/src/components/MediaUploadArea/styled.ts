@@ -1,11 +1,10 @@
 // Copyright 2021 NewSocial Inc.
 // Author(s): Dylan Trafford
-// Description: Styling
+// Description: Styling for the compact composer media control.
 
 import ReactPlayer from 'react-player';
 import styled, { css } from 'styled-components';
 
-import { OldCol } from 'styles/Flex';
 import { Icon } from 'styles/Globals';
 import { mediaQuery } from 'styles/Globals';
 
@@ -13,43 +12,47 @@ type Props = {
   show : boolean
 };
 
-export const OuterBlock = styled(OldCol)`
-  position: relative;
-  justify-content: center;
+// Small circular icon button that opens the file picker — sits in the
+// composer body like X's media button.
+export const AttachButton = styled.button`
+  display: inline-flex;
   align-items: center;
-  padding: 20px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  margin: 4px 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: ${({ theme }) => theme.primary};
 
-  width: fit-content;
-  max-width: 70vw;
-  height: 100%;
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 
-  font-weight: bold;
-  font-size: 26px;
-  line-height: 32px;
-  color: ${({ theme }) => theme.fontFocus};
+  &:hover {
+    background-color: ${({ theme }) => theme.backgroundLight};
+  }
 `;
 
-export const MediaArea = styled(OldCol)<Props>`
-  border: 2px dashed ${({ theme }) => theme.backgroundLight};
-  border-radius: 20px;
-  padding: 80px 10px 90px;
-  margin: 30px 0px;
-  height: 100%;
+// Holds the chosen image/video preview plus the remove control.
+export const PreviewWrapper = styled.div`
+  position: relative;
   width: 100%;
-
-  align-items: center;
-
-  ${({ show }) => !show && css`
-    display: none;
-  `}
+  margin: 8px 0 4px;
+  border-radius: 16px;
+  overflow: hidden;
 `;
 
 export const MediaPreview = styled.img<Props>`
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 280px;
   object-fit: cover;
-  margin: auto;
-  border-radius: 8px;
 
   ${({ show }) => !show && css`
     display: none;
@@ -57,33 +60,19 @@ export const MediaPreview = styled.img<Props>`
 `;
 
 export const MediaPlayer = styled(ReactPlayer)`
-  border-radius: 15px;
+  border-radius: 16px;
   width: 100%;
   height: auto;
-  max-height: 800px;
+  max-height: 280px;
   object-fit: cover;
   ${mediaQuery.sm} {
-    max-height: 300px;
+    max-height: 240px;
   }
 `;
 
 export const RemoveMediaIcon = styled(Icon)`
   position: absolute;
-  top: 15px;
-  left: 15px;
+  top: 10px;
+  left: 10px;
   z-index: 1; //On Top of Image
-`;
-
-export const MediaUploadIcon = styled(Icon)`
-  margin: 10px auto;
-  width: 50px;
-  height: 50px;
-  cursor: pointer;
-`;
-
-export const UploadInstructions = styled.span`
-  font-weight: bold;
-  font-size: 20px;
-  line-height: 26px;
-  margin: 20px auto;
 `;

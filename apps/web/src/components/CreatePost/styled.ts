@@ -13,11 +13,6 @@ type Props = {
   show : boolean
 };
 
-export const ConfirmCancelButton = styled.button`
-  background-color: ${({ theme }) => theme.primary};
-
-`;
-
 export const CloseContainer = styled.div`
   position: absolute;
   right: 0;
@@ -34,13 +29,6 @@ export const ActionButton = styled.div`
   height: 40px;
 `;
 
-
-export const CreatePostContainer = styled.div`
-  display: flex;
-  ${mediaQuery.sm} {
-    display: inline;
-  }
-`;
 
 export const BackgroundOverlay = styled.div<Props>`
   position: absolute;
