@@ -40,13 +40,23 @@ export default function useAuthentication() {
       dispatch(setStatus(AuthStatus.SignedIn));
       dispatch(setAuthId(did));
       if (email) dispatch(setEmail(email));
-      dispatch(autoLogin(did));
       void announcePresence(did);
-      // Privy's getAccessToken returns a JWT verified by @backspace/auth
-      // server-side. Store it as a cookie so SSR / middleware can read it.
-      getAccessToken().then((token) => {
-        if (token) setAuthCookie(token);
-      });
+      // The access-token cookie MUST be written before autoLogin runs.
+      // lib/axios reads the cookie synchronously when it builds a
+      // request, so firing autoLogin first sends the initial
+      // /user/self call out unauthenticated — it 401s, the app sees
+      // "no user", and bounces a fully-onboarded user back to
+      // onboarding. Sequence it: token -> cookie -> autoLogin.
+      getAccessToken()
+        .then((token) => {
+          if (token) setAuthCookie(token);
+        })
+        .catch((err) => {
+          console.error('getAccessToken failed during auth sync', err);
+        })
+        .finally(() => {
+          dispatch(autoLogin(did));
+        });
     } else {
       dispatch(setStatus(AuthStatus.SignedOut));
       removeAuthCookie();
