@@ -71,13 +71,17 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
     } catch (err) {
       // Any thrown error (a failed API call, etc.) must still resolve
       // the loading toast — otherwise it spins forever and the user is
-      // stuck with no feedback.
+      // stuck with no feedback. Surface the server's message when it
+      // gave one (e.g. the private-beta waitlist gate's 403).
       console.error('Onboarding submit failed', err);
+      const serverMessage =
+        (err as any)?.response?.data?.message ??
+        'An error occurred, please refresh the page and try again';
       toast.update(toastId, {
-        render: 'An error occurred, please refresh the page and try again',
+        render: serverMessage,
         type: 'error',
         isLoading: false,
-        autoClose: 3000,
+        autoClose: 5000,
       });
     }
   };

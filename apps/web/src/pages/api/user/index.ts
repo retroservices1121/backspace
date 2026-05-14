@@ -61,6 +61,25 @@ handler
       callerEmail = await getPrivyUserEmailById(req.authId, PRIVY_CFG).catch(() => null);
       if (callerEmail) callerEmail = callerEmail.toLowerCase();
     }
+    // Beta gate: account creation is restricted to people on the
+    // waitlist. Legacy users come in through /api/auth/claim (which
+    // rewrites an existing row) and never reach this path; everyone
+    // else must have a WaitlistEntry for their verified Privy email.
+    // Remove this block when the beta opens to the public.
+    const onWaitlist = callerEmail
+      ? await prisma.waitlistEntry.findUnique({
+        where: { email: callerEmail },
+        select: { email: true },
+      })
+      : null;
+    if (!onWaitlist) {
+      res.status(403).json({
+        error: 'not_on_waitlist',
+        message:
+          'Backspace is in private beta — join the waitlist to get access.',
+      });
+      return;
+    }
     // Block: if someone else reserved this exact handle on the waitlist
     // and hasn't yet claimed it, the requester cannot grab it via direct
     // app signup.
