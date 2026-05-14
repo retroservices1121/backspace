@@ -20,10 +20,10 @@ const PRIVY_CFG = {
 export type WaitlistCheckResponse =
   | { available: true; normalized: string }
   | {
-      available: false;
-      reason: UsernameRejection | 'taken' | 'reserved';
-      message: string;
-    };
+    available: false;
+    reason: UsernameRejection | 'taken' | 'reserved';
+    message: string;
+  };
 
 const handler = createHandler();
 

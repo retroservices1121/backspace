@@ -58,11 +58,11 @@ handler
         verified: u.verified,
         avatar: u.avatar
           ? {
-              id: u.avatar.id.toString(),
-              host: u.avatar.host,
-              path: u.avatar.path,
-              type: u.avatar.type,
-            }
+            id: u.avatar.id.toString(),
+            host: u.avatar.host,
+            path: u.avatar.path,
+            type: u.avatar.type,
+          }
           : null,
       })),
     );

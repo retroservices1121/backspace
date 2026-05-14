@@ -13,12 +13,12 @@ const PRIVY_CFG = {
 export type WaitlistMeResponse =
   | { found: false }
   | {
-      found: true;
-      email: string;
-      username: string | null;
-      claimed: boolean;
-      referralCode: string;
-    };
+    found: true;
+    email: string;
+    username: string | null;
+    claimed: boolean;
+    referralCode: string;
+  };
 
 const handler = createHandler();
 
