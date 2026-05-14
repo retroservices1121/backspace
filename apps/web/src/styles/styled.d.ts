@@ -21,7 +21,6 @@ declare module 'styled-components' {
     dividerColor: string;
     iconColor: string;
     verified: string;
-    verifiedOrg: string;
     colorScheme: string;
     none: string;
     error: string;

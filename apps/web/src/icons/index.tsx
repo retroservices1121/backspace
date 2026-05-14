@@ -31,6 +31,7 @@ import ShareIcon from 'icons/share-reply.svg';
 import LiveIcon from 'icons/signal-live.svg';
 import SunIcon from 'icons/sun.svg';
 import VerifiedIcon from 'icons/verified.svg';
+import VerifiedOrgIcon from 'icons/verified-org.svg';
 import XIcon from 'icons/x.svg';
 
 const baseSVG = styled.svg``;
@@ -160,7 +161,10 @@ class Icons {
   static Search     = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(SearchIcon, option);
   static Share      = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(ShareIcon, option);
   static Sun        = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(SunIcon, option);
-  static Verified   = (option: Partial<IconOptions> = { ...defaultIconOptions, color: 'primary', size: 'sm' }) => configIcon(VerifiedIcon, option);
+  static Verified   = (option: Partial<IconOptions> = { ...defaultIconOptions, color: 'verified', size: 'sm' }) => configIcon(VerifiedIcon, option);
+  // Org accounts: same brand-purple, hexagon shape instead of the
+  // scalloped person badge.
+  static OrgVerified = (option: Partial<IconOptions> = { ...defaultIconOptions, color: 'verified', size: 'sm' }) => configIcon(VerifiedOrgIcon, option);
   // Grid:         configIcon(GridIcon),
   // Live:         configIcon(LiveIcon),
   // Lock:         configIcon(LockIcon),

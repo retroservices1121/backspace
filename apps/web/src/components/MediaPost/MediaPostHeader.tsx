@@ -68,7 +68,9 @@ export default function MediaPostHeader({ post, followAction, options }: HeaderP
               @{author.username}
             </ClickableSpan>
             {author.verified && (
-              <Icons.Verified color={author.accountType === 'ORG' ? 'verifiedOrg' : 'verified'} />
+              author.accountType === 'ORG'
+                ? <Icons.OrgVerified color="verified" />
+                : <Icons.Verified color="verified" />
             )}
           </div>
         </div>

@@ -46,6 +46,7 @@ import { makeShortNumber } from 'utils/common_utils';
 
 import ChatIcon from 'public/graphics/commonicons/message.svg';
 import Verified from 'public/graphics/commonicons/verified.svg';
+import VerifiedOrg from 'public/graphics/commonicons/verified-org.svg';
 
 import { FollowBody } from '../api/follow';
 
@@ -195,8 +196,8 @@ function Profile() {
                {profile.verified && (
                  <VerificationIcon
                    $solid={true}
-                   $color={profile.accountType === 'ORG' ? 'verifiedOrg' : 'verified'}
-                   as={Verified}
+                   $color='verified'
+                   as={profile.accountType === 'ORG' ? VerifiedOrg : Verified}
                  />
                )}
              </OldRow>
