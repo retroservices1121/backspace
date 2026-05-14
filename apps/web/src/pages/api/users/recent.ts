@@ -31,7 +31,8 @@ handler
 
     const users = await prisma.user.findMany({
       where: {
-        onboarded: true,
+        // `onboarded` lives on the UserState relation, not User.
+        state: { onboarded: true },
         ...(me ? { id: { not: me.id } } : {}),
       },
       orderBy: { createdAt: 'desc' },
