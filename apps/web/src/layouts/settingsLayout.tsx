@@ -1,6 +1,7 @@
 //import { useState, useEffect } from "react";
 import { useState } from 'react';
 import useConstructor from '@src/hooks/useConstructor';
+import useLogout from '@src/hooks/useLogout';
 import { useRouter } from 'next/router';
 
 import Drawer from 'components/Drawer';
@@ -11,7 +12,6 @@ import { Card, Footer } from 'components/Settings/styledAgain';
 import { logEventScreen, Screens } from 'lib/events';
 import { setPageTitle } from 'store/appSlice';
 import { useAppDispatch } from 'store/store';
-import { logout } from 'store/userSlice';
 import { ClickableSpan, MediumTextButton } from 'styles/Buttons';
 import { Col, Row } from 'styles/Flex';
 import { Layout, Space } from 'styles/layout';
@@ -36,8 +36,9 @@ export default function settingsLayout({ children }) {
     dispatch(setPageTitle('Settings'));
   });
 
+  const logout = useLogout();
   const handleLogout = () => {
-    dispatch(logout('user logout from settings'));
+    logout('user logout from settings');
   };
 
   const [tab, setTab] = useState<Tabs>(startTab);

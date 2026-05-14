@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
+import useLogout from '@src/hooks/useLogout';
 import useMedia from '@src/hooks/useMedia';
 import useUser from '@src/hooks/useUser';
 import Icons from '@src/icons';
@@ -18,6 +19,7 @@ import { Avatar, NavButton, NotificationIndicator } from './styled';
 export const NavButtons = ({ toggleCreatePost, createPostOpen, path }: any) => {
   const { user, avatar } = useUser();
   const CreatePostModal = useModal(Modals.CreatePost);
+  const logout = useLogout();
   // const { unreadIndicator } = useSelector((state : RootState) => state.notifications);
   const [openNotifications, setOpenNotifications] = useState(false);
   return (
@@ -59,6 +61,12 @@ export const NavButtons = ({ toggleCreatePost, createPostOpen, path }: any) => {
           <Avatar src={avatar || placeholderProfile} alt="me" />
         </NavButton>
       </Link>
+      <NavButton
+        disabled={!user.id}
+        color='backgroundLight'
+        onClick={() => logout('user logout from nav')}>
+        <Icons.Leave />
+      </NavButton>
     </Row>
   );
 };

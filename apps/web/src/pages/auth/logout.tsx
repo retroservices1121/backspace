@@ -1,32 +1,23 @@
 import React from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
-import { usePrivy } from '@privy-io/react-auth';
 import useAuthentication from '@src/hooks/useAuthenticate';
+import useLogout from '@src/hooks/useLogout';
 import { AuthStatus } from '@src/store/authSlice';
-import { logout } from '@src/store/userSlice';
 import { Button } from '@src/styles/Buttons';
 import AuthLayout from 'layouts/authLayout';
 import { useRouter } from 'next/router';
 
 import { APP } from 'pages';
-import { RootState, useAppDispatch, useAppSelector } from 'store/store';
+import { RootState, useAppSelector } from 'store/store';
 
 const ManualLogout: ReactLayoutComponentType = () => {
   const username = useAppSelector((state: RootState) => state.user.username);
   const email = useAppSelector((state: RootState) => state.auth.email);
   const authState = useAuthentication();
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { logout: privyLogout } = usePrivy();
+  const logout = useLogout();
 
-  // Tear down the Privy session first; useAuthenticate observes the
-  // resulting !authenticated state and dispatches logout / clearAuthSlice.
-  // The thunk dispatch here is belt-and-braces for a clean local state
-  // reset in case the Privy event lands a tick later than the user expects.
-  const handleLogout = async () => {
-    await privyLogout();
-    dispatch(logout('User Initiated Logout'));
-  };
+  const handleLogout = () => logout('User Initiated Logout');
 
   return (
     authState === AuthStatus.SignedIn ? (

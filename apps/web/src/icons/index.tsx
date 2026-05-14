@@ -15,6 +15,7 @@ import MoreIcon from 'icons/dots-horizontal.svg';
 import GridIcon from 'icons/grid.svg';
 import HeartIcon from 'icons/heart.svg';
 import HomeIcon from 'icons/home.svg';
+import LeaveIcon from 'icons/leave.svg';
 import LockIcon from 'icons/lock.svg';
 import MenuIcon from 'icons/menu.svg';
 import MessageIcon from 'icons/message-dots.svg';
@@ -143,6 +144,7 @@ class Icons {
   static Grid       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(GridIcon, option);
   static Heart      = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(HeartIcon, option);
   static Home       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(HomeIcon, option);
+  static Leave      = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(LeaveIcon, option);
   static Live       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(LiveIcon, option);
   static Lock       = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(LockIcon, option);
   static Message    = (option: Partial<IconOptions> = defaultIconOptions) => configIcon(MessageIcon, option);
