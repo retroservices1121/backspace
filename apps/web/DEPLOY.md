@@ -1,0 +1,117 @@
+# Backspace Deploy — Environment Variables
+
+Single source of truth for env vars `apps/web` needs to run end-to-end on Railway. Grouped by subsystem; keep it in sync when you add a new var anywhere in `apps/web/src` or `packages/`.
+
+> **Server-only** vars must NOT have the `NEXT_PUBLIC_` prefix. Anything with that prefix is baked into client bundles and visible in the browser — never put a secret there.
+
+## Database
+
+| Var | Notes |
+| --- | --- |
+| `DATABASE_URL` | Postgres connection string. Railway-managed; same value lives in `packages/db/.env` for local migrations. |
+
+## Auth (Privy)
+
+| Var | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_PRIVY_APP_ID` | Client Privy app id, embedded in browser bundle. |
+| `PRIVY_APP_ID` | Same value, server-only. Used by `lib/nextconnect.ts` and `pages/api/auth/claim.ts` for token verification. |
+| `PRIVY_APP_SECRET` | **Server-only.** Privy JWT verification. |
+
+## Stripe
+
+| Var | Notes |
+| --- | --- |
+| `STRIPE_SECRET` | **Server-only.** Master Stripe key (`lib/stripe.ts`). |
+| `STRIPE_WEBHOOK_SECRET` | **Server-only.** Signature verification for `/api/webhooks/stripe`. Set after registering the endpoint in Stripe. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Browser publishable key for Stripe.js. (Replaces the legacy `REACT_APP_STRIPE_KEY` which Next does not expose.) |
+
+## Realtime (Ably)
+
+| Var | Notes |
+| --- | --- |
+| `ABLY_API_KEY` | **Server-only.** Master Ably credential. Used by `lib/ablyServer.ts` to publish from API routes and to sign TokenRequests for the browser via `/api/realtime/token`. The browser never holds this. Rotate any historically leaked keys before deploy. |
+
+## Storage — primary (Cloudflare R2)
+
+| Var | Notes |
+| --- | --- |
+| `R2_ACCOUNT_ID` | Cloudflare account id. |
+| `R2_ACCESS_KEY_ID` | **Server-only.** R2 API token id (Account-level token, scoped to the bucket). |
+| `R2_SECRET_ACCESS_KEY` | **Server-only.** R2 API token secret. |
+| `R2_BUCKET` | Bucket name (e.g. `backspace-media`). |
+| `R2_PUBLIC_URL` | Read origin (custom domain like `https://media.backspace.to` or `https://pub-<hash>.r2.dev`). New uploads' read URLs are `${R2_PUBLIC_URL}/${path}`. |
+
+R2 bucket also needs a CORS rule allowing `PUT` from the app origin with `Content-Type` in `AllowedHeaders` — see Cloudflare dashboard → bucket → Settings → CORS Policy.
+
+## Storage — legacy (kept until old Media rows are migrated)
+
+Required only if `Media` rows with `host=FIREBASE` or `host=SUPABASE` still exist. `api2/storage.ts` lazy-imports the SDKs only on those branches, but the env vars must be present for the imports to succeed.
+
+| Var |
+| --- |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` |
+| `NEXT_PUBLIC_FIREBASE_DATABASE_URL` |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` |
+| `NEXT_PUBLIC_SUPABASE_URL` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+
+## Operational secrets
+
+| Var | Notes |
+| --- | --- |
+| `CRON_SECRET` | **Server-only.** Bearer token the Railway cron service sends to `/api/cron/import-polymarket`. The cron service config is `curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/import-polymarket` on schedule `*/15 * * * *`. Generate with `openssl rand -hex 32`. |
+| `ADMIN_BOOTSTRAP_SECRET` | **Server-only.** One-shot bearer token for `POST /api/admin/bootstrap` (promotes the first signed-in caller to ADMIN). The route refuses 409 once any admin exists; **unset this var after first admin is set** so the endpoint hard-disables. Generate with `openssl rand -hex 32`. |
+
+## Polymarket trading
+
+On-chain trade integration (CLOB V2). See `apps/web/src/lib/polymarket/`.
+
+| Var | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_POLYGON_RPC_URL` | Polygon mainnet RPC. Used by the Privy embedded wallet (chain override in `_app.tsx`) and the viem read clients. Any provider (Alchemy/Infura/public). |
+| `NEXT_PUBLIC_POLYMARKET_BUILDER_CODE` | Builder order-attribution code from the Polymarket Builder Profile (polymarket.com/settings?tab=builder). Public — attached to every order, not a secret. |
+| `POLYMARKET_BUILDER_API_KEY` | **Server-only.** Builder HMAC key — authenticates Backspace to Polymarket's gasless Relayer (Safe deploy + token approvals). Used only by `pages/api/polymarket/sign.ts`. |
+| `POLYMARKET_BUILDER_SECRET` | **Server-only.** Builder HMAC secret. |
+| `POLYMARKET_BUILDER_PASSPHRASE` | **Server-only.** Builder HMAC passphrase. |
+
+All three `POLYMARKET_BUILDER_*` values come together from the Builder Profile. Without them the relayer signing endpoint returns 503 and trading stays disabled.
+
+## App origin
+
+| Var | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_APP_URL` | Canonical app origin (e.g. `https://backspace.to`). `pages/api/billing/account` uses this for Stripe Connect onboarding redirect URLs. Falls back to the request host header if unset, but explicit is safer in prod. Must match the origin allowed in R2 CORS. |
+
+---
+
+## Generating secrets
+
+```bash
+openssl rand -hex 32   # ADMIN_BOOTSTRAP_SECRET
+openssl rand -hex 32   # CRON_SECRET
+```
+
+## After deploy
+
+1. Register the Stripe webhook → set `STRIPE_WEBHOOK_SECRET`, redeploy.
+2. Configure the cron service in Railway → it shares `CRON_SECRET` with the web service.
+3. Sign up the first user via the app, then run:
+   ```bash
+   curl -X POST https://<app>/api/admin/bootstrap \
+     -H "Authorization: Bearer $ADMIN_BOOTSTRAP_SECRET" \
+     -H "Cookie: <your-privy-session-cookie>"
+   ```
+4. **Unset `ADMIN_BOOTSTRAP_SECRET`** in Railway once the first admin is set.
+
+## Adding a new env var
+
+When adding a new `process.env.X` reference anywhere in `apps/web/src` or `packages/`:
+
+1. Add a row above in the appropriate section (or create a new section).
+2. Note whether it's server-only (no `NEXT_PUBLIC_`) or browser-exposed.
+3. Set it in the Railway service env.

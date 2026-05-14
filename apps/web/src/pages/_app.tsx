@@ -4,15 +4,17 @@
 // Author(s): See Git History
 
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { PrivyProvider } from '@privy-io/react-auth';
+import { addRpcUrlOverrideToChain, PrivyProvider } from '@privy-io/react-auth';
 import CreatePost from '@src/components/CreatePost';
 import Loading from '@src/components/Loading';
 import AppWelcome from '@src/components/modals/AppWelcome';
 import PostViewer from '@src/components/modals/PostViewer';
 import useAuthentication from '@src/hooks/useAuthenticate';
 import { useWalletSync } from '@src/hooks/useWalletSync';
+import { polygonRpcUrl } from '@src/lib/polymarket/config';
 import { AuthStatus } from '@src/store/authSlice';
 import { AppLayoutProps } from 'next/app';
+import { polygon } from 'viem/chains';
 
 import Navigation from 'components/NavigationV2';
 import useAttribution from 'hooks/useAttribution';
@@ -27,6 +29,14 @@ import 'styles/globals.css';
 import 'styles/common.css';
 
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+// Polymarket trades settle on Polygon, so the Privy embedded wallet
+// must run there. Override the RPC when one is configured so the
+// wallet uses our endpoint rather than the public default.
+const POLYGON_RPC_URL = polygonRpcUrl();
+const polygonChain = POLYGON_RPC_URL
+  ? addRpcUrlOverrideToChain(polygon, POLYGON_RPC_URL)
+  : polygon;
 
 // Give JSON support for BigInts to the app
 // See https://github.com/GoogleChromeLabs/jsbi/issues/30
@@ -99,6 +109,8 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
             loginMethods: ['email', 'google', 'apple', 'wallet'],
             embeddedWallets: { createOnLogin: 'users-without-wallets' },
             appearance: { theme: 'dark', accentColor: '#5822FB' },
+            defaultChain: polygonChain,
+            supportedChains: [polygonChain],
           }}
         >
           <AppBody Component={Component} pageProps={pageProps} />
