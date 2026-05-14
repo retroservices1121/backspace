@@ -1,4 +1,3 @@
-import { supabase } from "utils/supabaseClient";
 import { Stripe as StripeOfficial } from 'stripe';
 import { SimpleDate } from "./date";
 

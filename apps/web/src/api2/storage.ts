@@ -13,7 +13,6 @@
 import { Media, StorageLocation } from '@prisma/client';
 import { mediaStorage, StorageBucket } from '@src/lib/media';
 import memoize from '@src/utils/memo';
-import { supabase } from '@src/utils/supabaseClient';
 
 const memoizedPathToURL = memoize(
   async (
@@ -41,7 +40,11 @@ const memoizedPathToURL = memoize(
         return getDownloadURL(ref(storage, path));
       }
       case StorageLocation.SUPABASE: {
-        const { signedURL } = await supabase
+        // Lazy-import so the Supabase client (and its env vars) are
+        // only touched when a legacy SUPABASE-hosted row is actually
+        // resolved, not at module load / build time.
+        const { getSupabase } = await import('@src/utils/supabaseClient');
+        const { signedURL } = await getSupabase()
           .storage
           .from(bucket)
           .createSignedUrl(path, 86400);
