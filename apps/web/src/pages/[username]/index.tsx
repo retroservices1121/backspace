@@ -52,7 +52,6 @@ import { FollowBody } from '../api/follow';
 enum Tabs {
   Posts = 'Posts',
   Follows = 'Follows',
-  Like = 'Like',
 }
 
 //TODO move to hook?
@@ -231,13 +230,6 @@ function Profile() {
                  <OldCol $center>
                    <h2>{makeShortNumber(profile._count.followers || 0)}</h2>
                    <h6>Followers</h6>
-                 </OldCol>
-               </PointerCursor>
-               <VerticalLine />
-               <PointerCursor onClick={() => setTab(Tabs.Like)}>
-                 <OldCol $center>
-                   <h2>{makeShortNumber(Math.max(profile._count.likesRecieved || 0, 0))}</h2>
-                   <h6>Likes</h6>
                  </OldCol>
                </PointerCursor>
               <VerticalLine />
