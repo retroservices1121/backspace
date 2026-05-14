@@ -61,7 +61,10 @@ const handler = createHandler();
 handler
   .use(requireAuthMiddleware)
   .post(async (req, res) => {
-    const user = await getUserByAuthId(req.authId);
+    // useCache: false — getUserByAuthId is module-memoized, and a
+    // just-onboarded user's authId may still be cached as `null` from
+    // the pre-signup /api/user lookup. An auth check must read fresh.
+    const user = await getUserByAuthId(req.authId, false);
     if (!user) {
       res.status(HttpStatus.UNAUTHORIZED).end('Not authorized');
       return;
