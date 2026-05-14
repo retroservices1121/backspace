@@ -34,7 +34,12 @@ const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
 const EmptyLayout = ({ children }) => <>{children}</>;
 
-const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
+// Everything that consumes Privy (useAuthentication, useWalletSync via
+// usePrivy) must render *inside* <PrivyProvider>. Keeping these hooks in
+// MyApp's body put them above the provider MyApp itself renders, so
+// usePrivy() never saw it — `ready` stayed false and the app was stuck
+// on <Loading> forever. This inner component is the provider's child.
+const AppBody = ({ Component, pageProps } : AppLayoutProps) => {
   useAttribution();
   authorizeNotifications();
   const authState = useAuthentication();
@@ -62,7 +67,7 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
   //Source: https://www.youtube.com/watch?v=69-mnojSa0M
   const Layout = Component.Layout || EmptyLayout;
 
-  const tree = (
+  return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TryCatch Fallback={DefaultError}>
@@ -82,7 +87,9 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
       </ThemeProvider>
     </QueryClientProvider>
   );
+};
 
+const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
   return (
     <div id='root'>
       {PRIVY_APP_ID ? (
@@ -94,12 +101,12 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
             appearance: { theme: 'dark', accentColor: '#5822FB' },
           }}
         >
-          {tree}
+          <AppBody Component={Component} pageProps={pageProps} />
         </PrivyProvider>
       ) : (
-        // Without NEXT_PUBLIC_PRIVY_APP_ID, render the tree without auth so
+        // Without NEXT_PUBLIC_PRIVY_APP_ID, render without the provider so
         // the dev server still boots. Server routes still 401 unauth requests.
-        tree
+        <AppBody Component={Component} pageProps={pageProps} />
       )}
     </div>
   );
