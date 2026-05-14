@@ -3,6 +3,7 @@
 // shot, so we skip the per-card useMarket fetch). Trade path + wallet
 // gating come from useTrade + <WalletReadiness />.
 
+import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useTrade } from '@src/hooks/useTrade';
 
 import { MarketCard, MarketCardData } from './MarketCard';
@@ -14,6 +15,7 @@ type Props = {
 
 export function CatalogMarketCard({ market }: Props) {
   const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
+  const livePrices = useLivePrices(market.outcomes.map((o) => o.externalId));
 
   return (
     <MarketCard
@@ -22,6 +24,7 @@ export function CatalogMarketCard({ market }: Props) {
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
       readinessSlot={<WalletReadiness />}
+      livePrices={livePrices}
     />
   );
 }

@@ -3,6 +3,7 @@
 // wallet gating come from useTrade + <WalletReadiness />. The bare
 // <MarketCard /> is presentational only.
 
+import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
 import { useTrade } from '@src/hooks/useTrade';
 
@@ -39,6 +40,7 @@ function TradeableMarketCard({
   market: NonNullable<ReturnType<typeof useMarket>['data']>;
 }) {
   const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
+  const livePrices = useLivePrices(market.outcomes.map((o) => o.externalId));
 
   return (
     <MarketCard
@@ -47,6 +49,7 @@ function TradeableMarketCard({
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
       readinessSlot={<WalletReadiness />}
+      livePrices={livePrices}
     />
   );
 }

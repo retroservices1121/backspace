@@ -43,10 +43,14 @@ type Props = {
   // Trade-gating UI injected by the connector (PostMarketCard /
   // CatalogMarketCard) — keeps MarketCard presentational and Privy-free.
   readinessSlot?: React.ReactNode;
+  // Live midpoint prices keyed by outcome externalId (the CLOB token
+  // id), streamed from the market-channel websocket. When present for
+  // an outcome it overrides the cron-cached lastPrice for display.
+  livePrices?: Record<string, number | null>;
 };
 
-function pct(p: string | null) {
-  if (p === null) return '—';
+function pct(p: string | number | null | undefined) {
+  if (p == null) return '—';
   const n = Number(p);
   if (!Number.isFinite(n)) return '—';
   return `${(n * 100).toFixed(0)}%`;
@@ -69,6 +73,7 @@ export function MarketCard({
   walletBalanceUsd,
   onTrade,
   readinessSlot,
+  livePrices,
 }: Props) {
   const [selectedOutcome, setSelectedOutcome] = useState(market.outcomes[0]?.externalId);
   const [side, setSide] = useState<Side>('BUY');
@@ -76,7 +81,9 @@ export function MarketCard({
   const [submitting, setSubmitting] = useState(false);
 
   const outcome = market.outcomes.find((o) => o.externalId === selectedOutcome);
-  const price = outcome?.lastPrice ?? null;
+  // Prefer the live websocket midpoint; fall back to the cached price.
+  const livePrice = outcome ? livePrices?.[outcome.externalId] ?? null : null;
+  const price = livePrice ?? outcome?.lastPrice ?? null;
   const numericShares = Number(shares) || 0;
   const numericPrice = price === null ? null : Number(price);
   const totalCost =
@@ -140,7 +147,7 @@ export function MarketCard({
             >
               <span className="text-sm font-medium text-white">{o.label}</span>
               <span className="text-sm font-mono tabular-nums text-white/80">
-                {pct(o.lastPrice)}
+                {pct(livePrices?.[o.externalId] ?? o.lastPrice)}
               </span>
             </button>
           );

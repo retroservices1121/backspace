@@ -14,6 +14,12 @@ export const RELAYER_URL = 'https://relayer-v2.polymarket.com';
 export const DATA_API_URL = 'https://data-api.polymarket.com';
 export const GAMMA_API_URL = 'https://gamma-api.polymarket.com';
 
+// CLOB market-channel websocket. Public — no auth required for the
+// market feed (book / price_change / best_bid_ask / last_trade_price).
+// Used browser-side by lib/polymarket/priceSocket.ts for live prices.
+export const CLOB_WS_URL =
+  'wss://ws-subscriptions-clob.polymarket.com/ws/market';
+
 // Public — safe to expose to the browser. The builder code is order
 // attribution metadata, not a secret.
 export function builderCode(): string | undefined {
