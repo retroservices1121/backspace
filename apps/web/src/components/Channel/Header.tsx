@@ -67,7 +67,7 @@ const Header: React.FC<Props> = ({
         <div>
           <div className="flex items-center" >
             <h3 className="mx-6 min-w-max">{channel.name}</h3>
-            {verified && <VerificationIcon $solid={true} $color='primary' as={Verified} />}
+            {verified && <VerificationIcon $solid={true} $color='verified' as={Verified} />}
           </div>
         </div>
       </ClickableContainer>

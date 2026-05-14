@@ -67,7 +67,7 @@ export const AvatarHeader: React.FC<AvatarHeaderProps> = ({
           <OldRow style={{ alignItems: 'end' }}>
             {subtitle && <Username>{subtitle}</Username>}
             {verified &&
-              <VerificationIcon  $solid={true} $color='primary' as={Verified} />
+              <VerificationIcon  $solid={true} $color='verified' as={Verified} />
             }
           </OldRow>
           {withDescription && <h5>{description}</h5>}
