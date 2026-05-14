@@ -36,30 +36,43 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
 
   const handleSubmitOnboarding = async (data: OnboardingFormState) => {
     const toastId = toast.loading('Checking Username');
-    const usernameCheck = await onboard.checkUsername(data.username);
-    if (!usernameCheck) {
+    try {
+      const usernameCheck = await onboard.checkUsername(data.username);
+      if (!usernameCheck) {
+        toast.update(toastId, {
+          render: 'Username is taken :(',
+          type: 'error',
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return;
+      }
       toast.update(toastId, {
-        render: 'Username is taken :(',
-        type: 'error',
-        isLoading: false,
-        autoClose: 3000,
+        render: 'Creating Account',
       });
-      return;
-    }
-    toast.update(toastId, {
-      render: 'Creating Account',
-    });
-    const success = await onboard.submit(data);
-    if (success) {
-      dispatch(fetchUser(auth?.authId));
-      toast.update(toastId, {
-        render: 'Account Created',
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000,
-      });
-      router.push(APP.INDEX);
-    } else {
+      const success = await onboard.submit(data);
+      if (success) {
+        dispatch(fetchUser(auth?.authId));
+        toast.update(toastId, {
+          render: 'Account Created',
+          type: 'success',
+          isLoading: false,
+          autoClose: 3000,
+        });
+        router.push(APP.INDEX);
+      } else {
+        toast.update(toastId, {
+          render: 'An error occurred, please refresh the page and try again',
+          type: 'error',
+          isLoading: false,
+          autoClose: 3000,
+        });
+      }
+    } catch (err) {
+      // Any thrown error (a failed API call, etc.) must still resolve
+      // the loading toast — otherwise it spins forever and the user is
+      // stuck with no feedback.
+      console.error('Onboarding submit failed', err);
       toast.update(toastId, {
         render: 'An error occurred, please refresh the page and try again',
         type: 'error',

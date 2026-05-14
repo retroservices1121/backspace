@@ -6,6 +6,7 @@
 import { Permissions, Prisma, User } from '@prisma/client';
 import { getPrivyUserEmailById } from '@backspace/auth';
 import { normalizeUsername } from '@backspace/usernames';
+import prisma from '@src/api2/prisma';
 import { createUser, getUserByAuthId, getUserById, getUserByUsername, updateUser } from '@src/api2/user';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { isDevelopment } from '@src/utils/common_utils';
