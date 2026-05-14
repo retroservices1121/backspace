@@ -95,24 +95,6 @@ export const Avatar = styled.img`
   margin: 0px 16px;
 `;
 
-export const InputTitle = styled.input`
-  min-height: 47px;
-  width: 100%;
-
-  margin-top: 20px;
-
-  background-color: transparent;
-  border: none;
-
-  color: ${({ theme }) => theme.fontSecondary};
-  font-weight: bold;
-  font-size: 26px;
-  line-height: 32px;
-  &:focus {
-    color: ${({ theme }) => theme.fontFocus};
-  }
-`;
-
 export const InputText = styled(MentionsInput)`
   min-height: 150px;
   width: 100%;

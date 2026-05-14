@@ -3,6 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
+import prisma from '@src/api2/prisma';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { paginate } from '@src/lib/pagination';
 import { Rest } from '@src/types/utilityTypes';

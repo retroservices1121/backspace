@@ -4,8 +4,8 @@
 // Author(s): See Git History
 
 
+import prisma from '@src/api2/prisma';
 import { Mention, MentionSource, NotificationType, Prisma } from '@prisma/client';
-import { Username } from '@src/components/UserHeader/styled';
 import { findMentions } from '@src/lib/mention';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { PostFormState } from '@src/types/post';
@@ -69,19 +69,21 @@ handler
           },
         },
       };
-      let result : Mention = null;
+      let result : Mention | null = null;
       try { //If one fails to connect, keep going
         result = await prisma.mention.create({ data: temp });
       } catch (error) {
         console.warn(error);
       }
-      if (result.id) {
+      if (result?.id) {
         newMentions.push({ id: result.id });
       }
     }
 
     const newPost : Prisma.PostCreateInput = {
-      title: typedBody.title,
+      // Posts no longer have a title in the UI (X-style composer);
+      // the column is still NOT NULL in the schema, so default it.
+      title: typedBody.title ?? '',
       text: typedBody.text,
       enableComments: typedBody.commentsEnabled,
       mentions: {
@@ -138,7 +140,6 @@ handler
     } = req;
     const typedBody : PostBody = body;
     const update : Prisma.PostUpdateInput = {
-      title: typedBody.title,
       text: typedBody.text,
       enableComments: typedBody.commentsEnabled,
       author: {

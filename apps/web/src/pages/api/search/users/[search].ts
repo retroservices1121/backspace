@@ -3,6 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
+import prisma from '@src/api2/prisma';
 import { Prisma, User } from '@prisma/client';
 import createHandler from '@src/lib/nextconnect';
 

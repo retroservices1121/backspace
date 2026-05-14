@@ -49,22 +49,25 @@ const CreatePost:React.FC<Props> = () => {
 
   const handleSubmit = async (state: PostFormState) => {
     setSubmitLoading(true);
-    let result : any;
-    if (post.id) {
-      result = await thisPost.update(state);
-    } else {
-      result = await thisPost.create(state, media);
+    try {
+      const result = post.id
+        ? await thisPost.update(state)
+        : await thisPost.create(state, media);
+
+      if (result) {
+        CreatePostModal.close();
+        toast.info(post.id ? 'Updated Post, refresh screen' : 'Created New Post');
+      } else {
+        toast.error(post.id ? 'Failed to Update Post' : 'Failed To Create Post');
+      }
+    } catch (err) {
+      // A thrown request (500, network error) must not leave the
+      // overlay spinner up — `finally` clears it regardless.
+      console.error('Post submit failed', err);
+      toast.error(post.id ? 'Failed to Update Post' : 'Failed To Create Post');
+    } finally {
+      setSubmitLoading(false);
     }
-      
-    if (result) {
-      CreatePostModal.close();
-      if (post.id) toast.info('Updated Post, refresh screen');
-      else toast.info('Created New Post');
-    } else {
-      if (post.id) toast.error('Failed to Update Post');
-      else toast.error('Failed To Create Post');
-    }
-    setSubmitLoading(false);
   };
 
   return (

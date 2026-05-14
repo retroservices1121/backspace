@@ -3,6 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
+import prisma from '@src/api2/prisma';
 import { buildID, buildSubscriptionChannel, SubEvents } from '@src/lib/ably';
 import { ablyLite } from '@src/lib/ablyServer';
 

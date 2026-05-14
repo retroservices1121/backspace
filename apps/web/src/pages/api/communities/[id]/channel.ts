@@ -3,6 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
+import prisma from '@src/api2/prisma';
 import { Permissions } from '@prisma/client';
 import { hasPermission } from '@src/lib/role';
 

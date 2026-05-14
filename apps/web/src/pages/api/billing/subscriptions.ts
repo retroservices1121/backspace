@@ -4,6 +4,7 @@
 // Author(s): See Git History
 
 
+import prisma from '@src/api2/prisma';
 import { Prisma, Subscription } from '@prisma/client';
 import { BillingWithAll, getBillingByUserId } from '@src/api2/billing';
 import { getCommunitiesByFbid } from '@src/api2/community';

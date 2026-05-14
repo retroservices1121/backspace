@@ -7,7 +7,6 @@ import { Channel as ChannelType, Community as CommunityType, Permissions } from 
 
 
 export enum PostFormFields {
-  Title = 'title',
   Caption = 'text',
   CommentsEnabled = 'commentsEnabled',
   PermissionsRequired = 'permissionsRequired',
@@ -18,7 +17,6 @@ export enum PostFormFields {
 }
 
 export type PostFormState = {
-  [PostFormFields.Title]: string;
   [PostFormFields.Caption]: string;
   [PostFormFields.CommentsEnabled]: boolean;
   [PostFormFields.PermissionsRequired]: Permissions;

@@ -29,7 +29,7 @@ import { PostFormFields, PostFormState } from 'types/post';
 import { FormDebug } from 'utils/FormDebug';
 
 import UserTile from '../User/UserTile';
-import { CancelButton, ColoredSpan, InputTitle, Option as OptionSection } from './styled';
+import { CancelButton, ColoredSpan, Option as OptionSection } from './styled';
 
 /** The entire point of this is to reset channel if community changes */
 const ChannelField = (props) => {
@@ -56,12 +56,14 @@ const ChannelField = (props) => {
   );
 };
 
+// X-style composer: no title. The post body is the single required
+// field — an empty post can't be submitted.
 const CreatePostSchema = Yup.object().shape({
-  [PostFormFields.Title]: Yup.string()
-    .min(1, 'is too short')
-    .required('is required'),
   [PostFormFields.Caption]: Yup.string()
-    .max(12000, 'Caption is too long'),
+    .trim()
+    .min(1, 'is required')
+    .max(12000, 'is too long')
+    .required('is required'),
 });
 
 type Props = {
@@ -102,7 +104,6 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
   });
 
   const INITIAL_STATE: PostFormState = {
-    [PostFormFields.Title]: post?.title || '',
     [PostFormFields.Caption]: post?.text || '',
     [PostFormFields.CommentsEnabled]: post?.enableComments || true,
     [PostFormFields.PermissionsRequired]: post?.message?.channel?.readPermission || Permissions.EVERYONE,
@@ -131,20 +132,10 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
         {/* Displays User info */}
         <UserTile user={user} />
 
-
-        <Field
-          name={PostFormFields.Title}
-          placeholder="Post Title"
-          as={InputTitle}
-        />
-        <ErrorMessage name={PostFormFields.Title}>
-          {msg => `Post title ${msg}`}
-        </ErrorMessage>
-        <Space />
         <div className="max-w-prose max-h-96 overflow-y-auto">
           <Field
             name={PostFormFields.Caption}
-            placeholder="Write a caption..."
+            placeholder="What's happening?"
             value={values[PostFormFields.Caption]}
             component={FormikInput}
           />
@@ -218,7 +209,7 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
 
         <FlexSpaceBetween>
           <CancelButton color='none' onClick={onCancel}>Cancel</CancelButton>
-          <ButtonLarge color='primary' type="submit" >{post?.id ? 'Update' : 'Create'} Post</ButtonLarge>
+          <ButtonLarge color='primary' type="submit">{post?.id ? 'Update' : 'Post'}</ButtonLarge>
         </FlexSpaceBetween>
         </Form>
       )}

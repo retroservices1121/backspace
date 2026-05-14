@@ -4,6 +4,7 @@
 // Author(s): See Git History
 
 
+import prisma from '@src/api2/prisma';
 import { Prisma } from '@prisma/client';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 
