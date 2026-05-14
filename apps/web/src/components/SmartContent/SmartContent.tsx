@@ -24,18 +24,20 @@ const SmartContent: React.FC<Props> = ({ children, clickable = true }) => {
 
   /** Process mentions */
   function parseString(text: string) {
-    const headIndex = 1;
-    const usernameIndex = 2;
-    const tailIndex = 3;
-  
     const groups = text.split(' ');
-    const regex = new RegExp('(.*)@\{([a-zA-Z_\-]{1,})\}(.*)');
+    // Braced form (@{handle}) is produced by the rich post editor and
+    // may sit mid-token with surrounding text. Braceless form (@handle)
+    // is what people type by hand (e.g. in a bio); it must start the
+    // token so we don't linkify the domain half of an email address.
+    const bracedRegex = /(.*)@\{([a-zA-Z_\-]{1,})\}(.*)/;
+    const bracelessRegex = /^@([a-zA-Z0-9_]{2,})(.*)$/;
     const processedGroups = groups.map((each) => {
-      const atMention = each.match(regex);
+      const braced = each.match(bracedRegex);
+      const atMention = braced ?? each.match(bracelessRegex);
       if (atMention) {
-        const head = atMention[headIndex];
-        const username = atMention[usernameIndex];
-        const tail = atMention[tailIndex];
+        const [head, username, tail] = braced
+          ? [atMention[1], atMention[2], atMention[3]]
+          : ['', atMention[1], atMention[2]];
         return (
           <>
           {head}

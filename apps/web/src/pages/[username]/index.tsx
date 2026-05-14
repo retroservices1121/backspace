@@ -17,6 +17,7 @@ import { UserWithProfile } from 'api2/user';
 import Avatar from 'components/Avatar';
 import { AvatarTypes } from 'components/Avatar/Avatar';
 import CommunityIcon from 'components/CommunityIcon/CommunityIcon';
+import SmartContent from 'components/SmartContent';
 import {
   Banner,
   Container,
@@ -202,7 +203,9 @@ function Profile() {
                )}
              </OldRow>
 
-             <ProfileDescription>{profile.bio}</ProfileDescription>
+             <ProfileDescription>
+               <SmartContent>{profile.bio}</SmartContent>
+             </ProfileDescription>
 
              {currentUser.id && (
                <ProfileInteractions>
@@ -246,6 +249,13 @@ function Profile() {
                  <OldCol $center>
                    <h2>{makeShortNumber(profile._count.followers || 0)}</h2>
                    <h6>Followers</h6>
+                 </OldCol>
+               </PointerCursor>
+               <VerticalLine />
+               <PointerCursor onClick={() => setTab(Tabs.Follows)}>
+                 <OldCol $center>
+                   <h2>{makeShortNumber(profile._count.following || 0)}</h2>
+                   <h6>Following</h6>
                  </OldCol>
                </PointerCursor>
               <VerticalLine />

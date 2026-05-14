@@ -134,7 +134,7 @@ const profileAttributes = Prisma.validator<Prisma.UserInclude>()({
   state: true,
   communities: true,
   _count: {
-    select: { likesRecieved: true, posts: true, followers: true },
+    select: { likesRecieved: true, posts: true, followers: true, following: true },
   },
   followers: true,
   //following: true,
