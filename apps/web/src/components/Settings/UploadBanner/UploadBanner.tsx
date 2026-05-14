@@ -3,9 +3,8 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
-import { legacyFirebasePathToURL as getMediaUrl } from '@src/api2/storage';
 import UploadInput from 'components/UploadInput';
 import { EditButton } from 'styles/Buttons';
 import { Icon } from 'styles/Globals';
@@ -16,6 +15,8 @@ import EditIcon from '../../../../public/graphics/commonicons/edit.svg';
 import { Container, EditButtonWrapper } from './styles';
 
 type Props = {
+  // Already-resolved image URL for the user's current banner (callers
+  // resolve the Media row via useMedia before passing it in).
   preview: string | null;
 };
 
@@ -27,18 +28,18 @@ const UploadBanner: Input<File, Props> = ({
   preview,
 }) => {
   const fileUploadRef = useRef<HTMLInputElement>(null);
-  const [mediaURL, setMediaURL] = useState('');
 
-  useEffect(() => {
-    if (value) {
-      setMediaURL(URL.createObjectURL(value));
-    } else if (preview) {
-      getMediaUrl(preview).then((url) => {
-        setMediaURL(url);
-      });
-      
-    }
-  }, [preview, value]);
+  // Blob URL for the just-picked file. Memoized + revoked so we don't
+  // mint (and leak) a fresh object URL on every render.
+  const objectUrl = useMemo(
+    () => (value ? URL.createObjectURL(value) : ''),
+    [value],
+  );
+  useEffect(() => () => {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  }, [objectUrl]);
+
+  const mediaURL = objectUrl || preview || '';
 
   return (
     <Container showBorder={mediaURL ? false : true}>

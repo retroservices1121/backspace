@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import useMedia from '@src/hooks/useMedia';
 import useUser from '@src/hooks/useUser';
 import { ErrorMessage, Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
@@ -48,8 +49,8 @@ type Props = {};
 const AccountForm: FormType<AccountFormState, Props> = ({
   onSubmit,
 }) => {
-  const { user } = useUser();
-
+  const { user, avatar } = useUser();
+  const banner = useMedia(user?.banner);
 
   let INITIAL_STATE: AccountFormState = {
     [AccountFields.ProfilePic]: null,
@@ -79,13 +80,13 @@ const AccountForm: FormType<AccountFormState, Props> = ({
             <Field
               name={AccountFields.BannerPic}
               component={UploadBanner}
-              preview={user.banner}
+              preview={banner}
             />
 
             <Field
               name={AccountFields.ProfilePic}
               component={UploadPfp}
-              preview={user.avatar}
+              preview={avatar}
             />
           </ImageHeader>
 
