@@ -205,8 +205,15 @@ model Post {
   // Optional market link — non-null posts render <MarketCard />
   market         Market?       @relation(fields: [marketId], references: [id])
   marketId       BigInt?
+  // Optional spot-token attachment — non-null posts render an inline
+  // <PostTokenCard /> with a Buy CTA (Dflow Solana swaps). Mirrors the
+  // market attachment pattern but for tradeable tokens rather than
+  // outcome markets.
+  token          Token?        @relation(fields: [tokenId], references: [id])
+  tokenId        BigInt?
   reports        Report[]
   @@index([marketId])
+  @@index([tokenId])
 }
 
 // Every time a post is modified, save a copy of what the post content was
@@ -703,6 +710,32 @@ model Market {
   @@unique([venue, externalId], name: "venueExternalId")
   @@index([status, closesAt])
   @@index([communityId])
+}
+
+// Spot-tradeable token catalog. Solana SPL tokens that Dflow's
+// aggregator can route through. Imported nightly from Dflow's
+// /tokens-with-decimals (mint + decimals) joined against Jupiter's
+// strict token list for display metadata (symbol/name/logo) — mints
+// without Jupiter metadata are intentionally skipped to keep junk
+// out of the catalog.
+//
+// Single table for now (Dflow only). Future Solana venues would add
+// a `venue` discriminator the same way Market does.
+model Token {
+  id        BigInt   @id @unique @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Solana mint address (base58). Unique across the catalog.
+  mint      String   @unique
+  symbol    String
+  name      String
+  decimals  Int
+  logoURI   String?
+  // Soft-flag for admin moderation — hides without deleting.
+  isActive  Boolean  @default(true)
+  posts     Post[]
+  @@index([symbol])
+  @@index([isActive])
 }
 
 model Outcome {
