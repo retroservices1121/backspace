@@ -18,6 +18,7 @@ import { ButtonLarge } from 'styles/Buttons';
 
 type CommunityLike = {
   id: bigint;
+  uuid?: string;
   name: string;
   description?: string;
   avatar?: any;
@@ -42,7 +43,12 @@ const ProfileCommunityCard: React.FC<Props> = ({ community, ownerName }) => {
     if (!isMember) {
       await dispatch(communityActions.joinCommunity(community.id));
     }
-    router.push(APP.COMMUNITY.INDEX);
+    // Pass the community uuid so /community can select it directly
+    // instead of defaulting to whichever ends up first in the user's
+    // membership list. Without this, mobile users land on the wrong
+    // community (or a "no channel selected" empty state).
+    const query = community.uuid ? { c: community.uuid } : undefined;
+    router.push({ pathname: APP.COMMUNITY.INDEX, query });
   };
 
   const description =

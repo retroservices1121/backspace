@@ -3,10 +3,13 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactLoading from 'react-loading';
+import { useDispatch, useSelector } from 'react-redux';
+import { MenuAlt2Icon } from '@heroicons/react/outline';
 import useConstructor from '@src/hooks/useConstructor';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 
 import ChannelFeed from 'components/Channel';
 import CommunityDrawer from 'components/Community/CommunityDrawer';
@@ -18,21 +21,39 @@ import PurchaseSubscription from 'components/modals/PurchaseSubscription';
 import useCommunity from 'hooks/entities/useCommunities';
 import { Screens, useScreen } from 'hooks/useAnalytics';
 import useBilling from 'hooks/useBilling';
-import { OldCol, OldRow } from 'styles/Flex';
+import { toggleDrawer } from 'store/appSlice';
+import { RootState } from 'store/store';
 
 type Props = {};
 
 const Community: React.FC<Props> = ({ }) => {
   useScreen(Screens.Community);
+  const router = useRouter();
+  const dispatch = useDispatch();
   // Note: useCommunity bootstraps this feature.
   const { current: { community, channel }, run, noFriends } = useCommunity();
   const { purchaseSubscription } = useBilling();
+  // Communities map — used to detect "the requested community is loaded"
+  // so we can switch to it once getCommunities() resolves.
+  const communities = useSelector((s: RootState) => s.community.communities);
 
   useConstructor(run.init);
 
+  // If /community?c=<uuid> was set (e.g. from a profile's Enter button),
+  // switch to that community as soon as it's available in state. The
+  // default upsertCommunities path picks payload[0], which is usually
+  // not the one the user clicked from a profile.
+  const requestedUuid = (router.query.c as string | undefined) ?? undefined;
+  useEffect(() => {
+    if (!requestedUuid) return;
+    if (!communities[requestedUuid]) return; // not loaded yet
+    if (community?.uuid === requestedUuid) return; // already selected
+    run.changeCommunity(requestedUuid);
+  }, [requestedUuid, communities, community?.uuid]);
+
   if (!community) {
     return <ReactLoading type='bubbles' />;
-  } 
+  }
 
   if (noFriends) {
     return (
@@ -59,9 +80,25 @@ const Community: React.FC<Props> = ({ }) => {
       {/* Main section */}
 
       {!channel ? (
-        <OldCol $full>
-          <OldRow $full $center>You have no channel selected.</OldRow>
-        </OldCol>
+        // No channel selected — typically because the community has no
+        // channels yet, or mobile users landed before auto-select kicked
+        // in. Surface a Browse rooms CTA that opens the drawer rather
+        // than a dead-end message.
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+          <h4 className="text-fontFocus">Pick a room to get started</h4>
+          <p className="text-sm text-fontTertiary max-w-xs">
+            Rooms are where the conversation happens. Open the room list to
+            jump in.
+          </p>
+          <button
+            type="button"
+            onClick={() => dispatch(toggleDrawer())}
+            className="mt-2 flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          >
+            <MenuAlt2Icon className="w-5 h-5" />
+            Browse rooms
+          </button>
+        </div>
       ) : (
         <ChannelFeed id={channel.uuid}/>
       )}
@@ -75,4 +112,3 @@ const Community: React.FC<Props> = ({ }) => {
 };
 
 export default Community;
-
