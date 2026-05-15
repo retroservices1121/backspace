@@ -32,13 +32,12 @@ handler
       take: 20,
       include: {
         ...Post.include,
-        likes: { //This will add only my likes to the post fetch
-          where: {
-            user: {
-              authId: authId,
-            },
-          },
-        },
+        // Scope likes/reposts/bookmarks to the requesting user so the
+        // client gets a zero/one-element array per row meaning "is
+        // this mine." Counts come from _count regardless of viewer.
+        likes:     { where: { user: { authId } } },
+        reposts:   { where: { user: { authId } } },
+        bookmarks: { where: { user: { authId } } },
       },
       orderBy: {
         createdAt: Prisma.SortOrder.desc,

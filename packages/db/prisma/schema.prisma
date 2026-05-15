@@ -52,6 +52,8 @@ model User {
   comments             Comment[]
   likesGiven           PostLike[]      @relation(name: "likesGiven")
   likesRecieved        PostLike[]      @relation(name: "likesRecieved")
+  reposts              Repost[]
+  bookmarks            Bookmark[]
   commentLikesGiven    CommentLike[]   @relation(name: "commentLikesGiven")
   commentLikesRecieved CommentLike[]   @relation(name: "commentLikesRecieved")
   communities          Community[]     @relation(name: "ownedCommunity")
@@ -193,6 +195,12 @@ model Post {
   media          Media[]
   comments       Comment[]
   likes          PostLike[]
+  reposts        Repost[]
+  bookmarks      Bookmark[]
+  // Twitter/X-style impression count. Incremented (not deduped) on
+  // every render past the visibility threshold. Author views are
+  // excluded server-side.
+  viewCount      Int           @default(0)
   mentions       Mention[]
   // Optional market link — non-null posts render <MarketCard />
   market         Market?       @relation(fields: [marketId], references: [id])
@@ -291,6 +299,36 @@ model PostLike {
   userId      BigInt
 
   @@unique([postId, userId], name:"userLike")
+}
+
+// One row per (post, user) repost. Author-only-once enforced by the
+// composite unique — a second POST to /api/post/[id]/repost from the
+// same user is a no-op.
+model Repost {
+  id        BigInt   @id @unique @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    BigInt
+  user      User     @relation(fields: [userId], references: [id])
+  userId    BigInt
+
+  @@unique([postId, userId], name: "userRepost")
+}
+
+// Private save. Same shape as Repost; lives in a separate table for
+// clean cascade semantics + so a future "Bookmarks" page can query
+// independently of repost analytics.
+model Bookmark {
+  id        BigInt   @id @unique @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    BigInt
+  user      User     @relation(fields: [userId], references: [id])
+  userId    BigInt
+
+  @@unique([postId, userId], name: "userBookmark")
 }
 
 model Private {

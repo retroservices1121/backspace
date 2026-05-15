@@ -26,12 +26,17 @@ handler
       authId,
     } = req;
     //TODO add 'allowed to access' check
-    const post = await prisma.post.findUnique( {
+    const post = await prisma.post.findUnique({
       where: {
         id: id ? BigInt(id as string) : undefined,
         uuid: uuid ? uuid as string : undefined,
       },
-      include: Post.include,
+      include: {
+        ...Post.include,
+        likes:     { where: { user: { authId } } },
+        reposts:   { where: { user: { authId } } },
+        bookmarks: { where: { user: { authId } } },
+      },
     });
     res.json(post);
   })
@@ -141,7 +146,12 @@ handler
       // Return the full Post payload (author/avatar/message/community/
       // channel/media) so the client can drop the row into the feed
       // without a follow-up GET.
-      include: Post.include,
+      include: {
+        ...Post.include,
+        likes:     { where: { user: { authId } } },
+        reposts:   { where: { user: { authId } } },
+        bookmarks: { where: { user: { authId } } },
+      },
     });
     res.json(post);
   })
@@ -165,7 +175,12 @@ handler
         id: BigInt(typedBody.id),
       },
       data: update,
-      include: Post.include,
+      include: {
+        ...Post.include,
+        likes:     { where: { user: { authId } } },
+        reposts:   { where: { user: { authId } } },
+        bookmarks: { where: { user: { authId } } },
+      },
     });
     res.json(post);
   })

@@ -187,9 +187,16 @@ export namespace Post {
       select: {
         likes: true,
         comments: true,
+        reposts: true,
+        bookmarks: true,
       },
     },
-    likes: false, //needed so we can conditionally add likes
+    // false on the include so routes can swap them in scoped to the
+    // requesting user — same pattern as `likes`, which gives the
+    // client a zero/one-element array meaning "is this mine."
+    likes: false,
+    reposts: false,
+    bookmarks: false,
   };
 
 }
