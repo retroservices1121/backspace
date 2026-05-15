@@ -3,7 +3,11 @@
 // translates DB rows into this shape so the UI never has to know about
 // Prisma's Decimal vs the wire's string. See packages/markets/src/types.ts.
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+
+// negRisk markets can carry 100+ outcomes; show the most-probable
+// handful and tuck the rest behind a "more" toggle.
+const OUTCOME_DISPLAY_CAP = 8;
 
 export type MarketCardOutcome = {
   externalId: string;
@@ -79,6 +83,21 @@ export function MarketCard({
   const [side, setSide] = useState<Side>('BUY');
   const [shares, setShares] = useState('10');
   const [submitting, setSubmitting] = useState(false);
+  const [showAllOutcomes, setShowAllOutcomes] = useState(false);
+
+  // Most-probable outcome first. Sorted on the cached price (not the
+  // live one) so the order stays stable as prices tick.
+  const sortedOutcomes = useMemo(
+    () =>
+      [...market.outcomes].sort(
+        (a, b) => Number(b.lastPrice ?? 0) - Number(a.lastPrice ?? 0),
+      ),
+    [market.outcomes],
+  );
+  const displayedOutcomes = showAllOutcomes
+    ? sortedOutcomes
+    : sortedOutcomes.slice(0, OUTCOME_DISPLAY_CAP);
+  const hiddenOutcomeCount = sortedOutcomes.length - displayedOutcomes.length;
 
   const outcome = market.outcomes.find((o) => o.externalId === selectedOutcome);
   // Prefer the live websocket midpoint; fall back to the cached price.
@@ -133,25 +152,35 @@ export function MarketCard({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2 px-4">
-        {market.outcomes.map((o) => {
+        {displayedOutcomes.map((o) => {
           const active = o.externalId === selectedOutcome;
           return (
             <button
               key={o.externalId}
               onClick={() => setSelectedOutcome(o.externalId)}
-              className={`flex flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition ${
+              className={`flex min-w-[8rem] flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition ${
                 active
                   ? 'border-white/40 bg-white/10'
                   : 'border-white/10 bg-black/20 hover:border-white/20'
               }`}
             >
-              <span className="text-sm font-medium text-white">{o.label}</span>
-              <span className="text-sm font-mono tabular-nums text-white/80">
+              <span className="truncate text-sm font-medium text-white">
+                {o.label}
+              </span>
+              <span className="shrink-0 text-sm font-mono tabular-nums text-white/80">
                 {pct(livePrices?.[o.externalId] ?? o.lastPrice)}
               </span>
             </button>
           );
         })}
+        {sortedOutcomes.length > OUTCOME_DISPLAY_CAP && (
+          <button
+            onClick={() => setShowAllOutcomes((v) => !v)}
+            className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/60 transition hover:border-white/20 hover:text-white/80"
+          >
+            {showAllOutcomes ? 'Show less' : `+${hiddenOutcomeCount} more`}
+          </button>
+        )}
       </div>
 
       <div className="mt-3 px-4 pb-4">

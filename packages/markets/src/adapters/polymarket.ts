@@ -16,32 +16,43 @@ import type {
  * Polymarket adapter.
  *
  * Polymarket runs a CLOB on Polygon. Their public Gamma API serves the market
- * catalog (read-only, no auth), the CLOB API handles order placement (signed
- * orders), and `condition_id` is the stable cross-API market identifier we
- * persist as Market.externalId.
+ * catalog (read-only, no auth) and the CLOB API handles order placement.
  *
- *   Catalog:  https://gamma-api.polymarket.com/markets
+ *   Catalog:  https://gamma-api.polymarket.com/events
  *   CLOB:     https://clob.polymarket.com   (signed orders)
  *   Docs:     https://docs.polymarket.com
  *
- * Implemented now:
- *   - listMarkets / getMarket  Catalog reads via Gamma. These let the
- *                              importer cache markets and outcomes into our
- *                              Market and Outcome tables and refresh prices.
+ * We read the catalog from the /events endpoint, not /markets, because
+ * Polymarket groups markets by event:
+ *   - A negRisk event (a "Who wins X?" market) is ONE multi-outcome
+ *     market, but under the hood it is N separate Yes/No conditionId
+ *     markets, one per candidate. We collapse it back into a single
+ *     VenueMarket whose outcomes are the candidates (label =
+ *     groupItemTitle, externalId = the candidate YES clob token id).
+ *     Its externalId is event-{id}.
+ *   - A plain event just groups independent binary markets by topic; we
+ *     emit each of its markets as its own VenueMarket (externalId =
+ *     conditionId), exactly as before.
  *
  * Still throwing:
- *   - quote / submit           Need CLOB integration (signed orders + a
- *                              Polygon RPC + signer setup). Out of scope
- *                              for the catalog-import pass.
+ *   - quote / submit  CLOB integration lives in apps/web/src/lib/polymarket.
  */
 const DEFAULT_GAMMA_URL = 'https://gamma-api.polymarket.com';
 const DEFAULT_CLOB_URL = 'https://clob.polymarket.com';
 
-// What we accept off the wire from Gamma. The catalog endpoint returns
-// camelCase keys and packs outcome data into THREE parallel JSON-encoded
-// string arrays (`outcomes`, `outcomePrices`, `clobTokenIds`) rather than
-// an array of objects. Some fields appear under multiple historical names
-// (`endDate` full ISO timestamp vs. `endDateIso` date-only); accept either.
+// externalId prefix for negRisk-event-grouped markets — distinguishes
+// them from plain markets, which are keyed by their 0x… conditionId.
+const EVENT_PREFIX = 'event-';
+
+// A negRisk event can carry 100+ candidate sub-markets; the long tail is
+// all ~0% noise. Keep the highest-probability ones and cap the rest so a
+// single event doesn't dominate an import sweep with per-outcome upserts.
+const MAX_OUTCOMES_PER_MARKET = 100;
+
+// A single Gamma market. The catalog packs outcome data into THREE
+// parallel JSON-encoded string arrays (`outcomes`, `outcomePrices`,
+// `clobTokenIds`). For a negRisk sub-market `groupItemTitle` is the
+// candidate name and `clobTokenIds` is [YES, NO].
 type RawMarket = {
   id?: string | number;
   conditionId?: string;
@@ -58,17 +69,43 @@ type RawMarket = {
   startDate?: string | null;
   startDateIso?: string | null;
   negRisk?: boolean;
+  // Candidate name on a negRisk sub-market (e.g. "Spain").
+  groupItemTitle?: string;
   // Outcome triplet — each is a JSON-encoded string at the wire level.
   outcomes?: string;
   outcomePrices?: string;
   clobTokenIds?: string;
 };
 
+type RawTag = { label?: string; slug?: string };
+
+// A Gamma event — the grouping unit. `negRisk` distinguishes a
+// multi-outcome market from a topical bundle of independent markets.
+type RawEvent = {
+  id?: string | number;
+  slug?: string;
+  title?: string;
+  description?: string;
+  image?: string | null;
+  icon?: string | null;
+  negRisk?: boolean;
+  negRiskMarketID?: string | null;
+  active?: boolean;
+  closed?: boolean;
+  archived?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
+  tags?: RawTag[];
+  markets?: RawMarket[];
+};
+
 export class PolymarketAdapter implements MarketVenue {
   readonly id = 'POLYMARKET' as const;
 
   private readonly gammaUrl: string;
+
   private readonly clobUrl: string;
+
   private readonly apiKey?: string;
 
   constructor(
@@ -85,45 +122,49 @@ export class PolymarketAdapter implements MarketVenue {
   }
 
   async listMarkets(args: ListMarketsArgs): Promise<ListMarketsResult> {
-    // Use Gamma's /markets/keyset endpoint — the builder docs recommend it
-    // for catalog scans because it scales past offset-based pagination
-    // without skipping/repeating rows when the catalog mutates between
-    // pages. The cursor in our contract IS Polymarket's opaque
-    // `next_cursor`; we pass it through unchanged.
-    //
-    // The endpoint explicitly rejects `offset` (422 validation error), so
-    // do not pass it.
+    // The /events endpoint is offset-paginated. Our ListMarketsResult
+    // `cursor` contract carries Gamma's `offset` as a string — opaque to
+    // the importer, which just passes it back to fetch the next page.
     const limit = clampLimit(args.limit);
+    const offset = parseOffset(args.cursor);
 
     const qs = new URLSearchParams();
     qs.set('limit', String(limit));
+    qs.set('offset', String(offset));
     qs.set('active', 'true');
     qs.set('closed', 'false');
-    if (args.cursor) qs.set('after_cursor', args.cursor);
-    if (args.category) qs.set('category', args.category);
     if (args.search) qs.set('q', args.search);
 
-    const raw = await this.fetchJson<{ markets?: RawMarket[]; next_cursor?: string }>(
-      `/markets/keyset?${qs.toString()}`,
+    const raw = await this.fetchJson<RawEvent[] | { data?: RawEvent[] }>(
+      `/events?${qs.toString()}`,
     );
-    const list = raw.markets ?? [];
-    const markets = list
-      .map((m) => mapRawMarket(m))
-      .filter((m): m is VenueMarket => m !== null);
+    const events = Array.isArray(raw) ? raw : (raw.data ?? []);
+    const markets = events.flatMap((e) => mapEvent(e));
 
-    // Per docs: "Present only when the number of returned markets equals
-    // the effective limit. Omitted on the last page." We surface that
-    // exact semantic as `cursor: null` for the final page.
-    const nextCursor = raw.next_cursor ?? null;
-    return { markets, cursor: nextCursor };
+    // Offset pagination: another page exists only when this one came back
+    // full. null cursor = last page.
+    const cursor = events.length === limit ? String(offset + limit) : null;
+    return { markets, cursor };
   }
 
   async getMarket(ref: VenueMarketRef): Promise<VenueMarket | null> {
     if (ref.venue !== this.id) return null;
-    // Gamma's path-based `/markets/{id}` keys on the numeric id, not on
-    // conditionId, so we query with `?condition_ids=` and pluck the one
-    // (or zero) returned row. Same wire shape as listMarkets, so the
-    // existing mapper handles it directly.
+
+    // negRisk-grouped markets are keyed by `event-{id}` — resolve them
+    // through the events endpoint.
+    if (ref.externalId.startsWith(EVENT_PREFIX)) {
+      const eventId = ref.externalId.slice(EVENT_PREFIX.length);
+      const raw = await this.fetchJson<RawEvent[] | RawEvent | null>(
+        `/events?id=${encodeURIComponent(eventId)}`,
+        { allow404: true },
+      );
+      if (!raw) return null;
+      const event = Array.isArray(raw) ? raw[0] : raw;
+      return event ? mapNegRiskEvent(event) : null;
+    }
+
+    // Plain market — keyed by conditionId. Gamma's path-based
+    // `/markets/{id}` keys on the numeric id, so query `?condition_ids=`.
     const qs = new URLSearchParams();
     qs.set('condition_ids', ref.externalId);
     qs.set('limit', '1');
@@ -136,9 +177,7 @@ export class PolymarketAdapter implements MarketVenue {
   }
 
   async quote(_args: QuoteArgs): Promise<Quote> {
-    // CLOB integration lands in a follow-up. The trade-from-timeline UI
-    // already routes intents through this method, so the error message
-    // makes the missing piece explicit.
+    // CLOB integration lives client-side in apps/web/src/lib/polymarket.
     throw new Error(
       'PolymarketAdapter.quote: CLOB signed-order integration not yet wired',
     );
@@ -180,6 +219,85 @@ function clampLimit(requested: number | undefined): number {
   return Math.min(requested, 200);
 }
 
+function parseOffset(cursor: string | undefined): number {
+  if (!cursor) return 0;
+  const n = parseInt(cursor, 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function firstTagLabel(event: RawEvent): string | null {
+  const tag = event.tags?.find((t) => t && typeof t.label === 'string');
+  return tag?.label ?? null;
+}
+
+// One Gamma event -> zero or more VenueMarkets.
+//   negRisk event -> a single multi-outcome market.
+//   plain event   -> each of its markets emitted independently.
+function mapEvent(event: RawEvent): VenueMarket[] {
+  if (event.negRisk === true) {
+    const grouped = mapNegRiskEvent(event);
+    return grouped ? [grouped] : [];
+  }
+  return (event.markets ?? [])
+    .map((m) => mapRawMarket(m))
+    .filter((m): m is VenueMarket => m !== null);
+}
+
+// Collapse a negRisk event into one multi-outcome VenueMarket. Each
+// sub-market becomes an outcome: betting on that candidate means buying
+// its YES token (clobTokenIds[0]).
+function mapNegRiskEvent(event: RawEvent): VenueMarket | null {
+  if (event.id == null || !event.title) return null;
+  const closesAt = parseDate(event.endDate);
+  if (!closesAt) return null;
+
+  const outcomes: VenueOutcome[] = [];
+  for (const sub of event.markets ?? []) {
+    // Skip resolved / inactive candidates.
+    if (sub.closed || sub.active === false) continue;
+    const tokenIds = parseStringArray(sub.clobTokenIds);
+    const prices = parseStringArray(sub.outcomePrices);
+    // clobTokenIds is [YES, NO]; the YES token is what you buy to back
+    // this candidate.
+    const yesToken = tokenIds[0];
+    const label = sub.groupItemTitle || sub.question;
+    if (!yesToken || !label) continue;
+    const rawPrice = prices[0];
+    const lastPrice: ProbabilityStr | null =
+      rawPrice && rawPrice !== '' ? rawPrice : null;
+    outcomes.push({
+      externalId: yesToken,
+      label,
+      lastPrice,
+      lastPriceAt: lastPrice !== null ? new Date() : null,
+    });
+  }
+  if (outcomes.length === 0) return null;
+
+  // Highest-probability candidates first, then cap the long tail.
+  outcomes.sort((a, b) => Number(b.lastPrice ?? 0) - Number(a.lastPrice ?? 0));
+
+  return {
+    venue: 'POLYMARKET',
+    externalId: `${EVENT_PREFIX}${event.id}`,
+    question: event.title,
+    description: event.description ?? '',
+    category: firstTagLabel(event),
+    imageUrl: event.image ?? event.icon ?? null,
+    chain: 'polygon',
+    // negRisk events settle through the NegRisk adapter — there's no
+    // single conditionId, so key the on-chain ref on negRiskMarketID.
+    contractAddress: event.negRiskMarketID ?? null,
+    negRisk: true,
+    status: deriveEventStatus(event),
+    opensAt: parseDate(event.startDate),
+    resolvedAt: event.closed ? closesAt : null,
+    closesAt,
+    outcomes: outcomes.slice(0, MAX_OUTCOMES_PER_MARKET),
+  };
+}
+
+// A plain binary (or otherwise self-contained) Gamma market.
 function mapRawMarket(raw: RawMarket): VenueMarket | null {
   const externalId = raw.conditionId;
   const question = raw.question;
@@ -250,5 +368,11 @@ function parseStringArray(encoded: string | undefined): string[] {
 function deriveStatus(raw: RawMarket): VenueMarket['status'] {
   if (raw.closed) return 'RESOLVED';
   if (raw.active === false) return 'FROZEN';
+  return 'ACTIVE';
+}
+
+function deriveEventStatus(event: RawEvent): VenueMarket['status'] {
+  if (event.closed) return 'RESOLVED';
+  if (event.active === false) return 'FROZEN';
   return 'ACTIVE';
 }
