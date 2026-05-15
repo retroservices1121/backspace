@@ -36,6 +36,7 @@
     "@polymarket/clob-client-v2": "^1.0.6",
     "@prisma/client": "^5.13.0",
     "@privy-io/react-auth": "^1.66.0",
+    "@solana/web3.js": "^1.98.4",
     "@reduxjs/toolkit": "^1.8.1",
     "@stripe/react-stripe-js": "^1.8.0",
     "@stripe/stripe-js": "^1.29.0",

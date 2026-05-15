@@ -11,6 +11,7 @@ import AppWelcome from '@src/components/modals/AppWelcome';
 import PostViewer from '@src/components/modals/PostViewer';
 import useAuthentication from '@src/hooks/useAuthenticate';
 import { useWalletSync } from '@src/hooks/useWalletSync';
+import { solanaRpcUrl } from '@src/lib/dflow/config';
 import { polygonRpcUrl } from '@src/lib/polymarket/config';
 import { AuthStatus } from '@src/store/authSlice';
 import { AppLayoutProps } from 'next/app';
@@ -37,6 +38,16 @@ const POLYGON_RPC_URL = polygonRpcUrl();
 const polygonChain = POLYGON_RPC_URL
   ? addRpcUrlOverrideToChain(polygon, POLYGON_RPC_URL)
   : polygon;
+
+// Dflow spot trading runs on Solana. The Privy v1.99 SDK ships with
+// Solana support — useSolanaWallets() returns ConnectedSolanaWallet
+// instances. solanaClusters tells Privy which RPC to broadcast through;
+// we only override when we have a paid RPC URL configured so dev still
+// works against the public mainnet-beta default.
+const SOLANA_RPC_URL = solanaRpcUrl();
+const solanaClusters = SOLANA_RPC_URL
+  ? [{ name: 'mainnet-beta' as const, rpcUrl: SOLANA_RPC_URL }]
+  : undefined;
 
 // Give JSON support for BigInts to the app
 // See https://github.com/GoogleChromeLabs/jsbi/issues/30
@@ -111,6 +122,13 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
             appearance: { theme: 'dark', accentColor: '#5822FB' },
             defaultChain: polygonChain,
             supportedChains: [polygonChain],
+            // Solana support for Dflow spot trading. The Solana wallet
+            // is created on-demand via useSolanaWallets().createWallet
+            // (see lib/dflow/ in Phase 3) — Privy's createOnLogin is
+            // a single Ethereum-or-Solana switch, not per-chain, so we
+            // keep Ethereum as the auto-create default and provision
+            // Solana explicitly when the user opens a Dflow flow.
+            ...(solanaClusters ? { solanaClusters } : {}),
           }}
         >
           <AppBody Component={Component} pageProps={pageProps} />

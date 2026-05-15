@@ -81,6 +81,19 @@ On-chain trade integration (CLOB V2). See `apps/web/src/lib/polymarket/`.
 
 All three `POLYMARKET_BUILDER_*` values come together from the Builder Profile. Without them the relayer signing endpoint returns 503 and trading stays disabled.
 
+## Dflow spot trading
+
+Solana DEX aggregator for spot swaps. See `apps/web/src/lib/dflow/`.
+
+| Var | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | Solana mainnet RPC. Used by the Privy embedded wallet (via `solanaClusters` in `_app.tsx`) and the browser-side broadcast path. Public RPC (`api.mainnet-beta.solana.com`) works for dev but is rate-limited; use Helius/QuickNode in prod. |
+| `DFLOW_API_KEY` | **Server-only.** Required `x-api-key` for every Dflow endpoint (`/quote`, `/swap`, `/tokens`). Request from `hello@dflow.net`. Server-side proxies in `pages/api/dflow/*` inject this header so the key never reaches the client bundle. |
+| `DFLOW_FEE_ACCOUNT` | **Server-only.** Backspace-controlled SPL token account that receives the `platformFeeBps` cut on every Dflow swap. Optional — without it, no platform fee is charged. |
+| `NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS` | Platform fee in basis points (e.g. `30` = 0.30%). Exposed to the client for display only; the server enforces the actual fee on every quote/swap. Defaults to `0` if unset. |
+
+Without `DFLOW_API_KEY` the proxy routes return 503 and the Dflow flow stays disabled. `NEXT_PUBLIC_SOLANA_RPC_URL` is required at runtime to broadcast signed transactions.
+
 ## App origin
 
 | Var | Notes |
