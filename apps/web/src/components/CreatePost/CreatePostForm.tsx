@@ -31,6 +31,7 @@ import { FormDebug } from 'utils/FormDebug';
 import MediaUploadArea from '../MediaUploadArea';
 import UserTile from '../User/UserTile';
 import MarketPicker from './MarketPicker';
+import TokenPicker from './TokenPicker';
 import { CancelButton, ColoredSpan, Option as OptionSection } from './styled';
 
 /** The entire point of this is to reset channel if community changes */
@@ -115,6 +116,9 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
     [PostFormFields.Channel]: undefined,
     [PostFormFields.Tags]: [],
     [PostFormFields.Market]: post?.marketId ? String(post.marketId) : null,
+    [PostFormFields.Token]: (post as { tokenId?: bigint | string | null })?.tokenId
+      ? String((post as { tokenId: bigint | string }).tokenId)
+      : null,
   };
 
   return (
@@ -153,12 +157,20 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
           </ErrorMessage>}
         </div>
 
-        {/* Attach a market — the post will render with the inline trade
-            card under the text in the feed. */}
-        {!post?.id && (
+        {/* Attach a market OR a token — mutually exclusive, since both
+            embed below the post text in the feed and the renderer
+            shouldn't have to pick between them. Picking one clears the
+            other. */}
+        {!post?.id && !values[PostFormFields.Token] && (
           <MarketPicker
             value={values[PostFormFields.Market] ?? null}
             onChange={(id) => setFieldValue(PostFormFields.Market, id)}
+          />
+        )}
+        {!post?.id && !values[PostFormFields.Market] && (
+          <TokenPicker
+            value={values[PostFormFields.Token] ?? null}
+            onChange={(id) => setFieldValue(PostFormFields.Token, id)}
           />
         )}
 

@@ -17,6 +17,10 @@ export enum PostFormFields {
   // Optional Market the post is "about" — the renderer drops the
   // inline <PostMarketCard /> below the text when this is set.
   Market = 'marketId',
+  // Optional Solana spot Token the post is "about" — the renderer
+  // drops the inline <PostTokenCard /> below the text when this is
+  // set. Mutually exclusive with Market in the picker UI.
+  Token = 'tokenId',
 }
 
 export type PostFormState = {
@@ -30,4 +34,6 @@ export type PostFormState = {
   [PostFormFields.Channel]: { name: string, value:ChannelType };
   // Market.id stringified, or null/undefined for no attachment.
   [PostFormFields.Market]?: string | null;
+  // Token.id stringified, or null/undefined for no attachment.
+  [PostFormFields.Token]?: string | null;
 };

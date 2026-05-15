@@ -140,6 +140,15 @@ handler
           id: BigInt(typedBody.marketId),
         },
       } : undefined,
+      // Optional Solana spot Token attachment — set by the CreatePost
+      // TokenPicker. When non-null, MediaPost/ContentContainer renders
+      // the inline <PostTokenCard /> (Dflow swap widget) under the post
+      // text. The composer enforces mutual exclusion with marketId.
+      token: typedBody.tokenId ? {
+        connect: {
+          id: BigInt(typedBody.tokenId),
+        },
+      } : undefined,
     };
     const post = await prisma.post.create({
       data: newPost,
