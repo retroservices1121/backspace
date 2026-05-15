@@ -26,10 +26,17 @@ handler.get(async (req, res) => {
     ? Math.min(requested, MAX_LIMIT)
     : DEFAULT_LIMIT;
 
+  // Optional question search — powers the CreatePost market picker
+  // typeahead. Case-insensitive substring; ignored when empty/short.
+  const q = ((req.query.q as string) ?? '').trim();
+
   const markets = await prisma.market.findMany({
     where: {
       status: MarketStatus.ACTIVE,
       closesAt: { gt: new Date() },
+      ...(q.length >= 2
+        ? { question: { contains: q, mode: 'insensitive' as const } }
+        : {}),
     },
     include: { outcomes: true },
     orderBy: { closesAt: 'asc' },

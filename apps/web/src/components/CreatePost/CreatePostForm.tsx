@@ -30,6 +30,7 @@ import { FormDebug } from 'utils/FormDebug';
 
 import MediaUploadArea from '../MediaUploadArea';
 import UserTile from '../User/UserTile';
+import MarketPicker from './MarketPicker';
 import { CancelButton, ColoredSpan, Option as OptionSection } from './styled';
 
 /** The entire point of this is to reset channel if community changes */
@@ -113,6 +114,7 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
     [PostFormFields.Community]: undefined,
     [PostFormFields.Channel]: undefined,
     [PostFormFields.Tags]: [],
+    [PostFormFields.Market]: post?.marketId ? String(post.marketId) : null,
   };
 
   return (
@@ -125,6 +127,7 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
       {({
         errors,
         values,
+        setFieldValue,
       }) => (
       <Form>
         <FormEffect<PostFormState> 
@@ -149,6 +152,15 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
             {msg => `Post ${msg}`}
           </ErrorMessage>}
         </div>
+
+        {/* Attach a market — the post will render with the inline trade
+            card under the text in the feed. */}
+        {!post?.id && (
+          <MarketPicker
+            value={values[PostFormFields.Market] ?? null}
+            onChange={(id) => setFieldValue(PostFormFields.Market, id)}
+          />
+        )}
 
         {/* Media attach + inline preview (new posts only) */}
         {!post?.id && <MediaUploadArea setMedia={setMedia} />}

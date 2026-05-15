@@ -126,7 +126,15 @@ handler
         connect: {
           id: BigInt(typedBody.mediaId),
         },
-      } : undefined, 
+      } : undefined,
+      // Optional Market attachment — set by the CreatePost MarketPicker.
+      // When non-null, MediaPost/ContentContainer renders the inline
+      // <PostMarketCard /> under the post text in the feed.
+      market: typedBody.marketId ? {
+        connect: {
+          id: BigInt(typedBody.marketId),
+        },
+      } : undefined,
     };
     const post = await prisma.post.create({
       data: newPost,

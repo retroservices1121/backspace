@@ -14,6 +14,9 @@ export enum PostFormFields {
   Profile = 'profile',
   Community = 'community',
   Channel = 'channel',
+  // Optional Market the post is "about" — the renderer drops the
+  // inline <PostMarketCard /> below the text when this is set.
+  Market = 'marketId',
 }
 
 export type PostFormState = {
@@ -25,4 +28,6 @@ export type PostFormState = {
   //These are shown as Options for the sake of the selects
   [PostFormFields.Community]: { name: string, value:CommunityType };
   [PostFormFields.Channel]: { name: string, value:ChannelType };
+  // Market.id stringified, or null/undefined for no attachment.
+  [PostFormFields.Market]?: string | null;
 };
