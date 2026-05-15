@@ -235,6 +235,28 @@ const communitySlice = createSlice({
     changeSelectedChannel(state, { payload: uuid }: PayloadAction<string>) {
       state.selected.channel = uuid;
     },
+    // Insert a single message into the channel it actually belongs to,
+    // resolved from the message's own community/channel relations rather
+    // than `state.selected`. Used for cross-surface inserts (composing a
+    // community post from the timeline composer, etc.) where the user
+    // may not be viewing the destination channel. Idempotent on uuid, so
+    // it's safe even when Ably also delivers the same message.
+    appendChannelMessage(
+      state,
+      { payload }: PayloadAction<Message & {
+        community?: { uuid: string } | null,
+        channel?: { uuid: string } | null,
+      }>,
+    ) {
+      const communityUuid = payload.community?.uuid;
+      const channelUuid = payload.channel?.uuid;
+      if (!communityUuid || !channelUuid) return;
+      const channel = state.communities[communityUuid]?.channels[channelUuid];
+      if (!channel) return;
+      if (channel.messageMap[payload.uuid]) return;
+      channel.messageMap[payload.uuid] = payload;
+      channel.messages = Object.values(channel.messageMap).sort(sortByCreatedAt());
+    },
     insertMessages(state, { payload }: PayloadAction<Message[]>) {
       const { community, channel: channelId } = state.selected;
       const channel = state.communities[community].channels[channelId];

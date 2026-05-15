@@ -11,6 +11,7 @@ import { useModal } from '@src/lib/Modal';
 import { FollowBody } from '@src/pages/api/follow';
 import { LikeBody } from '@src/pages/api/like';
 import { PostBody } from '@src/pages/api/post';
+import { communityActions } from '@src/store/community/slice';
 import { prependPost, removePostFromFeed, updatePostInFeed } from '@src/store/feedSlice';
 import { selectFollow, selectMembership } from '@src/store/post/selectors';
 import { clearPost, setPost, updatePost } from '@src/store/postSlice';
@@ -93,7 +94,13 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
     if (status === 200) {
       // Optimistically push the new post to the top of every loaded
       // feed bucket so the user sees their post without a refresh.
-      if (data) dispatch(prependPost(data));
+      if (data) {
+        dispatch(prependPost(data));
+        // Community posts also live as a Message inside a channel — if
+        // the user has that channel loaded, mirror the message into it
+        // so the channel view doesn't go stale.
+        if (data.message) dispatch(communityActions.appendChannelMessage(data.message));
+      }
       return true;
     } else {
       return false;

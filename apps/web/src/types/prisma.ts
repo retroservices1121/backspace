@@ -176,7 +176,10 @@ export namespace Post {
       include: {
         community: true,
         channel: true,
-      }, 
+        // Mirror Message.include so a post's message can be inserted
+        // straight into the community channel state on the client.
+        author: { include: User.include },
+      },
     },
     profile: true,
     comments: false, //needed so we can conditionally add likes
