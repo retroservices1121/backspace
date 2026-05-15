@@ -30,10 +30,14 @@ import useAsyncEffect from './useAsyncHook';
 import { useAxios } from './useAxios';
 import useUser from './useUser';
 
+// Per-tab dedupe set for view tracking. Lives outside the hook so
+// every MediaPost render in this tab shares one record.
+const viewedPostsThisSession = new Set<string>();
+
 /**
- * 
+ *
  * @param post post object from prisma models
- * @param fetchURLs whether media URLs should be fetched 
+ * @param fetchURLs whether media URLs should be fetched
  * @returns lots of useful things
  */
 
@@ -52,6 +56,15 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
   //With current design, only my likes should be in post.likes
   const [isLiked, setIsLiked] = useState<boolean>(post?.likes && post.likes.length > 0);
   const [isFollowing, setIsFollowing] = useState<boolean>(follow);
+  // Locally-tracked metric state. Initialized from server payload and
+  // updated optimistically on toggle so the action bar feels instant.
+  // Server-side count comes back in the POST response; we use it as
+  // the authoritative reconciliation.
+  const [isReposted, setIsReposted] = useState<boolean>(!!post?.reposts && post.reposts.length > 0);
+  const [repostCount, setRepostCount] = useState<number>(post?._count?.reposts ?? 0);
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(!!post?.bookmarks && post.bookmarks.length > 0);
+  const [bookmarkCount, setBookmarkCount] = useState<number>(post?._count?.bookmarks ?? 0);
+  const [viewCount, setViewCount] = useState<number>(post?.viewCount ?? 0);
 
   const update = async (formData: PostFormState) => {
     const changes : PostBody = {
@@ -194,6 +207,64 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
     axios.put('like', likeBody);
   };
 
+  const setRepost = async (value: boolean = !isReposted) => {
+    setIsReposted(value);
+    setRepostCount((c) => Math.max(0, c + (value ? 1 : -1)));
+    try {
+      const { data } = value
+        ? await axios.post(`/post/${post.id}/repost`)
+        : await axios.delete(`/post/${post.id}/repost`);
+      if (data) {
+        setRepostCount(data.count);
+        setIsReposted(data.mine);
+      }
+    } catch (err) {
+      // Roll back on failure.
+      setIsReposted(!value);
+      setRepostCount((c) => Math.max(0, c + (value ? -1 : 1)));
+      console.error('repost toggle failed', err);
+    }
+  };
+
+  const setBookmark = async (value: boolean = !isBookmarked) => {
+    setIsBookmarked(value);
+    setBookmarkCount((c) => Math.max(0, c + (value ? 1 : -1)));
+    try {
+      const { data } = value
+        ? await axios.post(`/post/${post.id}/bookmark`)
+        : await axios.delete(`/post/${post.id}/bookmark`);
+      if (data) {
+        setBookmarkCount(data.count);
+        setIsBookmarked(data.mine);
+      }
+    } catch (err) {
+      setIsBookmarked(!value);
+      setBookmarkCount((c) => Math.max(0, c + (value ? -1 : 1)));
+      console.error('bookmark toggle failed', err);
+    }
+  };
+
+  const trackView = async () => {
+    if (!post?.id) return;
+    // Dedupe within a single tab session — even if the post mounts
+    // multiple times (filter switch, scroll re-render) we fire one
+    // increment. Survives page-load = fine; the X model is "one per
+    // session," not "one per lifetime."
+    if (viewedPostsThisSession.has(post.id.toString())) return;
+    viewedPostsThisSession.add(post.id.toString());
+    try {
+      const { data } = await axios.post(`/post/${post.id}/view`);
+      if (data && typeof data.viewCount === 'number') {
+        setViewCount(data.viewCount);
+      }
+    } catch (err) {
+      // Treat as best-effort — drop the dedupe entry so a later
+      // retry can still land.
+      viewedPostsThisSession.delete(post.id.toString());
+      console.warn('view track failed', err);
+    }
+  };
+
   const setFollow = (value: boolean = true) => {
     setIsFollowing(value); //Assume positive
     const followBody : FollowBody = {
@@ -232,6 +303,11 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
   useEffect(() => {
     setIsLiked(post.likes && post.likes.length > 0);
     setIsFollowing(follow);
+    setIsReposted(!!post.reposts && post.reposts.length > 0);
+    setRepostCount(post?._count?.reposts ?? 0);
+    setIsBookmarked(!!post.bookmarks && post.bookmarks.length > 0);
+    setBookmarkCount(post?._count?.bookmarks ?? 0);
+    setViewCount(post?.viewCount ?? 0);
     setMediaURL([]);
   }, [post.id]);
 
@@ -249,6 +325,14 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
 
     setLike,
     setFollow,
+    setRepost,
+    setBookmark,
+    trackView,
+    isReposted,
+    isBookmarked,
+    repostCount,
+    bookmarkCount,
+    viewCount,
     share,
     open: openPost,
     edit: editPost,

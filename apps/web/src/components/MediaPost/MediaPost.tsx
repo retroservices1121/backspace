@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import PostPreview from '@src/components/modals/PostViewer';
 import usePost from '@src/hooks/usePost';
@@ -26,7 +26,15 @@ export default function MediaPost({ post }: PostProps) {
   const handleDelete = async () => {
     await thisPost.delete();
   };
-  
+
+  // Fire an impression once per session per post when the row mounts.
+  // (A proper viewport-gated IntersectionObserver would be tighter,
+  // but mount-fire matches X's behavior closely enough — the feed
+  // virtualizer mounts a post when it scrolls into the buffer zone.)
+  useEffect(() => {
+    thisPost.trackView();
+  }, [post.id]);
+
   //TODO put featured post back together
   // useEffect(() => {
   //   if (featuredPost === post.id) {

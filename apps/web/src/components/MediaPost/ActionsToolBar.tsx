@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
-import { CommentButton } from '@src/components/MediaPost/styled';
+// X-style action bar — 4 cluster buttons (reply, repost, like,
+// bookmark) plus a trailing share. Each button is icon + numeric count
+// in a hover-pilled hit area. View count sits next to the timestamp
+// (rendered upstream of this bar — left side here).
+
+import { BookmarkIcon, ChartBarIcon, ChatAltIcon, HeartIcon, RefreshIcon, ShareIcon } from '@heroicons/react/outline';
+import { BookmarkIcon as BookmarkSolid, HeartIcon as HeartSolid } from '@heroicons/react/solid';
 import usePost from '@src/hooks/usePost';
 
-import Icons from 'icons';
 import { Post } from 'types/prisma';
 import { timeAgoString, truncateLargeumbers } from 'utils/common_utils';
 
@@ -13,57 +17,93 @@ interface OwnProps {
   isLiked: boolean;
 }
 
+const formatCount = (n: number) => (n > 0 ? truncateLargeumbers(n) : '');
+
 export default function ActionsToolBar({ post, open, isLiked, actionLikePost }: OwnProps) {
-  const [likeString, setLikeString] = useState<string>('');
   const thisPost = usePost(post);
 
-  const commentString = (comments : number) => {
-    if (comments <= 0) { return 'Add Your Comment!'; }
-    if (comments === 1) { return 'View 1 Comment'; }
-    return `View All ${truncateLargeumbers(comments)} Comments`;
-  };
-
-  const createLikeString = (likes : number) => {
-    if (likes <= 0) { return 'Be the first like!'; }
-    if (likes === 1) { return '1 Like'; }
-    return `${truncateLargeumbers(likes)} Likes`;
-  };
-
-  useEffect(() => {
-    setLikeString(createLikeString(post?._count?.likes));
-  }, [post]);
-
-
+  const replyCount = post?._count?.comments ?? 0;
+  const likeCount = post?._count?.likes ?? 0;
 
   return (
-    <div className="mt-2 flex justify-between items-center">
-      <div className="flex items-center gap-3 text-sm">
-        <CommentButton onClick={open}>{commentString(post?._count?.comments)}</CommentButton>
-        {/* Timestamp links into the post detail (URL-modal), matching
-            Twitter's behavior where clicking the time opens the thread. */}
-        <span className="cursor-pointer hover:underline" onClick={open}>
+    <div className="mt-2 flex flex-col gap-1">
+      {/* Top row: timestamp + view count, left-aligned, subtle. */}
+      <div className="flex items-center gap-2 text-sm text-fontTertiary">
+        <span
+          className="cursor-pointer hover:underline"
+          onClick={open}
+          title="Open post"
+        >
           {timeAgoString(new Date(post.createdAt))}
         </span>
+        {thisPost.viewCount > 0 && (
+          <span className="flex items-center gap-1">
+            <ChartBarIcon className="w-3.5 h-3.5" />
+            <span>{truncateLargeumbers(thisPost.viewCount)} {thisPost.viewCount === 1 ? 'view' : 'views'}</span>
+          </span>
+        )}
       </div>
 
-      <div className="flex items-center gap-1">
-        <span className="text-sm mr-1">{likeString}</span>
+      {/* Bottom row: 4 action buttons + trailing share, spaced out across full width. */}
+      <div className="flex items-center justify-between max-w-md text-fontTertiary">
+        {/* Reply */}
+        <button
+          type="button"
+          onClick={open}
+          className="group flex items-center gap-1 px-1 py-1 rounded-full hover:bg-backgroundLight hover:text-primary transition-colors"
+          aria-label="Reply"
+        >
+          <ChatAltIcon className="w-5 h-5" />
+          <span className="text-xs min-w-[1ch]">{formatCount(replyCount)}</span>
+        </button>
+
+        {/* Repost */}
+        <button
+          type="button"
+          onClick={() => thisPost.setRepost()}
+          className={`group flex items-center gap-1 px-1 py-1 rounded-full hover:bg-backgroundLight hover:text-secondary transition-colors ${thisPost.isReposted ? 'text-secondary' : ''}`}
+          aria-label={thisPost.isReposted ? 'Undo repost' : 'Repost'}
+        >
+          <RefreshIcon className="w-5 h-5" />
+          <span className="text-xs min-w-[1ch]">{formatCount(thisPost.repostCount)}</span>
+        </button>
+
+        {/* Like */}
         <button
           type="button"
           onClick={actionLikePost}
-          className="p-2 flex items-center cursor-pointer rounded-full hover:bg-backgroundLight"
+          className={`group flex items-center gap-1 px-1 py-1 rounded-full hover:bg-backgroundLight hover:text-error transition-colors ${isLiked ? 'text-error' : ''}`}
+          aria-label={isLiked ? 'Unlike' : 'Like'}
         >
-          <Icons.Heart active={isLiked} allowFill={isLiked} strokeWidth={'2'} className={'sm:motion-safe:hover:animate-beat'}/>
+          {isLiked
+            ? <HeartSolid className="w-5 h-5" />
+            : <HeartIcon className="w-5 h-5" />}
+          <span className="text-xs min-w-[1ch]">{formatCount(likeCount)}</span>
         </button>
+
+        {/* Bookmark */}
+        <button
+          type="button"
+          onClick={() => thisPost.setBookmark()}
+          className={`group flex items-center gap-1 px-1 py-1 rounded-full hover:bg-backgroundLight hover:text-primary transition-colors ${thisPost.isBookmarked ? 'text-primary' : ''}`}
+          aria-label={thisPost.isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        >
+          {thisPost.isBookmarked
+            ? <BookmarkSolid className="w-5 h-5" />
+            : <BookmarkIcon className="w-5 h-5" />}
+          <span className="text-xs min-w-[1ch]">{formatCount(thisPost.bookmarkCount)}</span>
+        </button>
+
+        {/* Share — no count */}
         <button
           type="button"
           onClick={thisPost.share}
-          className="p-2 flex items-center cursor-pointer rounded-full hover:bg-backgroundLight"
+          className="group flex items-center gap-1 px-1 py-1 rounded-full hover:bg-backgroundLight hover:text-primary transition-colors"
+          aria-label="Share"
         >
-          <Icons.Share />
+          <ShareIcon className="w-5 h-5" />
         </button>
       </div>
     </div>
   );
 }
-
