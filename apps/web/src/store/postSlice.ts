@@ -60,7 +60,14 @@ const postSlice = createSlice({
   reducers: {
     setPost: (_, { payload }) => payload as PostState,
     updatePost: (state, { payload }) => state = populateStateFromObject(payload, state),
-    pushComment: (state, { payload }) => {state.comments = [...state.comments, payload];},
+    pushComment: (state, { payload }) => { state.comments = [...(state.comments ?? []), payload]; },
+    updateComment: (state, { payload }) => {
+      const idx = state.comments?.findIndex(c => c.id === payload.id) ?? -1;
+      if (idx >= 0) state.comments[idx] = { ...state.comments[idx], ...payload };
+    },
+    removeComment: (state, { payload: id }) => {
+      state.comments = (state.comments ?? []).filter(c => c.id !== id);
+    },
     clearPost: () => initialState,
   },
   extraReducers: (builder) => {
@@ -78,5 +85,5 @@ const postSlice = createSlice({
 
 export default postSlice.reducer;
 export const {
-  setPost, updatePost, pushComment, clearPost,
+  setPost, updatePost, pushComment, updateComment, removeComment, clearPost,
 } = postSlice.actions;

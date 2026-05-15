@@ -210,6 +210,12 @@ export namespace Comment {
     author: {
       include: { avatar: true },
     },
+    _count: {
+      select: { likes: true },
+    },
+    // false so routes can swap in viewer-scoped rows (mirrors the
+    // Post.include pattern). A zero/one-element array means "is mine."
+    likes: false,
   };
 
 }

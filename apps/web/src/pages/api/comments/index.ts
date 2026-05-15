@@ -1,79 +1,31 @@
-// Copyright 2022 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
-
+// GET /api/comments?postId=
+// Returns all comments on a post with author + per-viewer like state.
+//
+// The legacy PUT here toggled PostLike (not CommentLike — wrong table)
+// and was never called from the client. Removed to keep this route a
+// single-responsibility comments list. Comment likes live at
+// /api/comment/[id]/like.
 
 import prisma from '@src/api2/prisma';
-import { Prisma } from '@prisma/client';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { Comment } from '@src/types/prisma';
-
-export type LikeBody = {
-  userId: bigint,
-  postId: bigint,
-  authorId: bigint,
-  like: boolean,
-};
 
 const handler = createHandler();
 
 handler
   .use(requireAuthMiddleware)
   .get(async (req, res) => {
-    const {
-      query: { postId },
-    } = req;
-
+    const { postId } = req.query;
     const comments = await prisma.comment.findMany({
-      where: {
-        postId: BigInt(postId as string),
+      where: { postId: BigInt(postId as string) },
+      include: {
+        ...Comment.include,
+        // Viewer-scoped likes — zero/one-element array meaning "is mine."
+        likes: { where: { user: { authId: req.authId } } },
       },
-      include: Comment.include,
+      orderBy: { createdAt: 'asc' },
     });
     res.json(comments);
-  })
-  .put(async (req, res) => {
-    const { 
-      authId,
-      body,
-    } = req;
-    const typedBody : LikeBody = body;
-    if (typedBody.like) {
-      const newLike : Prisma.PostLikeCreateInput = {
-        post: {
-          connect: {
-            id: BigInt(typedBody.postId),
-          },
-        },
-        postOwner: {
-          connect: {
-            id: BigInt(typedBody.authorId),
-          },
-        },
-        user: {
-          connect: {
-            authId: authId,
-          },
-        },
-      };
-      const like = await prisma.postLike.create({
-        data: newLike,
-      });
-      return res.json(like);
-    } else { //Yes, I did put a delete in a put... but I can't put a body on a delete
-      await prisma.postLike.delete({
-        where: {
-          userLike: {
-            userId: BigInt(typedBody.userId),
-            postId: BigInt(typedBody.postId),
-          },
-        },
-      });
-      return res.end('deleted');
-    }
-
-
   });
 
 export default handler;

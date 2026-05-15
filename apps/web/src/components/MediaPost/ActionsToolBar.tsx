@@ -6,6 +6,7 @@
 import { BookmarkIcon, ChartBarIcon, ChatAltIcon, HeartIcon, RefreshIcon, ShareIcon } from '@heroicons/react/outline';
 import { BookmarkIcon as BookmarkSolid, HeartIcon as HeartSolid } from '@heroicons/react/solid';
 import usePost from '@src/hooks/usePost';
+import { useRouter } from 'next/router';
 
 import { Post } from 'types/prisma';
 import { timeAgoString, truncateLargeumbers } from 'utils/common_utils';
@@ -21,9 +22,15 @@ const formatCount = (n: number) => (n > 0 ? truncateLargeumbers(n) : '');
 
 export default function ActionsToolBar({ post, open, isLiked, actionLikePost }: OwnProps) {
   const thisPost = usePost(post);
+  const router = useRouter();
 
   const replyCount = post?._count?.comments ?? 0;
   const likeCount = post?._count?.likes ?? 0;
+
+  // Timestamp navigates to the canonical /post/[uuid] thread page —
+  // X parity. Reply icon still opens the in-feed modal for quick
+  // replies without losing the user's scroll position.
+  const goToThread = () => router.push(`/post/${post.uuid}`);
 
   return (
     <div className="mt-2 flex flex-col gap-1">
@@ -31,7 +38,7 @@ export default function ActionsToolBar({ post, open, isLiked, actionLikePost }: 
       <div className="flex items-center gap-2 text-sm text-fontTertiary">
         <span
           className="cursor-pointer hover:underline"
-          onClick={open}
+          onClick={goToThread}
           title="Open post"
         >
           {timeAgoString(new Date(post.createdAt))}

@@ -284,6 +284,10 @@ model CommentLike {
   commentOwnerId BigInt
   user           User     @relation(name: "commentLikesGiven", fields: [userId], references: [id])
   userId         BigInt
+
+  // One like per (comment, user). Without this the existing PostViewer
+  // "Like" toggle could (and previously did) insert duplicates.
+  @@unique([commentId, userId], name: "userCommentLike")
 }
 
 model PostLike {

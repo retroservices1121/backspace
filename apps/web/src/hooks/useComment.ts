@@ -1,54 +1,136 @@
-// Copyright 2022 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
+// Comment actions hook. The legacy version was post-scoped only and
+// supported add/delete (with a string-template bug that meant delete
+// never actually hit the server). Rewritten so:
+//   - the postId-scoped form returns add() for the composer,
+//   - the (commentId, comment)-scoped form returns like/edit/remove.
+// Both keep Redux in sync via postSlice so the UI updates without
+// a refetch.
 
+import { useState } from 'react';
 import { toast } from 'react-toastify';
 
 import useUser from 'hooks/useUser';
 import axios from 'lib/axios';
-import { pushComment } from 'store/postSlice';
+import { pushComment, removeComment, updateComment } from 'store/postSlice';
 import { useAppDispatch } from 'store/store';
 
-/**
- * NOTE: ONLY DESIGNED TO BE USED IN POSTVIEWER RIGHT NOW
- * @param post requires a post object for reference
- * @returns 
- */
-export default function useComment(postId: bigint) {
+export function useCommentComposer(postId: bigint | undefined) {
   const dispatch = useAppDispatch();
   const { user } = useUser();
 
-  const addComment = async (text: string) => {
-    if (postId && text) {
+  const add = async (text: string) => {
+    if (!postId || !text?.trim()) {
+      toast.error('Cannot submit comment');
+      return false;
+    }
+    try {
       const { status, data } = await axios().post('/comment', {
         postId,
-        text,
+        text: text.trim(),
       });
-      if (status >= 300) toast.error('Failed to add comment');
-      else {
-        //Add user info to new comment so we see an avatar and such
-        const newComment = { ...data, author: user };
-        dispatch(pushComment(newComment)); //Adds comment to PostPreview
+      if (status >= 300 || !data) {
+        toast.error('Failed to add comment');
+        return false;
       }
-    } else { //TODO enhance error case
-      toast.error('Cannot submit comment.');
-    }
-  };
-  /** Untested */
-  const deleteComment = async (id: bigint) => {
-    if (postId && id) {
-      const { status } = await axios().delete('/comment?id=${bigint}');
-      if (status >= 300) toast.error('Failed to delete comment');
-      else toast.info('Comment deleted');
-    } else { //TODO enhance error case
-      toast.error('Cannot delete comment.');
+      // The endpoint already includes author/_count/likes — but be
+      // defensive: stamp the author from the current user if missing
+      // (was the legacy behavior, kept so older endpoints still work).
+      const merged = data.author ? data : { ...data, author: user };
+      dispatch(pushComment(merged));
+      return true;
+    } catch (err) {
+      console.error('comment add failed', err);
+      toast.error('Failed to add comment');
+      return false;
     }
   };
 
-  return {
-    add: addComment,
-    delete : deleteComment,
+  return { add };
+}
+
+type CommentLite = {
+  id: bigint;
+  _count?: { likes: number };
+  likes?: unknown[];
+};
+
+export function useCommentRow(comment: CommentLite) {
+  const dispatch = useAppDispatch();
+  const [isLiked, setIsLiked] = useState<boolean>(
+    Array.isArray(comment.likes) && comment.likes.length > 0,
+  );
+  const [likeCount, setLikeCount] = useState<number>(comment._count?.likes ?? 0);
+  const [busy, setBusy] = useState<{ like?: boolean; remove?: boolean }>({});
+
+  const toggleLike = async (value: boolean = !isLiked) => {
+    if (busy.like) return;
+    setBusy(b => ({ ...b, like: true }));
+    setIsLiked(value);
+    setLikeCount(c => Math.max(0, c + (value ? 1 : -1)));
+    try {
+      const { data } = value
+        ? await axios().post(`/comment/${comment.id}/like`)
+        : await axios().delete(`/comment/${comment.id}/like`);
+      if (data) {
+        setLikeCount(data.count);
+        setIsLiked(data.mine);
+      }
+    } catch (err) {
+      // Roll back optimistic delta.
+      setIsLiked(!value);
+      setLikeCount(c => Math.max(0, c + (value ? -1 : 1)));
+      console.error('comment like toggle failed', err);
+    } finally {
+      setBusy(b => ({ ...b, like: false }));
+    }
   };
 
+  const remove = async () => {
+    if (busy.remove) return;
+    setBusy(b => ({ ...b, remove: true }));
+    try {
+      const { status } = await axios().delete(`/comment?id=${comment.id}`);
+      if (status >= 300) {
+        toast.error('Failed to delete comment');
+        return false;
+      }
+      dispatch(removeComment(comment.id));
+      return true;
+    } catch (err) {
+      console.error('comment delete failed', err);
+      toast.error('Failed to delete comment');
+      return false;
+    } finally {
+      setBusy(b => ({ ...b, remove: false }));
+    }
+  };
+
+  const edit = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+    try {
+      const { status, data } = await axios().patch(`/comment?id=${comment.id}`, { text: trimmed });
+      if (status >= 300 || !data) {
+        toast.error('Failed to edit comment');
+        return false;
+      }
+      dispatch(updateComment(data));
+      return true;
+    } catch (err) {
+      console.error('comment edit failed', err);
+      toast.error('Failed to edit comment');
+      return false;
+    }
+  };
+
+  return { isLiked, likeCount, toggleLike, remove, edit };
+}
+
+// Legacy default export — keeps PostViewer.tsx working until it's
+// migrated to the new hooks. Mirrors the old shape: { add, delete }.
+export default function useComment(postId: bigint | undefined) {
+  const composer = useCommentComposer(postId);
+  // delete() is intentionally not supported via this legacy shape —
+  // the row-level useCommentRow().remove() is the way.
+  return { add: composer.add };
 }
