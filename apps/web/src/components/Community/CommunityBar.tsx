@@ -7,6 +7,8 @@ import CommunityIcon from 'components/CommunityIcon';
 import useCommunity from 'hooks/entities/useCommunities';
 import useCommunityById from 'hooks/entities/useCommunity';
 import useMedia from 'hooks/useMedia';
+import useModals from 'hooks/useModals';
+import constants from 'styles/Globals';
 
 import { ColumnBreak, CommunityBarContainer } from './styled';
 
@@ -18,12 +20,22 @@ type ItemProps = {
 const CommunityItem: React.FC<ItemProps> = ({ id, active }) => {
   const { community, changeCommunity } = useCommunityById(id);
   const avatar = useMedia(community?.avatar);
+  const { toggleDrawer } = useModals();
+  const handleClick = () => {
+    changeCommunity();
+    // On mobile the drawer is a fullscreen overlay — close it so the
+    // user sees the newly-selected community's channel feed update.
+    if (typeof window !== 'undefined'
+        && window.innerWidth <= parseInt(constants.SMALLSCREEN_WIDTH, 10)) {
+      toggleDrawer();
+    }
+  };
   return (
     <CommunityIcon
       image={avatar}
       communityName={community.name}
       active={active}
-      onClick={changeCommunity}
+      onClick={handleClick}
     />
   );
 };

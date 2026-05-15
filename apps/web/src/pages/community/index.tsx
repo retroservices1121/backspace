@@ -40,16 +40,30 @@ const Community: React.FC<Props> = ({ }) => {
   useConstructor(run.init);
 
   // If /community?c=<uuid> was set (e.g. from a profile's Enter button),
-  // switch to that community as soon as it's available in state. The
-  // default upsertCommunities path picks payload[0], which is usually
-  // not the one the user clicked from a profile.
+  // switch to that community as soon as it's available in state and
+  // explicitly select its first channel. The default upsertCommunities
+  // path picks payload[0], which is usually not the one the user
+  // clicked from a profile. We do the channel select ourselves so the
+  // user never sees the "Pick a room" empty state in the happy path.
   const requestedUuid = (router.query.c as string | undefined) ?? undefined;
   useEffect(() => {
     if (!requestedUuid) return;
-    if (!communities[requestedUuid]) return; // not loaded yet
-    if (community?.uuid === requestedUuid) return; // already selected
-    run.changeCommunity(requestedUuid);
-  }, [requestedUuid, communities, community?.uuid]);
+    const target = communities[requestedUuid];
+    if (!target) return; // not loaded yet
+    if (community?.uuid !== requestedUuid) {
+      run.changeCommunity(requestedUuid);
+    }
+    // Force-pick a channel. Prefer channelOrder (matches sidebar
+    // visual order) and fall back to whatever ends up first in the
+    // map. The reducer already tries, but if it ever ends up with a
+    // stale or wrong channel id we override it here.
+    const firstChannelUuid =
+      target.channelOrder?.[0]
+      ?? Object.values(target.channels ?? {})[0]?.uuid;
+    if (firstChannelUuid && channel?.uuid !== firstChannelUuid) {
+      run.changeChannel(firstChannelUuid);
+    }
+  }, [requestedUuid, communities, community?.uuid, channel?.uuid]);
 
   if (!community) {
     return <ReactLoading type='bubbles' />;
