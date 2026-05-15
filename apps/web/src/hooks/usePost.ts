@@ -11,6 +11,7 @@ import { useModal } from '@src/lib/Modal';
 import { FollowBody } from '@src/pages/api/follow';
 import { LikeBody } from '@src/pages/api/like';
 import { PostBody } from '@src/pages/api/post';
+import { prependPost, removePostFromFeed, updatePostInFeed } from '@src/store/feedSlice';
 import { selectFollow, selectMembership } from '@src/store/post/selectors';
 import { clearPost, setPost, updatePost } from '@src/store/postSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@src/store/store';
@@ -59,6 +60,9 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
     const { status, data } = await axios.put('post', changes);
     if (status === 200) {
       dispatch(updatePost(data)); //update so the user sees the update
+      // Also mirror into the feed list so the inline post row updates
+      // without a refresh.
+      dispatch(updatePostInFeed(data));
       return true;
     } else {
       return false;
@@ -85,8 +89,11 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
       ...formData, 
       mediaId: mediaId,
     };
-    const { status } = await axios.post('/post', newPost);
+    const { status, data } = await axios.post('/post', newPost);
     if (status === 200) {
+      // Optimistically push the new post to the top of every loaded
+      // feed bucket so the user sees their post without a refresh.
+      if (data) dispatch(prependPost(data));
       return true;
     } else {
       return false;
@@ -142,10 +149,11 @@ export default function usePost(post: Post, fetchURLs: boolean = false) {
   const deletePost = async () => {
     const { status } = await axios.delete(`/post?id=${post.id}`);
     if (status === 200) {
-      toast.info('Post Deleted. Refresh your page.');
+      dispatch(removePostFromFeed(post.id));
+      toast.info('Post deleted');
       return true;
     } else {
-      toast.error('Delete Failed. Try refreshing your page.');
+      toast.error('Delete failed');
       return false;
     }
   };

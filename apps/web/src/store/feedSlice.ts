@@ -220,6 +220,33 @@ const feedSlice = createSlice({
     clearPosts(state) {
       state.posts = initialState.posts;
     },
+    // Live-update reducers for the feed. usePost dispatches these on
+    // create/update/delete so the user doesn't have to refresh to see
+    // their own action take effect. Each iterates every loaded filter
+    // bucket because the same post can sit in multiple feeds at once.
+    prependPost(state, { payload }: PayloadAction<Post>) {
+      for (const key of Object.keys(state.posts) as (keyof FeedPosts)[]) {
+        const list = state.posts[key];
+        if (!Array.isArray(list)) continue;
+        if (list.some(p => p.id === payload.id)) continue;
+        state.posts[key] = [payload, ...list];
+      }
+    },
+    updatePostInFeed(state, { payload }: PayloadAction<Post>) {
+      for (const key of Object.keys(state.posts) as (keyof FeedPosts)[]) {
+        const list = state.posts[key];
+        if (!Array.isArray(list)) continue;
+        const idx = list.findIndex(p => p.id === payload.id);
+        if (idx >= 0) list[idx] = { ...list[idx], ...payload };
+      }
+    },
+    removePostFromFeed(state, { payload: id }: PayloadAction<bigint>) {
+      for (const key of Object.keys(state.posts) as (keyof FeedPosts)[]) {
+        const list = state.posts[key];
+        if (!Array.isArray(list)) continue;
+        state.posts[key] = list.filter(p => p.id !== id);
+      }
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchPosts.fulfilled, (state, action) => {
@@ -251,4 +278,11 @@ const feedSlice = createSlice({
 });
 
 export default feedSlice.reducer;
-export const { setFilter, toggleDiscoverModal, clearPosts } = feedSlice.actions;
+export const {
+  setFilter,
+  toggleDiscoverModal,
+  clearPosts,
+  prependPost,
+  updatePostInFeed,
+  removePostFromFeed,
+} = feedSlice.actions;

@@ -54,9 +54,9 @@ const CreatePost:React.FC<Props> = () => {
 
       if (result) {
         CreatePostModal.close();
-        toast.info(post.id ? 'Updated Post, refresh screen' : 'Created New Post');
+        toast.info(post.id ? 'Post updated' : 'Post created');
       } else {
-        toast.error(post.id ? 'Failed to Update Post' : 'Failed To Create Post');
+        toast.error(post.id ? 'Failed to update post' : 'Failed to create post');
       }
     } catch (err) {
       // A thrown request (500, network error) must not leave the

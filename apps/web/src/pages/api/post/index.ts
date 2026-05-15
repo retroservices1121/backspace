@@ -138,6 +138,10 @@ handler
     };
     const post = await prisma.post.create({
       data: newPost,
+      // Return the full Post payload (author/avatar/message/community/
+      // channel/media) so the client can drop the row into the feed
+      // without a follow-up GET.
+      include: Post.include,
     });
     res.json(post);
   })
@@ -161,6 +165,7 @@ handler
         id: BigInt(typedBody.id),
       },
       data: update,
+      include: Post.include,
     });
     res.json(post);
   })
