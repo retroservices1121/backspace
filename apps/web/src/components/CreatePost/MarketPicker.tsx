@@ -67,20 +67,54 @@ export default function MarketPicker({ value, onChange }: Props) {
     },
   );
 
-  if (value && selected) {
+  // Edit-mode resolver: when the form opens with a marketId already set
+  // (re-editing a post that attached a market) we only have the id —
+  // fetch the question + image so the pill can render. The local
+  // `selected` (from a fresh pick) takes precedence and skips the fetch.
+  const {
+    data: fetched,
+    isLoading: fetchingExisting,
+    isError: fetchError,
+  } = useQuery<MarketHit>(
+    ['market-by-id', value],
+    async () => {
+      const { data } = await axios().get<{
+        id: string;
+        question: string;
+        imageUrl: string | null;
+        closesAt: string;
+      }>(`/markets/${value}`);
+      return {
+        id: String(data.id),
+        question: data.question,
+        imageUrl: data.imageUrl,
+        closesAt: data.closesAt,
+      };
+    },
+    { enabled: !!value && !selected, staleTime: 60_000 },
+  );
+
+  // Only treat `fetched` as the display if it actually matches the
+  // current value — react-query keeps the previous result around when
+  // `enabled` flips off, which would otherwise flash a stale pill.
+  const display: MarketHit | null = value
+    ? selected ?? (fetched && fetched.id === value ? fetched : null)
+    : null;
+
+  if (display) {
     return (
       <div className="my-2 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-        {selected.imageUrl && (
+        {display.imageUrl && (
           <img
-            src={selected.imageUrl}
+            src={display.imageUrl}
             alt=""
             className="h-8 w-8 shrink-0 rounded object-cover"
           />
         )}
         <div className="min-w-0 flex-1 text-sm text-white">
-          <div className="truncate">{selected.question}</div>
+          <div className="truncate">{display.question}</div>
           <div className="text-xs text-white/50">
-            closes in {closingIn(selected.closesAt)}
+            closes in {closingIn(display.closesAt)}
           </div>
         </div>
         <button
@@ -94,6 +128,14 @@ export default function MarketPicker({ value, onChange }: Props) {
           Remove
         </button>
       </div>
+    );
+  }
+
+  // Edit-mode: value set, metadata still loading — show a skeleton so
+  // we don't flash the empty "Attach" button before the pill resolves.
+  if (value && fetchingExisting && !fetchError) {
+    return (
+      <div className="my-2 h-12 animate-pulse rounded-xl border border-white/10 bg-white/5" />
     );
   }
 
