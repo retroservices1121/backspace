@@ -132,7 +132,15 @@ const profileAttributes = Prisma.validator<Prisma.UserInclude>()({
   avatar: true,
   banner: true,
   state: true,
-  communities: true,
+  // User-owned communities — and the explicit featured one (with its
+  // own avatar/banner) so the profile can render the X-style pinned
+  // community card without a follow-up fetch.
+  communities: {
+    include: { avatar: true },
+  },
+  featuredCommunity: {
+    include: { avatar: true, banner: true },
+  },
   _count: {
     select: { likesRecieved: true, posts: true, followers: true, following: true },
   },

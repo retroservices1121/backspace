@@ -11,6 +11,7 @@ import { useQuery } from 'react-query';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
 
+import ProfileCommunityCard from 'components/Profile/ProfileCommunityCard';
 import ProfileHeader from 'components/Profile/ProfileHeader';
 import ProfileReplyCard from 'components/Profile/ProfileReplyCard';
 import ProfileTabs, { ProfileTab } from 'components/Profile/ProfileTabs';
@@ -143,6 +144,18 @@ function Profile() {
             onFollowToggle={toggleFollow}
             onMessage={() => router.push(APP.MESSAGES.INDEX)}
           />
+
+          {/* Pinned community card — prefer the explicit featured one,
+              fall back to the first owned community. Backspace's
+              communities are core to the product so this slot sits
+              above the tabs (X uses it for pinned posts). */}
+          {(() => {
+            const featured = (profile as any).featuredCommunity
+              ?? (profile.communities?.[0] ?? null);
+            return featured
+              ? <ProfileCommunityCard community={featured} ownerName={profile.name} />
+              : null;
+          })()}
 
           <ProfileTabs active={tab} onChange={setTab} />
 
