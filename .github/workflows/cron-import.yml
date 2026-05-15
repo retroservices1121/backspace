@@ -4,9 +4,15 @@
 # (apps/web/src/pages/api/cron/import-polymarket.ts) does the work and
 # owns the DATABASE_URL. This workflow is just the scheduler.
 #
-# Setup: add a repo secret CRON_SECRET (Settings -> Secrets and
-# variables -> Actions) with the same value as the web service's
-# CRON_SECRET env var.
+# Setup (one-time, in Settings -> Secrets and variables -> Actions):
+#   - Secret  CRON_SECRET     — same value as the web service env var.
+#   - Variable CRON_BASE_URL   — Railway origin, e.g.
+#       https://<service>.up.railway.app
+#     Hits the origin directly so Cloudflare's 100s edge timeout is
+#     out of the path; the catalog walk can run for several minutes
+#     without the connection being killed mid-sweep. Falling back to
+#     https://backspace.to is kept only for the manual workflow_dispatch
+#     case if the variable is unset.
 name: Polymarket catalog import
 
 on:
@@ -25,14 +31,18 @@ jobs:
       - name: Trigger import
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
             echo "CRON_SECRET repo secret is not set" >&2
             exit 1
           fi
-          # -f: non-zero exit on HTTP >=400 so a failed import fails the
-          # job. -sS: quiet but still print errors. The summary JSON is
-          # echoed to the run log.
-          curl -fsS -X POST \
+          BASE="${CRON_BASE_URL:-https://backspace.to}"
+          # --max-time 270s comfortably covers a full catalog sweep on
+          # Railway (the origin's own request timeout is the real cap;
+          # this just guards against the runner hanging indefinitely).
+          # -f: non-zero exit on HTTP >=400. -sS: quiet but still print
+          # errors. The summary JSON is echoed to the run log.
+          curl -fsS --max-time 270 -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
-            https://backspace.to/api/cron/import-polymarket
+            "$BASE/api/cron/import-polymarket"
