@@ -7,6 +7,7 @@ import { togglePostModal } from 'store/appSlice';
 import { RootState } from 'store/store';
 import { SafeArea } from 'styles/layout';
 
+import AccountDrawer from './AccountDrawer';
 import MobileNavigation from './MobileNavigation';
 import NavigationBar from './NavigationBar';
 
@@ -32,6 +33,9 @@ const Navigation: React.FC = ({
       </Head>
       <SafeArea className='flex h-screen flex-col'>
         <MobileNavigation onAuth={onAuth ? true : false}/>
+        {/* Universal mobile account drawer — sibling to MobileNavigation
+            so it slides over the whole shell. Hidden on desktop. */}
+        <AccountDrawer />
 
         {/* Desktop Primary Navigation */}
         <div className="hidden sm:flex items-center">

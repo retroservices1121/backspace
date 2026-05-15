@@ -6,7 +6,7 @@ import { DefaultTheme } from 'styled-components';
 import Search from 'components/Search';
 import Icons, { configIcon } from 'icons';
 import { APP } from 'pages';
-import { toggleDrawer } from 'store/appSlice';
+import { toggleAccountDrawer } from 'store/appSlice';
 import { RootState } from 'store/store';
 import { isProduction } from 'utils/common_utils';
 
@@ -20,7 +20,7 @@ type NavProps = {
 
 
 export default function MobileNavigation({ onAuth }: NavProps) {
-  const { drawerOpen } = useSelector((state: RootState) => state.app);
+  const { accountDrawerOpen } = useSelector((state: RootState) => state.app);
   const router = useRouter();
   const dispatch = useDispatch();
   const [isShowingSearch, setIsShowingSearch] = useState<boolean>(false);
@@ -31,13 +31,12 @@ export default function MobileNavigation({ onAuth }: NavProps) {
       {/* Force Center Logo on Auth */}
       {onAuth && <div className="w-12 mx-3"/>}
 
-      {/* Menu Button */}
+      {/* Menu Button — opens the X-style universal AccountDrawer. */}
       <div className={`${onAuth ? 'hidden' : 'static'}`}>
         <MenuIcon className="mx-2 py-2 px-3 flex items-center cursor-pointer rounded-xl">
-          {drawerOpen ?
-            <Icons.Close onClick={() => {dispatch(toggleDrawer());}}/>
-            :
-            <Icons.Menu onClick={() => {dispatch(toggleDrawer());}} />
+          {accountDrawerOpen
+            ? <Icons.Close onClick={() => dispatch(toggleAccountDrawer())} />
+            : <Icons.Menu  onClick={() => dispatch(toggleAccountDrawer())} />
           }
         </MenuIcon>
       </div>

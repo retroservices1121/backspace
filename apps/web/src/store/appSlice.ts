@@ -19,6 +19,11 @@ enum ModalNames {
   subscribeModal = 'subscribeModal',
   createChannelModelOpen = 'createChannelModelOpen',
   drawerOpen = 'drawerOpen',
+  // X-style universal mobile menu (avatar + profile counts + Profile/
+  // Markets/Portfolio/Communities/Wallet/Settings links). Lives on a
+  // separate flag from drawerOpen so the page-specific drawers
+  // (community rooms list, etc.) still work via the in-page CTAs.
+  accountDrawerOpen = 'accountDrawerOpen',
 }
 
 type BasicModals = {
@@ -42,6 +47,7 @@ const initialModalState: BasicModals = {
   createChannelModelOpen: false,
   communitySettingsModalOpen: false,
   drawerOpen: false,
+  accountDrawerOpen: false,
 };
 
 const initialState: AppState = {
@@ -67,6 +73,7 @@ const appSlice = createSlice({
     toggleCreateChannelModal: toggleModal(ModalNames.createChannelModelOpen),
     toggleCommunitySettingsModal: toggleModal(ModalNames.communitySettingsModalOpen),
     toggleDrawer: toggleModal(ModalNames.drawerOpen),
+    toggleAccountDrawer: toggleModal(ModalNames.accountDrawerOpen),
     toggleSubscribeModal: toggleModal(ModalNames.subscribeModal),
     toggleEditChannelModal(state, { payload }: PayloadAction<{ channelId: string } | undefined>) {
       if (typeof payload?.channelId === 'string') {
@@ -109,4 +116,5 @@ export const {
   toggleSubscribeModal,
   toggleEditChannelModal,
   toggleDrawer,
+  toggleAccountDrawer,
 } = appSlice.actions;
