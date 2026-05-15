@@ -8,6 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useSolanaWallets } from '@privy-io/react-auth';
+import { useQueryClient } from 'react-query';
 
 import {
   type DflowQuote,
@@ -16,6 +17,7 @@ import {
   pickEmbeddedSolanaWallet,
   previewSwap,
 } from '@src/lib/dflow';
+import axios from '@src/lib/axios';
 
 export type SwapPhase =
   | 'idle'
@@ -28,6 +30,7 @@ export type SwapPhase =
 export function useDflowSwap() {
   const { wallets, ready, createWallet } = useSolanaWallets();
   const wallet = useMemo(() => pickEmbeddedSolanaWallet(wallets), [wallets]);
+  const queryClient = useQueryClient();
 
   const [quote, setQuote] = useState<DflowQuote | null>(null);
   const [phase, setPhase] = useState<SwapPhase>('idle');
@@ -68,13 +71,31 @@ export function useDflowSwap() {
       const result = await executeSwap({ wallet, quote });
       setSignature(result.signature);
       setPhase('success');
+
+      // Record-only audit log. Polymarket already returned the order id
+      // before this point — for Dflow we have the submitted tx
+      // signature; that's the dedupe key on the server. Fire-and-forget:
+      // a failed audit write must not surface as a trade failure since
+      // the swap already settled on-chain.
+      axios()
+        .post('/dflow/trades', {
+          txSignature: result.signature,
+          inputMint: quote.inputMint,
+          inputAmount: quote.inAmount,
+          outputMint: quote.outputMint,
+          outputAmount: quote.outAmount,
+          walletAddress: wallet.address,
+        })
+        .then(() => queryClient.invalidateQueries(['dflow-trades']))
+        .catch(() => undefined);
+
       return result;
     } catch (e) {
       setError(e as Error);
       setPhase('error');
       throw e;
     }
-  }, [wallet, quote]);
+  }, [wallet, quote, queryClient]);
 
   const reset = useCallback(() => {
     setQuote(null);

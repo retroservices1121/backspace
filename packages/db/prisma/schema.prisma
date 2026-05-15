@@ -75,6 +75,7 @@ model User {
   wallets              Wallet[]
   positions            Position[]
   trades               Trade[]
+  tokenTrades          TokenTrade[]
   marketsCreated       Market[]            @relation(name: "marketCreator")
   marketsResolved      MarketResolution[]  @relation(name: "marketResolver")
   accuracy             UserAccuracy?
@@ -673,6 +674,7 @@ model Wallet {
   custodial   Boolean   @default(false)
   positions   Position[]
   trades      Trade[]
+  tokenTrades TokenTrade[]
   @@unique([chain, address], name: "walletIdentity")
   @@index([userId])
 }
@@ -734,6 +736,8 @@ model Token {
   // Soft-flag for admin moderation — hides without deleting.
   isActive  Boolean  @default(true)
   posts     Post[]
+  inTrades  TokenTrade[] @relation(name: "tokenTradeIn")
+  outTrades TokenTrade[] @relation(name: "tokenTradeOut")
   @@index([symbol])
   @@index([isActive])
 }
@@ -807,6 +811,47 @@ model Trade {
   @@index([userId, createdAt])
   @@index([marketId])
   @@index([txHash])
+}
+
+// Spot token swap audit log. Separate from Trade because spot swaps
+// don't fit Trade's market/outcome shape — and we don't want to weaken
+// Trade's NOT NULL guarantees to accommodate both venues.
+//
+// Like Trade, this is a record-only audit row: the swap executed
+// on-chain via Dflow's aggregator, signed by the user's Privy wallet.
+// Balances + transaction history are read live from Solana RPC (the
+// chain is the source of truth) — this table just lets the app surface
+// recent activity / power future leaderboards without hitting RPC.
+model TokenTrade {
+  id            BigInt   @id @unique @default(autoincrement())
+  uuid          String   @unique @default(uuid())
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        BigInt
+  // The Solana wallet that signed the swap.
+  wallet        Wallet?  @relation(fields: [walletId], references: [id])
+  walletId      BigInt?
+  // Mints + atomic-unit amounts (string for Decimal safety — Solana's
+  // largest token uses u64 lamports, fits cleanly as a string).
+  inputMint     String
+  inputAmount   String
+  outputMint    String
+  outputAmount  String
+  // Optional FKs to the Token catalog. Stays useful as the catalog
+  // grows: existing rows resolve to symbols/logos as new tokens are
+  // imported, without a backfill.
+  inputToken    Token?   @relation(name: "tokenTradeIn", fields: [inputTokenId], references: [id])
+  inputTokenId  BigInt?
+  outputToken   Token?   @relation(name: "tokenTradeOut", fields: [outputTokenId], references: [id])
+  outputTokenId BigInt?
+  // Solana transaction signature. Unique dedupe key — a double-submit
+  // of the same on-chain swap upserts to the same row.
+  txSignature   String   @unique
+  // Venue identifier — "DFLOW" for now; future Solana spot venues
+  // (Jupiter, etc.) discriminate here.
+  venue         String   @default("DFLOW")
+  @@index([userId, createdAt])
+  @@index([walletId])
 }
 
 model MarketResolution {
