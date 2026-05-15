@@ -188,6 +188,11 @@ export const directMessageSlice = createSlice({
       const convo = state.conversations[state.activeConversation.toString()];
       convo.messages = convo.messages.filter(m => m.id !== payload.id);
     },
+    editMessage(state, { payload }: PayloadAction<DirectMessage>) {
+      const convo = state.conversations[state.activeConversation.toString()];
+      const idx = convo?.messages.findIndex(m => m.id === payload.id) ?? -1;
+      if (idx >= 0) convo.messages[idx] = payload;
+    },
     setActiveConversation: (state, { payload }: PayloadAction<bigint>) => {
       state.activeConversation = payload;
     },

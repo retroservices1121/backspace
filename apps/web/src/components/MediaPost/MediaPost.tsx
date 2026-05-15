@@ -20,10 +20,12 @@ export default function MediaPost({ post }: PostProps) {
   const thisPost = usePost(post);
   const featuredPost = useSelector((state: RootState) => state.feed.featuredPost);
   const [ postPreviewOpen, setPostPreviewOpen ] = useState(false);
-  const [ postOptionsOpen, setPostOptionsOpen ] = useState(false);
 
   const toggleOpenPostPreview = () => { setPostPreviewOpen(state => !state); };
-  const toggleOptionsModal = () => { setPostOptionsOpen(state => !state); };
+
+  const handleDelete = async () => {
+    await thisPost.delete();
+  };
   
   //TODO put featured post back together
   // useEffect(() => {
@@ -39,7 +41,12 @@ export default function MediaPost({ post }: PostProps) {
         className="my-3 sm:my-6 sm:mx-2 sm:px-6 pt-2 pb-4 w-screen md:w-media md:max-h-media sm:rounded-3xl" 
         isFeatured={false}>
         <div className="sm:mx-2">
-          <MediaPostHeader post={post} followAction={thisPost.setFollow} options={toggleOptionsModal} />
+          <MediaPostHeader
+            post={post}
+            followAction={thisPost.setFollow}
+            onEdit={thisPost.edit}
+            onDelete={handleDelete}
+          />
           <ContentContainer
             post={post}
             openPost={thisPost.open}

@@ -3,7 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import { noop, throttle } from 'lodash';
+import { throttle } from 'lodash';
 
 import DMHeader from 'components/Channel/DMHeader';
 import BaseMessage from 'components/Community/Message/BaseMessage';
@@ -15,7 +15,7 @@ import useUser from 'hooks/useUser';
 type Props = {};
 
 const Conversation: React.FC<Props> = () => {
-  const { conversation, paginate, sendMessage, deleteMessage } = useChat();
+  const { conversation, paginate, sendMessage, deleteMessage, editMessage } = useChat();
   const { user } = useUser();
 
   // const goToUser = (user: User) => {
@@ -73,7 +73,8 @@ const Conversation: React.FC<Props> = () => {
           <BaseMessage
             message={msg}
             author={users[msg.authorId.toString()]}
-            onDelete={noop} //FIXME
+            onDelete={deleteMessage}
+            onEdit={(text) => editMessage(msg.id, text)}
           />
         )}
       </InfiniteListFull>

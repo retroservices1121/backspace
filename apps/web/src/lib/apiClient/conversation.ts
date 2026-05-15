@@ -40,7 +40,9 @@ const Conversation = (route: string) => ({
     return axios().post<DirectMessage>(`${route}/${data.convoId}`, data);
   },
 
-  // editMessage() {},
+  editMessage(convoId: bigint, id: bigint, text: string) {
+    return axios().patch<DirectMessage>(`${route}/${convoId}/${id}`, { text });
+  },
   deleteMessage(convoId: bigint, id: bigint) {
     return axios().delete<DirectMessage>(`${route}/${convoId}/${id}`);
   },

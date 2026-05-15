@@ -69,13 +69,34 @@ handler.post(async (req: Send, res) => {
   return res.json(response);
 });
 
+async function assertMessageAuthor(
+  authId: string,
+  uuid: string,
+): Promise<true | { status: number; body: string }> {
+  const user = await prisma.user.findUnique({
+    where: { authId },
+    select: { id: true },
+  });
+  if (!user) return { status: 404, body: 'user not found' };
+  const existing = await prisma.message.findUnique({
+    where: { uuid },
+    select: { authorId: true },
+  });
+  if (!existing) return { status: 404, body: 'message not found' };
+  if (existing.authorId !== user.id) return { status: 403, body: 'forbidden' };
+  return true;
+}
+
 // PATCH /messages/:messageId (edit message)
 handler.patch(async (req: Edit, res) => {
   const messageId = req.query.id;
   const { text } = req.body;
+  if (typeof text !== 'string' || text.trim().length === 0) {
+    return res.status(400).end('text is required');
+  }
 
-  // TODO probably add security measures to prevent other people
-  // from editing someone elses messages. So make sure to check authId.
+  const ok = await assertMessageAuthor(req.authId, messageId);
+  if (ok !== true) return res.status(ok.status).end(ok.body);
 
   const response = await prisma.message.update({
     where: { uuid: messageId },
@@ -89,6 +110,9 @@ handler.patch(async (req: Edit, res) => {
 // DELETE /messages/:messageId (delete message)
 handler.delete(async (req: Remove, res) => {
   const messageId = req.query.id;
+
+  const ok = await assertMessageAuthor(req.authId, messageId);
+  if (ok !== true) return res.status(ok.status).end(ok.body);
 
   const response = await prisma.message.delete({
     where: { uuid: messageId },

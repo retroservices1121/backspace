@@ -22,6 +22,7 @@ const ChannelMessage: React.FC<Props> = ({ message }) => {
       message={message}
       author={author}
       onDelete={Delete}
+      onEdit={edit}
     />
   );
 };

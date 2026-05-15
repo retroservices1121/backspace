@@ -4,7 +4,7 @@
 // Author(s): See Git History
 
 import { Message } from 'types/prisma';
-import { Edit, Send } from 'types/requests/messages';
+import { Send } from 'types/requests/messages';
 
 import axios from '../axios';
 
@@ -14,8 +14,8 @@ const Messages = (route: string) => ({
     return axios().post<Message>(`${route}/${channelId}`, data);
   },
 
-  edit(messageId: string, data: Edit) {
-    throw new Error('Not implemented');
+  edit(messageId: string, body: { text: string }) {
+    return axios().patch<Message>(`${route}/${messageId}`, body);
   },
 
   delete(messageId: string) {

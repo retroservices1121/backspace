@@ -90,6 +90,18 @@ export function useChat() {
     [conversation],
   );
 
+  const editMessage = useCallback(
+    async (id: bigint, text: string) => {
+      const { status, data } = await ApiClient.Conversation.editMessage(
+        conversation.id,
+        id,
+        text,
+      );
+      if (status === 200) dispatch(messageActions.editMessage(data));
+    },
+    [conversation],
+  );
+
   return {
     conversation,
     paginate() {
@@ -101,5 +113,6 @@ export function useChat() {
     },
 
     deleteMessage,
+    editMessage,
   };
 }

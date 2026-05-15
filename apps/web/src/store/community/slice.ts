@@ -78,18 +78,24 @@ const sendMessage = createThunk(
 );
 
 const editMessage = createThunk(
-  `${NAMESPACE}/sendMessage`,
-  async (payload: string, thunkAPI) => {
-    const { } = thunkAPI.getState();
-
+  `${NAMESPACE}/editMessage`,
+  async (payload: { uuid: string; text: string }, thunkAPI) => {
+    const { data, status } = await ApiClient.Messages.edit(payload.uuid, {
+      text: payload.text,
+    });
+    if (status === 200) {
+      thunkAPI.dispatch(communityActions.updateMessage(data));
+    }
   },
 );
 
 const deleteMessage = createThunk(
-  `${NAMESPACE}/sendMessage`,
+  `${NAMESPACE}/deleteMessage`,
   async (uuid: string, thunkAPI) => {
-    await ApiClient.Messages.delete(uuid);
-    thunkAPI.dispatch(communityActions.deleteCommunity(uuid));
+    const { status } = await ApiClient.Messages.delete(uuid);
+    if (status === 200) {
+      thunkAPI.dispatch(communityActions.removeMessage(uuid));
+    }
   },
 );
 
@@ -238,13 +244,27 @@ const communitySlice = createSlice({
       }
 
       payload.forEach(msg => channel.messageMap[msg.uuid] = msg);
-      channel.messages = Object.values(channel.messageMap).sort(sortByCreatedAt()); 
-      
+      channel.messages = Object.values(channel.messageMap).sort(sortByCreatedAt());
+
       // If we have less than what we expected, then we've reached the beginning.
       if (payload.length < MESSAGES_PER_FETCH) {
         channel.canPaginate = false;
       }
       channel.lastId = payload[payload.length - 1].id;
+    },
+    removeMessage(state, { payload: uuid }: PayloadAction<string>) {
+      const { community, channel: channelId } = state.selected;
+      const channel = state.communities[community]?.channels[channelId];
+      if (!channel) return;
+      delete channel.messageMap[uuid];
+      channel.messages = channel.messages.filter((m) => m.uuid !== uuid);
+    },
+    updateMessage(state, { payload }: PayloadAction<Message>) {
+      const { community, channel: channelId } = state.selected;
+      const channel = state.communities[community]?.channels[channelId];
+      if (!channel || !channel.messageMap[payload.uuid]) return;
+      channel.messageMap[payload.uuid] = payload;
+      channel.messages = Object.values(channel.messageMap).sort(sortByCreatedAt());
     },
     deleteCommunity(state, { payload: uuid }: PayloadAction<string>) {
       delete state.communities[uuid];

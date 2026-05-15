@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { DotsHorizontalIcon } from '@heroicons/react/solid';
 import useMedia from '@src/hooks/useMedia';
@@ -15,17 +15,34 @@ import { DisplayName, FollowButton } from './styled';
 
 
 interface HeaderProps {
-  options: () => void;
   post: Post;
   followAction: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function MediaPostHeader({ post, followAction, options }: HeaderProps) {
+export default function MediaPostHeader({ post, followAction, onEdit, onDelete }: HeaderProps) {
   const { id: uid, following } = useSelector((state : RootState) => state.user);
   const [Following, setFollowing] = useState<boolean>();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const author = post.author;
   const authorAvatar = useMedia(post.author.avatar);
+  const isAuthor = post.author?.id === uid;
+
+  // Close the menu on outside click — matches how every other dropdown
+  // in the app feels and avoids stuck-open states on mobile.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
   
   const clickBehavior = () => {throw new Error('Not implemented clickBehavior');};
   // const clickBehavior = () => {
@@ -86,7 +103,38 @@ export default function MediaPostHeader({ post, followAction, options }: HeaderP
           Follow
         </FollowButton>
         }
-        <DotsHorizontalIcon className="ml-6 w-8 cursor-pointer" onClick={options}/>
+        <div className="relative ml-6" ref={menuRef}>
+          <DotsHorizontalIcon
+            className="w-8 cursor-pointer"
+            onClick={() => setMenuOpen((o) => !o)}
+          />
+          {menuOpen && isAuthor && (
+            <div className="absolute right-0 top-10 z-20 min-w-[10rem] overflow-hidden rounded-xl border border-white/10 bg-backgroundLight shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEdit?.();
+                }}
+                className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-white/10"
+              >
+                Edit post
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (window.confirm('Delete this post? This cannot be undone.')) {
+                    onDelete?.();
+                  }
+                }}
+                className="block w-full px-4 py-2 text-left text-sm text-rose-300 hover:bg-rose-500/20"
+              >
+                Delete post
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
     </div>
