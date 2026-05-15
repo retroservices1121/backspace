@@ -1,11 +1,17 @@
-//import { useState, useEffect } from "react";
-import { useState } from 'react';
+// Settings shell. Desktop keeps the side Drawer with the SettingsList
+// (the user expects to bounce between tabs from there). Mobile drops
+// the duplicate slide-in — the global AccountDrawer already exposes
+// Wallet / Billing / Settings, and the page itself gets an X-style
+// sticky header with a back arrow + tab title so the user always knows
+// where they are and how to leave.
+
+import { useEffect, useState } from 'react';
+import { ArrowLeftIcon } from '@heroicons/react/outline';
 import useConstructor from '@src/hooks/useConstructor';
 import useLogout from '@src/hooks/useLogout';
 import { useRouter } from 'next/router';
 
 import Drawer from 'components/Drawer';
-import MobileDrawer from 'components/DrawerV2';
 import { Tabs } from 'components/Settings/common';
 import SettingsList from 'components/Settings/SettingsList';
 import { Card, Footer } from 'components/Settings/styledAgain';
@@ -23,8 +29,7 @@ export default function settingsLayout({ children }) {
   const router = useRouter();
   const pagePosition = 2; // when you split path on /, settings page is 3rd
   const routeTab = router.pathname.split('/')[pagePosition];
-  let startTab : Tabs = Tabs.Account;
-  //See if any match (case insensitive)
+  let startTab: Tabs = Tabs.Account;
   Object.keys(Tabs).forEach((key) => {
     if (key.toLowerCase() === routeTab?.toLowerCase()) {
       startTab = Tabs[key as keyof typeof Tabs];
@@ -41,54 +46,68 @@ export default function settingsLayout({ children }) {
     logout('user logout from settings');
   };
 
+  // Keep the local tab in sync with the URL — without this, deep-links
+  // (Wallet/Billing/etc. from the AccountDrawer) leave the sidebar
+  // highlighting the wrong row.
   const [tab, setTab] = useState<Tabs>(startTab);
+  useEffect(() => {
+    if (tab !== startTab) setTab(startTab);
+  }, [startTab]);
 
   function changeTab(newTab: Tabs) {
     router.push(`${newTab.toLowerCase()}`);
     setTab(newTab);
-    return;
   }
 
-  const drawerContent = () => {
-    return (
-      <Card>
-        <SettingsList activeTab={tab} setActive={(value: Tabs) => changeTab(value)}/>
-        <Col className='justify-center'>
-          <Space direction="column" />
-          <MediumTextButton color='none' onClick={handleLogout}>Logout</MediumTextButton>
-          <Space direction="column" />
-        </Col>
-        <Footer $center>
-          <ClickableSpan onClick={() => openInNewTab(TOS_URL)}>
-            Terms and Conditions
-          </ClickableSpan>
-          <ClickableSpan onClick={() => openInNewTab(PRIVACY_URL)}>
-            Privacy Policy
-          </ClickableSpan>
-        </Footer>
-      </Card>
-    );
+  const goBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) router.back();
+    else router.push('/');
   };
 
   return (
     <Layout>
       <Row $full>
-        <div className='hidden sm:flex'>
+        {/* Desktop: settings sidebar. Mobile: not rendered — the global
+            AccountDrawer is the menu. */}
+        <div className="hidden sm:flex">
           <Drawer title="Settings">
-            {drawerContent()}
+            <Card>
+              <SettingsList activeTab={tab} setActive={(value: Tabs) => changeTab(value)} />
+              <Col className="justify-center">
+                <Space direction="column" />
+                <MediumTextButton color="none" onClick={handleLogout}>Logout</MediumTextButton>
+                <Space direction="column" />
+              </Col>
+              <Footer $center>
+                <ClickableSpan onClick={() => openInNewTab(TOS_URL)}>
+                  Terms and Conditions
+                </ClickableSpan>
+                <ClickableSpan onClick={() => openInNewTab(PRIVACY_URL)}>
+                  Privacy Policy
+                </ClickableSpan>
+              </Footer>
+            </Card>
           </Drawer>
         </div>
-        <div className='flex sm:hidden'>
-          <MobileDrawer>
-            {drawerContent()}
-          </MobileDrawer>
-        </div>
-        
-        <Col>
+
+        <Col className="w-full">
+          {/* Mobile-only: X-style sticky header with back arrow + tab
+              name. Removed on desktop because the sidebar handles
+              orientation. */}
+          <div className="sm:hidden sticky top-0 z-10 flex items-center gap-6 border-b border-dividerColor bg-backgroundDark/80 px-4 py-3 backdrop-blur">
+            <button
+              type="button"
+              onClick={goBack}
+              className="p-1 rounded-full hover:bg-backgroundLight"
+              aria-label="Back"
+            >
+              <ArrowLeftIcon className="w-5 h-5" />
+            </button>
+            <span className="text-lg font-semibold">{tab}</span>
+          </div>
           {children}
         </Col>
       </Row>
     </Layout>
   );
 }
-

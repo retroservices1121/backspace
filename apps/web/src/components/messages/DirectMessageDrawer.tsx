@@ -27,7 +27,11 @@ export default function DirectMessageDrawer() {
   };
 
   return (
-  <Drawer title={'Direct Messages'}>
+  // Hidden on mobile — the legacy Drawer is position:fixed top:0 there,
+  // which overlapped the mobile top nav (the New Conversation row sat
+  // right under the logo). Mobile uses the inline list in messages/
+  // index.tsx instead.
+  <Drawer title={'Direct Messages'} hideOnMobile>
     <div className='col w-full justify-between items-center py-3 px-10'>
       <ClickableSpan onClick={actions.newConversation}>
         <div className='row center m-2 justify-between'>
@@ -35,7 +39,7 @@ export default function DirectMessageDrawer() {
           <span className='pl-6'>New Conversation</span>
         </div>
       </ClickableSpan>
-      {/* <Search callbackText={null} callback={(selectedUser) => 
+      {/* <Search callbackText={null} callback={(selectedUser) =>
         dispatch(setConversationFromUid(selectedUser.id))
       }/> */}
     </div>

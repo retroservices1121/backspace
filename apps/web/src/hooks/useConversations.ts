@@ -54,6 +54,11 @@ export default function useConversations() {
       newConversation() {
         dispatch(messageActions.newConversation());
       },
+      // Drop the active conversation — used by the mobile back arrow
+      // to return to the conversations list view.
+      deselectConversation() {
+        dispatch(messageActions.setActiveConversation(null as any));
+      },
       toggleDrawer,
     },
   };

@@ -27,18 +27,37 @@ import {
 } from '@heroicons/react/outline';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
+import styled, { useTheme } from 'styled-components';
 
 import Avatar from 'components/Avatar';
 import { AvatarTypes } from 'components/Avatar/Avatar';
 import useLogout from 'hooks/useLogout';
 import useUser from 'hooks/useUser';
 import { APP } from 'pages';
-import { toggleAccountDrawer, toggleTheme } from 'store/appSlice';
+import { FilterOptions, setFilter } from 'store/feedSlice';
+import { toggleAccountDrawer, toggleDrawer, toggleTheme } from 'store/appSlice';
 import { RootState } from 'store/store';
 import { Themes } from 'styles/theme';
 import { makeShortNumber } from 'utils/common_utils';
 
 import Zindex from 'styles/zindex';
+
+// Theme-aware shell so light/dark toggle applies to the drawer itself.
+// Tailwind classes like bg-backgroundDark are static (driven by the
+// tailwind.config palette, which is the dark theme); styled-components
+// re-renders with the current ThemeProvider theme so it follows the
+// user's selection.
+const Panel = styled.aside`
+  background: ${({ theme }) => theme.backgroundDark};
+  color: ${({ theme }) => theme.fontFocus};
+`;
+const Divider = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.dividerColor};
+`;
+const ItemButton = styled.button`
+  color: ${({ theme }) => theme.fontFocus};
+  &:hover { background: ${({ theme }) => theme.backgroundLight}; }
+`;
 
 type ItemProps = {
   icon: React.ReactNode;
@@ -47,38 +66,50 @@ type ItemProps = {
 };
 
 const Item: React.FC<ItemProps> = ({ icon, label, onClick }) => (
-  <button
+  <ItemButton
     type="button"
     onClick={onClick}
-    className="flex w-full items-center gap-4 px-5 py-3 text-left text-fontFocus hover:bg-backgroundLight transition-colors"
+    className="flex w-full items-center gap-4 px-5 py-3 text-left transition-colors"
   >
-    <span className="text-fontFocus">{icon}</span>
+    <span>{icon}</span>
     <span className="text-base">{label}</span>
-  </button>
+  </ItemButton>
 );
 
 const AccountDrawer: React.FC = () => {
   const open = useSelector((s: RootState) => s.app.accountDrawerOpen);
-  const theme = useSelector((s: RootState) => s.app.theme);
+  const themeName = useSelector((s: RootState) => s.app.theme);
   const { user, avatar } = useUser();
   const dispatch = useDispatch();
   const router = useRouter();
   const logout = useLogout();
 
-  const close = () => dispatch(toggleAccountDrawer(false));
+  // Closing the AccountDrawer also force-closes the legacy page-context
+  // drawerOpen so a navigation never lands the user on a page where an
+  // old slide-in (feed filter, channel list, etc.) is unexpectedly open.
+  const close = () => {
+    dispatch(toggleAccountDrawer(false));
+    dispatch(toggleDrawer(false));
+  };
   const go = (path: string) => {
     close();
     router.push(path);
   };
-  const setMarkets = () => {
-    close();
-    // Land on the home feed; the user can then tap Markets in the
-    // accuracy/discover/markets filter. The Markets filter lives on
-    // home — there's no /markets page yet.
-    router.push(APP.INDEX);
+  const goMarkets = () => {
+    // X parity: Markets is a feed filter. Switch the filter then
+    // navigate so the home feed renders the markets catalog.
+    dispatch(setFilter(FilterOptions.MARKETS));
+    go(APP.INDEX);
+  };
+  const goHome = () => {
+    // Reset feed filter to the platform default when explicitly
+    // tapping Home so the user doesn't land on a stale Markets/etc.
+    // filter from a prior session.
+    dispatch(setFilter(FilterOptions.ACCURACY));
+    go(APP.INDEX);
   };
 
-  const isDark = theme === Themes.Dark;
+  const isDark = themeName === Themes.Dark;
 
   return (
     <>
@@ -108,8 +139,8 @@ const AccountDrawer: React.FC = () => {
         leaveFrom="translate-x-0"
         leaveTo="-translate-x-full"
       >
-        <aside
-          className="fixed inset-y-0 left-0 w-80 max-w-[85vw] overflow-y-auto bg-backgroundDark text-fontFocus shadow-2xl sm:hidden"
+        <Panel
+          className="fixed inset-y-0 left-0 w-80 max-w-[85vw] overflow-y-auto shadow-2xl sm:hidden"
           style={{ zIndex: Zindex.Drawer + 1 }}
           aria-label="Account menu"
         >
@@ -164,7 +195,7 @@ const AccountDrawer: React.FC = () => {
             </button>
           )}
 
-          <div className="my-2 border-t border-dividerColor" />
+          <Divider className="my-2" />
 
           {/* Primary menu */}
           {user?.id && (
@@ -177,12 +208,12 @@ const AccountDrawer: React.FC = () => {
           <Item
             icon={<HomeIcon className="w-6 h-6" />}
             label="Home"
-            onClick={() => go(APP.INDEX)}
+            onClick={goHome}
           />
           <Item
             icon={<ShieldCheckIcon className="w-6 h-6" />}
             label="Markets"
-            onClick={setMarkets}
+            onClick={goMarkets}
           />
           <Item
             icon={<BriefcaseIcon className="w-6 h-6" />}
@@ -200,7 +231,7 @@ const AccountDrawer: React.FC = () => {
             onClick={() => go(APP.MESSAGES.INDEX)}
           />
 
-          <div className="my-2 border-t border-dividerColor" />
+          <Divider className="my-2" />
 
           {/* Account & settings */}
           <Item
@@ -219,7 +250,7 @@ const AccountDrawer: React.FC = () => {
             onClick={() => go(APP.SETTINGS.INDEX)}
           />
 
-          <div className="my-2 border-t border-dividerColor" />
+          <Divider className="my-2" />
 
           {/* Theme + logout */}
           <Item
@@ -236,7 +267,7 @@ const AccountDrawer: React.FC = () => {
           )}
 
           <div className="h-8" />
-        </aside>
+        </Panel>
       </Transition>
     </>
   );
