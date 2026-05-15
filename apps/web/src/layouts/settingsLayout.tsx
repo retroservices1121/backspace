@@ -29,7 +29,9 @@ export default function settingsLayout({ children }) {
   const router = useRouter();
   const pagePosition = 2; // when you split path on /, settings page is 3rd
   const routeTab = router.pathname.split('/')[pagePosition];
-  let startTab: Tabs = Tabs.Account;
+  // `null` means "no specific tab" — i.e. /settings root. The mobile
+  // header shows 'Settings' in that case, otherwise the tab name.
+  let startTab: Tabs | null = null;
   Object.keys(Tabs).forEach((key) => {
     if (key.toLowerCase() === routeTab?.toLowerCase()) {
       startTab = Tabs[key as keyof typeof Tabs];
@@ -48,10 +50,13 @@ export default function settingsLayout({ children }) {
 
   // Keep the local tab in sync with the URL — without this, deep-links
   // (Wallet/Billing/etc. from the AccountDrawer) leave the sidebar
-  // highlighting the wrong row.
-  const [tab, setTab] = useState<Tabs>(startTab);
+  // highlighting the wrong row. Defaults to Account when the URL
+  // doesn't pick one out (so the desktop sidebar still has something
+  // highlighted on /settings root).
+  const [tab, setTab] = useState<Tabs>(startTab ?? Tabs.Account);
   useEffect(() => {
-    if (tab !== startTab) setTab(startTab);
+    const next = startTab ?? Tabs.Account;
+    if (tab !== next) setTab(next);
   }, [startTab]);
 
   function changeTab(newTab: Tabs) {
@@ -103,7 +108,7 @@ export default function settingsLayout({ children }) {
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </button>
-            <span className="text-lg font-semibold">{tab}</span>
+            <span className="text-lg font-semibold">{startTab ?? 'Settings'}</span>
           </div>
           {children}
         </Col>

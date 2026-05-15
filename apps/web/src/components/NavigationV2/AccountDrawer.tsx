@@ -198,7 +198,12 @@ const AccountDrawer: React.FC = () => {
           <Divider className="my-2" />
 
           {/* Primary menu */}
-          {user?.id && (
+          {user?.id && user.username && (
+            // Gate on username too — APP.PROFILE.USERNAME(undefined)
+            // returns '/undefined' which silently routes to the
+            // [username] page with a literal 'undefined' username.
+            // Until the user state has actually hydrated, hide the
+            // Profile row rather than letting it dead-end.
             <Item
               icon={<UserIcon className="w-6 h-6" />}
               label="Profile"
