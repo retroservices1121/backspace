@@ -6,6 +6,7 @@ import { Post } from '@src/types/prisma';
 import { getMediaType } from '@src/utils/common_utils';
 import { useDoubleTap } from 'use-double-tap';
 
+import { PostTokenCard } from 'components/Dflow/PostTokenCard';
 import { PostMarketCard } from 'components/Market/PostMarketCard';
 import RichRender from 'components/Rich/RichRender';
 import { ClickableSpan } from 'styles/Buttons';
@@ -91,6 +92,16 @@ export default function ContentContainer({ post, openPost, actionLikePost }: Con
 			{post.marketId && (
 				<div className="mt-2">
 					<PostMarketCard marketId={post.marketId} />
+				</div>
+			)}
+
+			{/* Tradeable Solana token — inline Dflow swap when the post is
+			    linked to a Token row. Mutually exclusive with market in
+			    practice; CreatePost only lets the user pick one or the
+			    other, but rendering both is harmless if they ever coexist. */}
+			{(post as { tokenId?: bigint | string | null }).tokenId && (
+				<div className="mt-2">
+					<PostTokenCard tokenId={(post as { tokenId: bigint | string }).tokenId} />
 				</div>
 			)}
 		</Col>
