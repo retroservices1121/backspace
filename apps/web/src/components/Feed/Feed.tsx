@@ -17,6 +17,7 @@ import axios from '@src/lib/axios';
 import type { MessageUnion } from 'types/legacy-aliases';
 import DesktopFeedDrawer from 'components/Feed/DesktopFeedDrawer';
 import FeedDrawer from 'components/Feed/FeedDrawer';
+import InlineCompose from 'components/Feed/InlineCompose';
 import { Container, FeedContainer } from 'components/Feed/styles';
 import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
 import DiscoverModal from 'components/modals/DiscoverModal';
@@ -116,6 +117,11 @@ const Feed: React.FC<Props> = ({}) => {
 
         <FeedContainer>
           <Col>
+            {/* Inline composer at the top of every post-style filter
+                (X parity). Hidden on the Markets catalog tab. */}
+            {authState === AuthStatus.SignedIn && myFeed.filter !== FilterOptions.MARKETS && (
+              <InlineCompose />
+            )}
             {myFeed.filter === FilterOptions.MARKETS ? (
               myFeed.markets && myFeed.markets.length > 0 ? (
                 myFeed.markets.map((m) => (
