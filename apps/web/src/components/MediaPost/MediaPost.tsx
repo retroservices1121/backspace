@@ -37,10 +37,10 @@ export default function MediaPost({ post }: PostProps) {
 
   return (
     <>
-      <Card 
-        className="my-3 sm:my-6 sm:mx-2 sm:px-6 pt-2 pb-4 w-screen md:w-media md:max-h-media sm:rounded-3xl" 
+      <Card
+        className="w-screen md:w-media px-4 py-3"
         isFeatured={false}>
-        <div className="sm:mx-2">
+        <div>
           <MediaPostHeader
             post={post}
             followAction={thisPost.setFollow}

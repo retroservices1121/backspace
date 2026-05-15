@@ -6,11 +6,16 @@
 import { Icon } from '@src/styles/Globals';
 import styled, { css } from 'styled-components';
 
+// Twitter/X-style flat post: no card background, one-pixel divider
+// between rows, subtle hover lift. Featured posts get an accent border
+// on the left (cleaner than the old full surround).
 export const Card = styled.div<{ isFeatured?: boolean }>`
-  background: ${({ theme }) => theme.backgroundMedium};
+  background: transparent;
+  border-bottom: 1px solid ${({ theme }) => theme.dividerColor};
+  transition: background-color 120ms ease;
+  &:hover { background: ${({ theme }) => theme.backgroundNormal}; }
   ${({ isFeatured }) => isFeatured && css`
-    border: 2px solid;
-    border-color: ${({ theme }) => theme.primary};
+    border-left: 2px solid ${({ theme }) => theme.primary};
   `}
 `;
 

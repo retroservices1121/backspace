@@ -30,13 +30,13 @@ function TextContent({ title, text, openPost }: TextContentProps) {
 
   return (
 		<>
-			<h3 className="my-6">{title}</h3>
+			{title && <h3 className="mt-2 mb-1">{title}</h3>}
 			<div className="relative">
-				<p ref={ref} className="line-clamp-3 mb-5"><RichRender value={text} /></p>
-				{showMore() && 
+				<p ref={ref} className="line-clamp-6 mb-2"><RichRender value={text} /></p>
+				{showMore() &&
 				<ReadMoreButton className="absolute right-0 bottom-0 pl-2 pb-0.5">
-					<ClickableSpan onClick={openPost}> 
-						...Read More 
+					<ClickableSpan onClick={openPost}>
+						...Show more
 					</ClickableSpan>
 				</ReadMoreButton> }
 			</div>
@@ -84,14 +84,12 @@ export default function ContentContainer({ post, openPost, actionLikePost }: Con
 
 			{/* Text For Media Post */}
 			{post.media &&
-				<div className="mx-2">
-					<TextContent title={post.title} text={post.text} openPost={openPost} />
-				</div>
+				<TextContent title={post.title} text={post.text} openPost={openPost} />
 			}
 
 			{/* Tradeable market — only renders when this post is linked to a Market row */}
 			{post.marketId && (
-				<div className="mx-2">
+				<div className="mt-2">
 					<PostMarketCard marketId={post.marketId} />
 				</div>
 			)}

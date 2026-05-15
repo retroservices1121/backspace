@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import { CommentButton } from '@src/components/MediaPost/styled';
 import usePost from '@src/hooks/usePost';
-import copy from 'copy-to-clipboard';
-import moment from 'moment';
 
 import Icons from 'icons';
 import { Post } from 'types/prisma';
 import { timeAgoString, truncateLargeumbers } from 'utils/common_utils';
-
-import { IconPlusText } from './styled';
 
 interface OwnProps {
   open: () => void;
@@ -19,16 +14,8 @@ interface OwnProps {
 }
 
 export default function ActionsToolBar({ post, open, isLiked, actionLikePost }: OwnProps) {
-  const [showDate, setShowDate] = useState<boolean>(false);
   const [likeString, setLikeString] = useState<string>('');
   const thisPost = usePost(post);
-  const time = () => {
-    if (showDate) {
-      return moment(new Date(post.createdAt)).format('MM-DD-YY  hh:mma');
-    } else {
-      return timeAgoString(new Date(post.createdAt));
-    }
-  };
 
   const commentString = (comments : number) => {
     if (comments <= 0) { return 'Add Your Comment!'; }
@@ -49,27 +36,32 @@ export default function ActionsToolBar({ post, open, isLiked, actionLikePost }: 
 
 
   return (
-    <div className="mb-2 mx-4 flex justify-between">
-      <div>
-        <CommentButton onClick={open} className="">{commentString(post?._count?.comments)}</CommentButton>
-        <p className="cursor-pointer"
-          onClick={() => setShowDate(!showDate)}
-        >{time()}</p>
+    <div className="mt-2 flex justify-between items-center">
+      <div className="flex items-center gap-3 text-sm">
+        <CommentButton onClick={open}>{commentString(post?._count?.comments)}</CommentButton>
+        {/* Timestamp links into the post detail (URL-modal), matching
+            Twitter's behavior where clicking the time opens the thread. */}
+        <span className="cursor-pointer hover:underline" onClick={open}>
+          {timeAgoString(new Date(post.createdAt))}
+        </span>
       </div>
 
-      {/* Buttons */}
-      <div className="flex justify-between items-center">
-        <div/>
-        <div className="flex items-center">
-          <p className="mr-2 sm:mr-4">{likeString}</p>
-          <IconPlusText className="mx-2 p-3 flex items-center cursor-pointer rounded-xl" onClick={actionLikePost} >
-            <Icons.Heart active={isLiked} allowFill={isLiked} strokeWidth={'2'} className={'sm:motion-safe:hover:animate-beat'}/>
-          </IconPlusText>
-
-          <IconPlusText className="mx-2 p-3 flex items-center cursor-pointer rounded-xl" onClick={thisPost.share}>
-            <Icons.Share />
-          </IconPlusText>
-        </div>
+      <div className="flex items-center gap-1">
+        <span className="text-sm mr-1">{likeString}</span>
+        <button
+          type="button"
+          onClick={actionLikePost}
+          className="p-2 flex items-center cursor-pointer rounded-full hover:bg-backgroundLight"
+        >
+          <Icons.Heart active={isLiked} allowFill={isLiked} strokeWidth={'2'} className={'sm:motion-safe:hover:animate-beat'}/>
+        </button>
+        <button
+          type="button"
+          onClick={thisPost.share}
+          className="p-2 flex items-center cursor-pointer rounded-full hover:bg-backgroundLight"
+        >
+          <Icons.Share />
+        </button>
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ export default function MediaPostHeader({ post, followAction, onEdit, onDelete }
   }, [following]);
 
   return (
-    <div className="flex justify-between items-center mx-3 sm:mx-0 my-4">
+    <div className="flex justify-between items-center my-1">
 
       {/* Avatars & Usernames */}
       <div className="flex cursor-pointer">
