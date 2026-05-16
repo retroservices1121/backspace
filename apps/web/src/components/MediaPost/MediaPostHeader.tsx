@@ -7,6 +7,7 @@ import { useRouter } from 'next/router';
 
 import Avatar from 'components/Avatar';
 import { AvatarTypes } from 'components/Avatar/Avatar';
+import CalibrationChip from 'components/Profile/CalibrationChip';
 import Icons from 'icons';
 import { RootState } from 'store/store';
 import { ClickableSpan } from 'styles/Buttons';
@@ -80,7 +81,7 @@ export default function MediaPostHeader({ post, followAction, onEdit, onDelete }
           <DisplayName onClick={clickBehavior}>
             {author.name}
           </DisplayName>
-          <div className="flex">
+          <div className="flex items-center gap-1">
             <ClickableSpan onClick={() => router.push(author.username) }>
               @{author.username}
             </ClickableSpan>
@@ -89,6 +90,10 @@ export default function MediaPostHeader({ post, followAction, onEdit, onDelete }
                 ? <Icons.OrgVerified color="verified" />
                 : <Icons.Verified color="verified" />
             )}
+            <CalibrationChip
+              publicAccuracy={(author as any).publicAccuracy}
+              accuracy={(author as any).accuracy}
+            />
           </div>
         </div>
       </div>

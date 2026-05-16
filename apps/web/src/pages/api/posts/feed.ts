@@ -91,13 +91,21 @@ handler
           },
         });
         break;
-      case FilterOptions.ACCURACY:
-        // Rank by author's UserAccuracy.rankingScore. Authors without an
-        // accuracy row sort to the bottom. Recency is the tiebreak so a brand
-        // new platform with all-zero scores still produces a sensible feed.
+      case FilterOptions.ACCURACY: {
+        // "For You" — rank visible posts by author's UserAccuracy.rankingScore.
+        // Authors without an accuracy row sort to the bottom; recency is the
+        // tiebreak so a brand-new platform with all-zero scores still produces
+        // a sensible feed.
+        //
+        // Recency floor: cap the candidate set to posts from the last 7 days.
+        // Without this, a single high-accuracy author from months ago would
+        // dominate the feed forever — the calibration boost is supposed to
+        // surface *current* signal, not pin a hall of fame to the top.
         //
         // Visibility filter mirrors DISCOVER (EVERYONE-readable + profile
         // posts) — the ranking change shouldn't expose gated content.
+        const FRESH_WINDOW_DAYS = 7;
+        const since = new Date(Date.now() - FRESH_WINDOW_DAYS * 24 * 60 * 60 * 1000);
         posts = await prisma.post.findMany({
           ...postFindManyBase,
           orderBy: [
@@ -105,6 +113,7 @@ handler
             { createdAt: Prisma.SortOrder.desc },
           ],
           where: {
+            createdAt: { gte: since },
             OR: [
               { message: { channel: { readPermission: Permissions.EVERYONE } } },
               { profileId: { gte: 0 } },
@@ -112,6 +121,7 @@ handler
           },
         });
         break;
+      }
       default:
         console.error(`Unsupported Filter of ${filter}`);
         res.status(HttpStatus.INTERNAL_SERVER_ERROR);

@@ -18,8 +18,12 @@ type FilterType = {
 
 const filters : Array<FilterType> = [
   {
-    // Web3 pivot: ranks by author's prediction-market accuracy first, recency second
-    name: 'Accuracy',
+    // Accuracy-weighted feed: authors with higher prediction-market
+    // ranking scores surface above noise; recency is the tiebreak.
+    // Named "For You" because that's the framing users expect from
+    // a personalized rank tab — "Accuracy" reads like a metric, not
+    // a feed.
+    name: 'For You',
     sort: FilterOptions.ACCURACY,
     icon: Icons.Discover,
   },

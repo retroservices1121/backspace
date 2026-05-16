@@ -170,7 +170,23 @@ export namespace Post {
   export const include = {
     media: true,
     author: {
-      include: { avatar: true },
+      include: {
+        avatar: true,
+        // Pull the author's Polymarket-derived accuracy + the
+        // publicAccuracy gate alongside the avatar. Lets the feed
+        // render the calibration chip inline without a follow-up
+        // per-author query. UserAccuracy is a 1:0 relation, so the
+        // include resolves to `null` for authors with no resolved
+        // positions yet — the chip just renders nothing in that case.
+        accuracy: {
+          select: {
+            resolvedPositions: true,
+            correctPositions: true,
+            weightedBrierScore: true,
+            rankingScore: true,
+          },
+        },
+      },
     },
     message: {
       include: {
