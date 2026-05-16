@@ -162,6 +162,9 @@ export async function importDflowCatalog(): Promise<ImportSummary> {
   ]);
   summary.fromDflow = dflowTokens.length;
 
+  // Build the upsert payload set (only Dflow mints with Jupiter meta).
+  type Row = { mint: string; symbol: string; name: string; decimals: number; logoURI: string | null };
+  const rows: Row[] = [];
   for (const [mint, decimalsFromDflow] of dflowTokens) {
     const meta = jupiterByMint.get(mint);
     if (!meta) {
@@ -169,40 +172,84 @@ export async function importDflowCatalog(): Promise<ImportSummary> {
       continue;
     }
     summary.withJupiterMeta += 1;
-
     // Trust Dflow's decimals for routing accuracy (it knows the
-    // tradeable pool) but fall back to Jupiter's if Dflow ever
-    // sends 0/null. They should always match for real tokens.
+    // tradeable pool) but fall back to Jupiter's if Dflow ever sends
+    // 0/null. They should always match for real tokens.
     const decimals =
       Number.isFinite(decimalsFromDflow) && decimalsFromDflow >= 0
         ? decimalsFromDflow
         : meta.decimals;
+    rows.push({
+      mint,
+      symbol: meta.symbol,
+      name: meta.name,
+      decimals,
+      logoURI: meta.logoURI ?? null,
+    });
+  }
 
+  // Partition into create vs update with a SINGLE query — the previous
+  // per-row findUnique + upsert pattern issued 2 round trips per token
+  // across the public internet (~100ms each), which timed out Railway
+  // for catalogs north of 500 tokens.
+  const existing = await prisma.token.findMany({
+    where: { mint: { in: rows.map((r) => r.mint) } },
+    select: { mint: true },
+  });
+  const existingSet = new Set(existing.map((e) => e.mint));
+  const toCreate = rows.filter((r) => !existingSet.has(r.mint));
+  const toUpdate = rows.filter((r) => existingSet.has(r.mint));
+
+  // createMany in one shot — bulk INSERT, ignores any racing dupes.
+  if (toCreate.length > 0) {
     try {
-      const existing = await prisma.token.findUnique({
-        where: { mint },
-        select: { id: true },
+      const created = await prisma.token.createMany({
+        data: toCreate,
+        skipDuplicates: true,
       });
-      await prisma.token.upsert({
-        where: { mint },
-        create: {
-          mint,
-          symbol: meta.symbol,
-          name: meta.name,
-          decimals,
-          logoURI: meta.logoURI ?? null,
-        },
-        update: {
-          symbol: meta.symbol,
-          name: meta.name,
-          decimals,
-          logoURI: meta.logoURI ?? null,
-        },
-      });
-      if (existing) summary.updated += 1;
-      else summary.created += 1;
+      summary.created = created.count;
     } catch (err) {
-      summary.errors.push({ mint, message: (err as Error).message });
+      // If the bulk insert fails wholesale, fall back to per-row so
+      // the rest still lands and we can see which mint blew up.
+      for (const r of toCreate) {
+        try {
+          await prisma.token.create({ data: r });
+          summary.created += 1;
+        } catch (e) {
+          summary.errors.push({ mint: r.mint, message: (e as Error).message });
+        }
+      }
+    }
+  }
+
+  // Updates can't be bulked (Prisma has no updateMany-with-per-row-data
+  // shortcut). Parallelize in modest chunks to bound the connection pool.
+  const CONCURRENCY = 10;
+  for (let i = 0; i < toUpdate.length; i += CONCURRENCY) {
+    const chunk = toUpdate.slice(i, i + CONCURRENCY);
+    const results = await Promise.allSettled(
+      chunk.map((r) =>
+        prisma.token.update({
+          where: { mint: r.mint },
+          data: {
+            symbol: r.symbol,
+            name: r.name,
+            decimals: r.decimals,
+            logoURI: r.logoURI,
+          },
+        }),
+      ),
+    );
+    for (let j = 0; j < results.length; j += 1) {
+      const res = results[j];
+      if (res.status === 'fulfilled') {
+        summary.updated += 1;
+      } else {
+        summary.errors.push({
+          mint: chunk[j].mint,
+          message: (res.reason as Error).message,
+        });
+      }
     }
   }
 
