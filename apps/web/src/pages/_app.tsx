@@ -122,6 +122,23 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
             appearance: { theme: 'dark', accentColor: '#5822FB' },
             defaultChain: polygonChain,
             supportedChains: [polygonChain],
+            // External wallets — route to the user's INSTALLED wallet
+            // app (extension on desktop, native app on mobile), not
+            // Privy's smart-wallet creation flow.
+            //
+            // 'eoaOnly' on coinbaseWallet stops Privy defaulting users
+            // into the Coinbase Smart Wallet (Base Sepolia) signup. We
+            // want existing on-mainnet Polymarket traders to be able
+            // to link the wallet they already use; smart-wallet signup
+            // is the opposite of that.
+            //
+            // WalletConnect (the path Privy uses to deep-link
+            // MetaMask / Rabby / Phantom / Trust on mobile) is enabled
+            // by default in Privy v1.99 — no projectId needed, Privy
+            // hosts the WC project — so we don't override it here.
+            externalWallets: {
+              coinbaseWallet: { connectionOptions: 'eoaOnly' },
+            },
             // Solana support for Dflow spot trading. The Solana wallet
             // is created on-demand via useSolanaWallets().createWallet
             // (see lib/dflow/ in Phase 3) — Privy's createOnLogin is
