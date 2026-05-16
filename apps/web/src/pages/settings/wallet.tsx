@@ -1,12 +1,17 @@
 // Trading wallet settings — the funding + one-time-setup surface for
-// Polymarket markets. Shows the user their non-custodial Safe deposit
-// address (where they self-fund USDC on Polygon), their pUSD balance,
-// and an "Enable trading" action that runs the one-time session setup
-// (deploy Safe + token approvals, gasless).
+// each trading venue.
+//   - Polymarket section: non-custodial Safe address + pUSD balance +
+//     "Enable trading" (deploys Safe + approvals, gasless).
+//   - Solana section: Privy embedded Solana wallet address + live SOL
+//     balance + "Create wallet" (provisions on demand — Privy's
+//     createOnLogin only auto-creates one chain, which we reserve for
+//     Ethereum/Polymarket).
 import React from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { toast } from 'react-toastify';
+import { useDflowSwap } from '@src/hooks/useDflowSwap';
 import { usePolymarketSession } from '@src/hooks/usePolymarketSession';
+import { useSolanaBalances } from '@src/hooks/useSolanaBalances';
 import settingsLayout from '@src/layouts/settingsLayout';
 import copy from 'copy-to-clipboard';
 
@@ -115,9 +120,99 @@ const Wallet: ReactLayoutComponentType = () => {
           <h6 style={{ color: 'salmon' }}>{error.message}</h6>
         </>
       )}
+
+      <Space direction="column" />
+      <HorizontalLine />
+      <Space direction="column" />
+
+      <SolanaWalletSection />
     </Container>
   );
 };
+
+function SolanaWalletSection() {
+  const {
+    walletAddress,
+    walletsReady,
+    isReady,
+    provisionWallet,
+    error,
+  } = useDflowSwap();
+  const balances = useSolanaBalances(walletAddress);
+  const sol = balances.data?.find((b) => b.mint === 'SOL');
+
+  const copyAddress = () => {
+    if (!walletAddress) return;
+    copy(walletAddress);
+    toast.success('Address copied');
+  };
+
+  return (
+    <>
+      <h1>Solana Wallet</h1>
+      <Space direction="column" />
+      <h6>
+        Spot swaps on Solana run through this non-custodial wallet.
+        Backspace never holds your funds — send SOL here to start trading
+        tokens via Dflow.
+      </h6>
+      <Space direction="column" />
+
+      {!walletsReady ? (
+        <h6>Loading wallet…</h6>
+      ) : !isReady ? (
+        <>
+          <h6>
+            One-time setup: provisions your Solana embedded wallet. No
+            signature required — Privy generates it on the spot.
+          </h6>
+          <Space direction="column" />
+          <LargeTextButton
+            color="primary"
+            onClick={() => provisionWallet().catch(() => undefined)}
+          >
+            Create Solana wallet
+          </LargeTextButton>
+        </>
+      ) : (
+        <>
+          <h3>Deposit address</h3>
+          <Space direction="column" />
+          <h6>
+            Send <strong>SOL on the Solana network</strong> to this address
+            to fund swaps. Don&apos;t send from another chain.
+          </h6>
+          <Space direction="column" />
+          <OldCol>
+            <code style={{ wordBreak: 'break-all' }}>{walletAddress}</code>
+            <Space direction="column" size="sm" />
+            <Button color="primary" onClick={copyAddress}>
+              Copy address
+            </Button>
+          </OldCol>
+          <Space direction="column" />
+          <h4>
+            Balance:{' '}
+            {balances.isLoading
+              ? '—'
+              : sol
+                ? `${sol.uiAmount.toLocaleString(undefined, {
+                  maximumFractionDigits: 4,
+                })} SOL`
+                : '0 SOL'}
+          </h4>
+        </>
+      )}
+
+      {error && (
+        <>
+          <Space direction="column" />
+          <h6 style={{ color: 'salmon' }}>{error.message}</h6>
+        </>
+      )}
+    </>
+  );
+}
 
 Wallet.Layout = settingsLayout;
 export default Wallet;

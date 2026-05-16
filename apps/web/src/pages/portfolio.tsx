@@ -249,7 +249,13 @@ function TokensTab() {
   if (!address) {
     return (
       <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
-        No Solana wallet yet. Open a swap from a token post to provision one.
+        No Solana wallet yet.{' '}
+        <Link href="/settings/wallet">
+          <a className="text-white/80 underline hover:text-white">
+            Create one in settings
+          </a>
+        </Link>{' '}
+        to start swapping.
       </div>
     );
   }
