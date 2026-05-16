@@ -1,10 +1,45 @@
 
+/* Design tokens — ported verbatim from /webui/Backspace App UI.html.
+   Single source of truth; Tailwind theme below references the same
+   values so utility classes (bg-canvas, text-ink-2, etc.) stay in
+   sync with raw CSS that has to use var(--…) (styled-components,
+   SVG fills, etc.). */
+:root {
+  --bg: #08070d;
+  --bg-2: #0c0a16;
+  --surface: #0f0d1a;
+  --surface-2: #16142a;
+  --hover: rgba(255, 255, 255, 0.04);
+  --hover-2: rgba(88, 34, 251, 0.10);
+  --ink: #ffffff;
+  --ink-2: rgba(255, 255, 255, 0.72);
+  --ink-3: rgba(255, 255, 255, 0.5);
+  --ink-4: rgba(255, 255, 255, 0.3);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+
+  --brand: #5822FB;
+  --brand-2: #7B4CFF;
+  --brand-soft: rgba(88, 34, 251, 0.18);
+
+  --orange: #FF8800;
+  --blue: #1C70F5;
+  --green: #0EAD69;
+  --green-2: #3BD691;
+  --pink: #ff5470;
+  --pink-2: #ff8a9b;
+  --gold: #FFB44C;
+
+  --font-display: 'Poppins', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  font-family: var(--font-display);
 }
 
 @tailwind base;
