@@ -26,16 +26,22 @@ import { DFLOW_API_BASE, dflowApiKey } from './config';
 
 // Jupiter's public token list. The original `token.jup.ag/strict`
 // host was decommissioned mid-2024 and Jupiter migrated to the V2
-// Tokens API at `api.jup.ag/tokens/v2/tag?tag=verified`. The paid
-// host needs `x-api-key`; `lite-api.jup.ag` is the free public mirror
-// with the same paths. V2 response fields differ slightly from V1
-// (`id` instead of `address`, `icon` instead of `logoURI`) so the
-// parser below tolerates both shapes.
+// Tokens API at `<host>/tokens/v2/tag`. The paid host
+// (`api.jup.ag`) needs `x-api-key`; `lite-api.jup.ag` is the free
+// public mirror with the same paths.
+//
+// Param naming gotcha: the tag endpoint accepts the value (e.g.
+// `verified`) under the param name `query`, not `tag`. Jupiter's
+// own docs summary is inconsistent — the OpenAPI spec is the
+// source of truth.
+//
+// V2 response fields differ from V1 (`id` instead of `address`,
+// `icon` instead of `logoURI`) — the parser below tolerates both.
 //
 // Overridable via JUPITER_TOKEN_LIST_URL so a future Jupiter URL
 // change can be fixed by setting an env var on Railway without a
 // redeploy.
-const DEFAULT_JUPITER_LIST = 'https://lite-api.jup.ag/tokens/v2/tag?tag=verified';
+const DEFAULT_JUPITER_LIST = 'https://lite-api.jup.ag/tokens/v2/tag?query=verified';
 function jupiterListUrl(): string {
   return process.env.JUPITER_TOKEN_LIST_URL || DEFAULT_JUPITER_LIST;
 }
