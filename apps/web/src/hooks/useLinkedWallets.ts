@@ -196,64 +196,6 @@ export function useLinkedWallets() {
     }
   }, [candidate, generateSiweMessage, linkWithSiwe, syncMutation]);
 
-  // ---- Manual paste-signature flow ---------------------------------
-  //
-  // Bulletproof fallback when Privy's deep-link / WC dance fails (most
-  // common on mobile + Coinbase Wallet in an external browser). Three
-  // user steps, zero deep links:
-  //   1. Paste wallet address  → generate a SIWE message for it.
-  //   2. User signs the message in their wallet however they want.
-  //   3. Paste the signature   → submit to Privy + sync to our DB.
-  //
-  // Privy still verifies the signature against the message server-
-  // side, so the resulting linked-account is identical to what the
-  // modal flow would have produced.
-
-  /** Generate a SIWE message for a manually-entered wallet address.
-   *  Returns the message string the user should sign in their wallet. */
-  const generateManualMessage = useCallback(
-    async (address: string, chainId = 'eip155:137') => {
-      // Privy expects a checksummed-or-lowercase 0x address. We don't
-      // checksum here — the SIWE verifier accepts either form.
-      const trimmed = address.trim();
-      if (!/^0x[0-9a-fA-F]{40}$/.test(trimmed)) {
-        throw new Error('Address must be a 0x-prefixed 40-character hex string.');
-      }
-      return generateSiweMessage({ address: trimmed, chainId });
-    },
-    [generateSiweMessage],
-  );
-
-  /** Submit a manually-collected (address, message, signature) tuple
-   *  to Privy. On success, persists to our DB via the same sync POST
-   *  the modal flow uses. */
-  const submitManualLink = useCallback(
-    async ({
-      message,
-      signature,
-      chainId = 'eip155:137',
-    }: { message: string; signature: string; chainId?: string }) => {
-      setError(null);
-      setPhase('linking');
-      try {
-        await linkWithSiwe({
-          signature: signature.trim(),
-          message,
-          chainId,
-          walletClientType: 'manual',
-          connectorType: 'manual',
-        });
-        await syncMutation.mutateAsync();
-        setPhase('linked');
-      } catch (e) {
-        setError(e as Error);
-        setPhase('idle');
-        throw e;
-      }
-    },
-    [linkWithSiwe, syncMutation],
-  );
-
   return {
     wallets: list.data ?? [],
     isLoading: list.isLoading,
@@ -265,11 +207,6 @@ export function useLinkedWallets() {
     error,
     startLinking,
     finishLinking,
-    // Manual fallback — works when the Privy modal/deep-link flow
-    // can't establish a wallet session (typically mobile + Coinbase
-    // Wallet in an external browser).
-    generateManualMessage,
-    submitManualLink,
     refresh: () => queryClient.invalidateQueries(['linked-wallets']),
   };
 }

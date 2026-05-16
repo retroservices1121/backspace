@@ -6,7 +6,7 @@
 //     balance + "Create wallet" (provisions on demand — Privy's
 //     createOnLogin only auto-creates one chain, which we reserve for
 //     Ethereum/Polymarket).
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { toast } from 'react-toastify';
 import { useDflowSwap } from '@src/hooks/useDflowSwap';
@@ -249,7 +249,7 @@ function LinkedPolymarketWalletsSection() {
           )}
 
           <Space direction="column" />
-          <ManualLinkSection />
+          <WalletBrowserLinksSection />
         </>
       )}
 
@@ -284,186 +284,79 @@ function LinkedPolymarketWalletsSection() {
   );
 }
 
-function ManualLinkSection() {
-  const { generateManualMessage, submitManualLink, phase, error } =
-    useLinkedWallets();
-  const [open, setOpen] = useState(false);
-  const [address, setAddress] = useState('');
-  const [message, setMessage] = useState<string | null>(null);
-  const [signature, setSignature] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+// Mobile linking from an external browser (Safari/Chrome) routinely
+// fails when picking a wallet that uses its own SDK for connect
+// requests — Coinbase Wallet being the loudest offender. The
+// wallet's mobile app opens via the deep link, but doesn't actually
+// receive the connect payload, so the user is stuck looking at the
+// wallet's home screen with no prompt.
+//
+// The reliable workaround is to start the flow from INSIDE the
+// wallet's in-app browser. Each major wallet ships a universal link
+// that opens its in-app browser to a chosen URL — we surface those
+// directly, so one tap puts the user in the right context and the
+// existing Privy flow then works on the first try (shared injected
+// provider).
+function WalletBrowserLinksSection() {
+  const currentUrl = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return window.location.href;
+  }, []);
+  const hostPath = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const u = new URL(window.location.href);
+    return `${u.host}${u.pathname}${u.search}`;
+  }, []);
+  const enc = encodeURIComponent(currentUrl);
 
-  const reset = () => {
-    setAddress('');
-    setMessage(null);
-    setSignature('');
-    setLocalError(null);
-  };
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'rgba(255,255,255,0.5)',
-          padding: 0,
-          cursor: 'pointer',
-          textDecoration: 'underline',
-          fontSize: 12,
-        }}
-      >
-        Trouble linking? Use manual link
-      </button>
-    );
-  }
-
-  const handleGenerate = async () => {
-    setLocalError(null);
-    setBusy(true);
-    try {
-      const msg = await generateManualMessage(address);
-      setMessage(msg);
-    } catch (e) {
-      setLocalError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!message) return;
-    setLocalError(null);
-    setBusy(true);
-    try {
-      await submitManualLink({ message, signature });
-      toast.success('Wallet linked');
-      reset();
-      setOpen(false);
-    } catch (e) {
-      setLocalError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleCopy = () => {
-    if (!message) return;
-    copy(message);
-    toast.success('Message copied');
-  };
+  const wallets = [
+    {
+      // https://docs.cdp.coinbase.com/wallet-sdk/docs/mobile-links/
+      // go.cb-w.com is Coinbase Wallet's universal link; falls back
+      // to the App Store / Play Store if the app isn't installed.
+      name: 'Coinbase Wallet',
+      url: `https://go.cb-w.com/dapp?cb_url=${enc}`,
+    },
+    {
+      // MetaMask universal link expects host+path with no scheme.
+      name: 'MetaMask',
+      url: `https://metamask.app.link/dapp/${hostPath}`,
+    },
+  ];
 
   return (
     <OldCol>
-      <h3>Manual link</h3>
+      <h3>Open in your wallet&apos;s browser</h3>
       <h6>
-        Skip the wallet popup. Paste your address, sign the message in any
-        wallet, paste the signature back. Backspace never moves your funds —
-        this signature only proves ownership.
+        Mobile wallets sometimes can&apos;t handle connect requests from
+        outside their own browser. Open Backspace inside your wallet&apos;s
+        app — then the Link button works on the first tap.
       </h6>
       <Space direction="column" />
-
-      <h4>1. Wallet address</h4>
-      <input
-        type="text"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        placeholder="0x…"
-        disabled={!!message}
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          fontFamily: 'monospace',
-          borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(0,0,0,0.3)',
-          color: 'white',
-        }}
-      />
-      <Space direction="column" size="sm" />
-      {!message ? (
-        <Button color="primary" onClick={handleGenerate} disabled={busy || !address}>
-          {busy ? 'Generating…' : 'Generate message'}
-        </Button>
-      ) : (
-        <>
-          <Space direction="column" />
-          <h4>2. Sign this message in your wallet</h4>
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              padding: 10,
-              borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(0,0,0,0.3)',
-              color: 'rgba(255,255,255,0.85)',
-              fontSize: 12,
-            }}
+      {wallets.map((w) => (
+        <React.Fragment key={w.name}>
+          {/* Universal-link buttons must be real <a> tags so iOS
+              promotes them to associated-domains lookups; a
+              JS-driven window.open call gets blocked or stripped of
+              its universal-link metadata on iOS Safari. */}
+          <a
+            href={w.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none' }}
           >
-            {message}
-          </pre>
-          <Button color="primary" onClick={handleCopy}>
-            Copy message
-          </Button>
-
-          <Space direction="column" />
-          <h4>3. Paste the signature</h4>
-          <input
-            type="text"
-            value={signature}
-            onChange={(e) => setSignature(e.target.value)}
-            placeholder="0x… (the signature your wallet produced)"
-            style={{
-              width: '100%',
-              padding: '8px 10px',
-              fontFamily: 'monospace',
-              borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(0,0,0,0.3)',
-              color: 'white',
-            }}
-          />
+            <Button color="primary" type="button">
+              Open in {w.name}
+            </Button>
+          </a>
           <Space direction="column" size="sm" />
-          <Button
-            color="primary"
-            onClick={handleSubmit}
-            disabled={busy || !signature || phase === 'linking'}
-          >
-            {phase === 'linking' || busy ? 'Linking…' : 'Link wallet'}
-          </Button>
-        </>
-      )}
-
-      {(localError || error) && (
-        <>
-          <Space direction="column" />
-          <h6 style={{ color: 'salmon' }}>{localError ?? error?.message}</h6>
-        </>
-      )}
-
-      <Space direction="column" />
-      <button
-        type="button"
-        onClick={() => {
-          reset();
-          setOpen(false);
-        }}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'rgba(255,255,255,0.5)',
-          padding: 0,
-          cursor: 'pointer',
-          textDecoration: 'underline',
-          fontSize: 12,
-        }}
-      >
-        Cancel manual link
-      </button>
+        </React.Fragment>
+      ))}
+      <h6 style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+        Once inside the wallet&apos;s browser, scroll to{' '}
+        <strong>Existing Polymarket wallet</strong> and tap <strong>Link
+        Polymarket wallet</strong>.
+      </h6>
     </OldCol>
   );
 }
