@@ -36,25 +36,41 @@ handler.post(async (req, res) => {
   });
   if (!me) return res.status(HttpStatus.NOT_FOUND).end('user not found');
 
-  let externalWallets: string[];
-  try {
-    // req.authId is the verified Privy DID (set by nextconnect
-    // middleware). Calling Privy's user-lookup API by DID gives us
-    // the authoritative list of attached wallets — the access-token
-    // claims don't carry linkedAccounts.
-    externalWallets = await getPrivyExternalWalletsById(req.authId, PRIVY_CFG);
-  } catch (err) {
-    return res.status(HttpStatus.BAD_GATEWAY).json({
-      error: 'privy_unavailable',
-      message: (err as Error).message,
-    });
-  }
-
   // The body's `address` (if any) is treated as a hint — we only
   // record what Privy actually says is linked. This is the security
   // guarantee: a client cannot make us record an address they don't
   // control.
   const claimedAddress = ((req.body as { address?: string })?.address ?? '').toLowerCase();
+
+  // Privy read-after-write race: useLinkWithSiwe resolves before
+  // Privy's own getUser API reflects the new wallet. Poll until the
+  // claimed address shows up, capped at ~10s. Without this the link
+  // appears successful on the Privy side but our server reads a
+  // stale empty list, records nothing, and the UI reverts.
+  let externalWallets: string[] = [];
+  const deadline = Date.now() + 10_000;
+  const delays = [0, 800, 1500, 2500, 4000];
+  let lastError: Error | null = null;
+  for (const delay of delays) {
+    if (delay) await new Promise((r) => setTimeout(r, delay));
+    try {
+      externalWallets = await getPrivyExternalWalletsById(req.authId, PRIVY_CFG);
+      lastError = null;
+    } catch (err) {
+      lastError = err as Error;
+      continue;
+    }
+    if (!claimedAddress) break; // no specific address requested — single fetch is enough
+    if (externalWallets.map((a) => a.toLowerCase()).includes(claimedAddress)) break;
+    if (Date.now() >= deadline) break;
+  }
+  if (lastError) {
+    return res.status(HttpStatus.BAD_GATEWAY).json({
+      error: 'privy_unavailable',
+      message: lastError.message,
+    });
+  }
+
   const verified = externalWallets.map((a) => a.toLowerCase());
   const toRecord = claimedAddress && verified.includes(claimedAddress)
     ? [claimedAddress]
@@ -63,11 +79,23 @@ handler.post(async (req, res) => {
     : verified;
 
   if (toRecord.length === 0) {
+    // Distinguish "you sent an address but Privy doesn't see it
+    // (race timed out)" from "you sent nothing AND there are no
+    // wallets at all" — the first one is a transient sync issue the
+    // user can fix by retrying; the second means the link genuinely
+    // didn't happen.
+    const reason = claimedAddress
+      ? 'address_not_on_privy_yet'
+      : 'no_linked_wallet';
     return res.status(HttpStatus.BAD_REQUEST).json({
-      error: 'no_linked_wallet',
-      message: 'No external wallet is linked to your Privy account.',
+      error: reason,
+      message: claimedAddress
+        ? "Privy hasn't confirmed the wallet link yet. Wait a moment and try again."
+        : 'No external wallet is linked to your Privy account.',
     });
   }
+
+  let skippedOnOtherUser = false;
 
   const results = [];
   for (const address of toRecord) {
@@ -98,14 +126,23 @@ handler.post(async (req, res) => {
       select: { id: true, userId: true, address: true, safeAddress: true },
     });
     if (wallet.userId !== me.id) {
-      // Address already attached to a different user. Don't reveal
-      // which — just skip silently.
+      // Address already attached to a different Backspace user.
+      // Don't reveal which — just flag it so the client can show a
+      // useful error instead of silently reverting.
+      skippedOnOtherUser = true;
       continue;
     }
     results.push({
       id: wallet.id.toString(),
       address: wallet.address,
       safeAddress: wallet.safeAddress,
+    });
+  }
+
+  if (results.length === 0 && skippedOnOtherUser) {
+    return res.status(HttpStatus.CONFLICT).json({
+      error: 'wallet_attached_elsewhere',
+      message: 'This wallet is already linked to another Backspace account.',
     });
   }
 

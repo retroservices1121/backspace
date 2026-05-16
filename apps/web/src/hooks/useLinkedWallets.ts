@@ -57,13 +57,15 @@ async function fetchLinkedWallets(): Promise<LinkedWallet[]> {
   return data ?? [];
 }
 
-async function syncLinkedWallets(): Promise<LinkedWallet[]> {
-  // Empty body — server reads Privy's authoritative linked-accounts
-  // list and persists whatever's attached. Used both after a fresh
-  // link AND as a refresh on settings page mount.
+async function syncLinkedWallets(address?: string): Promise<LinkedWallet[]> {
+  // When `address` is provided, the server polls Privy until that
+  // specific address shows up in linkedAccounts (read-after-write
+  // race protection). Otherwise it just persists whatever's currently
+  // attached — used as the on-mount refresh.
+  const body = address ? { address } : {};
   const { data } = await axios().post<{ linked: LinkedWallet[] }>(
     '/users/me/linked-wallets',
-    {},
+    body,
   );
   return data.linked ?? [];
 }
@@ -130,12 +132,15 @@ export function useLinkedWallets() {
     },
   });
 
-  const syncMutation = useMutation(syncLinkedWallets, {
-    onSuccess: () => {
-      queryClient.invalidateQueries(['linked-wallets']);
-      queryClient.invalidateQueries(['polymarket-positions']);
+  const syncMutation = useMutation(
+    (address?: string) => syncLinkedWallets(address),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['linked-wallets']);
+        queryClient.invalidateQueries(['polymarket-positions']);
+      },
     },
-  });
+  );
 
   /** Step 1: open the Privy modal, deep-link to the wallet, get the
    *  user back with an active connection. After this resolves, the
@@ -183,14 +188,39 @@ export function useLinkedWallets() {
         connectorType: candidate.connectorType,
       });
 
-      // Persist to our DB + derive the Safe address.
-      await syncMutation.mutateAsync();
+      // Persist to our DB + derive the Safe address. Pass the
+      // address explicitly so the server can poll Privy until its
+      // own read-side reflects the new link (Privy's getUser API
+      // takes a beat to update after useLinkWithSiwe resolves).
+      try {
+        const linked = await syncMutation.mutateAsync(candidate.address);
+        if (linked.length === 0) {
+          // Server returned 201 with no rows — Privy confirmed the
+          // wallet but our upsert produced nothing (currently only
+          // happens if the address ends up owned by a different
+          // Backspace user mid-flight). Surface as a real error
+          // rather than reverting silently.
+          throw new Error('Wallet linked on Privy but not recorded on Backspace.');
+        }
+      } catch (syncErr: any) {
+        // Pull the server's structured error if axios attached one.
+        const serverMsg = syncErr?.response?.data?.message as string | undefined;
+        const errorCode = syncErr?.response?.data?.error as string | undefined;
+        const wrapped = new Error(serverMsg ?? syncErr.message ?? 'Wallet sync failed');
+        (wrapped as any).code = errorCode;
+        throw wrapped;
+      }
       setPhase('linked');
     } catch (e) {
       setError(e as Error);
       // Keep the candidate around so the user can retry without
       // re-connecting — common after wallets that auto-cancel sign
-      // requests when the user takes too long to confirm.
+      // requests when the user takes too long to confirm. NOTE:
+      // once Privy itself has linked the wallet, `candidate` will
+      // become null and the effect below resets phase to 'idle' —
+      // that's why `error` is the real source of truth for the UI,
+      // not phase. The settings page should render `error` even in
+      // the idle state.
       setPhase('pending');
       throw e;
     }
