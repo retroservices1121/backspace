@@ -10,6 +10,7 @@ import React from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { toast } from 'react-toastify';
 import { useDflowSwap } from '@src/hooks/useDflowSwap';
+import { useLinkedWallets } from '@src/hooks/useLinkedWallets';
 import { usePolymarketSession } from '@src/hooks/usePolymarketSession';
 import { useSolanaBalances } from '@src/hooks/useSolanaBalances';
 import settingsLayout from '@src/layouts/settingsLayout';
@@ -125,10 +126,70 @@ const Wallet: ReactLayoutComponentType = () => {
       <HorizontalLine />
       <Space direction="column" />
 
+      <LinkedPolymarketWalletsSection />
+
+      <Space direction="column" />
+      <HorizontalLine />
+      <Space direction="column" />
+
       <SolanaWalletSection />
     </Container>
   );
 };
+
+function LinkedPolymarketWalletsSection() {
+  const { wallets, isLoading, link } = useLinkedWallets();
+
+  return (
+    <>
+      <h1>Existing Polymarket wallet</h1>
+      <Space direction="column" />
+      <h6>
+        Already trade on Polymarket? Link the wallet you use there to import
+        your trade history. Your accuracy stats are computed across every
+        linked wallet plus your Backspace trading wallet — all under one
+        Backspace handle, no matter which one signs.
+      </h6>
+      <Space direction="column" />
+
+      {isLoading ? (
+        <h6>Loading linked wallets…</h6>
+      ) : wallets.length === 0 ? (
+        <>
+          <h6>
+            No external wallet linked yet. We never move your funds —
+            linking only proves ownership so we can read your on-chain
+            history.
+          </h6>
+          <Space direction="column" />
+          <LargeTextButton color="primary" onClick={link}>
+            Link Polymarket wallet
+          </LargeTextButton>
+        </>
+      ) : (
+        <>
+          {wallets.map((w) => (
+            <OldCol key={w.id}>
+              <h4>Wallet</h4>
+              <code style={{ wordBreak: 'break-all' }}>{w.address}</code>
+              {w.safeAddress && (
+                <>
+                  <Space direction="column" size="sm" />
+                  <h4>Polymarket Safe</h4>
+                  <code style={{ wordBreak: 'break-all' }}>{w.safeAddress}</code>
+                </>
+              )}
+              <Space direction="column" />
+            </OldCol>
+          ))}
+          <Button color="primary" onClick={link}>
+            Link another wallet
+          </Button>
+        </>
+      )}
+    </>
+  );
+}
 
 function SolanaWalletSection() {
   const {

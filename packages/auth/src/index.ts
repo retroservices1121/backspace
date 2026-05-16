@@ -110,4 +110,26 @@ export async function getPrivyUserEmailById(
   );
 }
 
+/**
+ * List the external (non-Privy-embedded) wallet addresses currently linked
+ * to a Privy user. Used by the wallet-linking flow to verify what the
+ * client claims about their linked accounts — the JWT claims don't include
+ * `linkedAccounts`, so this calls Privy's user lookup API.
+ *
+ * Returns lowercased addresses. The embedded wallets Privy provisions for
+ * the user are filtered out — only "real" wallets the user attached count.
+ */
+export async function getPrivyExternalWalletsById(
+  userId: string,
+  cfg: PrivyConfig,
+): Promise<string[]> {
+  const user = await client(cfg).getUser(userId);
+  return (user.linkedAccounts ?? [])
+    .filter((a): a is { type: 'wallet'; address: string; walletClientType?: string } =>
+      a.type === 'wallet' && typeof (a as { address?: unknown }).address === 'string',
+    )
+    .filter((a) => a.walletClientType !== 'privy')
+    .map((a) => a.address.toLowerCase());
+}
+
 export type { AuthTokenClaims };
