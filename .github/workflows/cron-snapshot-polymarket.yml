@@ -1,0 +1,38 @@
+# Scheduled Polymarket position-snapshot worker.
+#
+# Hits /api/cron/snapshot-polymarket — the route walks every linked
+# Polymarket wallet and persists resolved positions into
+# PolymarketPositionSnapshot for the accuracy aggregator (Phase 10.4).
+#
+# Cadence: every 30min. Resolved positions don't change very often
+# (markets resolve once), but new resolutions roll in continuously,
+# and a snapshot lag means stale accuracy badges. 30min is a fair
+# compromise between freshness and Data API call volume.
+name: Polymarket position snapshot
+
+on:
+  schedule:
+    - cron: '17,47 * * * *'
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger snapshot
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET repo secret is not set" >&2
+            exit 1
+          fi
+          BASE="${CRON_BASE_URL:-https://backspace.to}"
+          HTTP=$(curl -sS --max-time 270 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -o /tmp/body -w '%{http_code}' \
+            "$BASE/api/cron/snapshot-polymarket")
+          echo "HTTP $HTTP"
+          cat /tmp/body; echo
+          [ "$HTTP" -lt 400 ]
