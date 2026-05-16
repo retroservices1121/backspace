@@ -6,7 +6,7 @@
 //     balance + "Create wallet" (provisions on demand — Privy's
 //     createOnLogin only auto-creates one chain, which we reserve for
 //     Ethereum/Polymarket).
-import React from 'react';
+import React, { useState } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { toast } from 'react-toastify';
 import { useDflowSwap } from '@src/hooks/useDflowSwap';
@@ -247,6 +247,9 @@ function LinkedPolymarketWalletsSection() {
               <h6 style={{ color: 'salmon' }}>{linkError.message}</h6>
             </>
           )}
+
+          <Space direction="column" />
+          <ManualLinkSection />
         </>
       )}
 
@@ -278,6 +281,190 @@ function LinkedPolymarketWalletsSection() {
         <span>Show my accuracy stats on my public profile</span>
       </label>
     </>
+  );
+}
+
+function ManualLinkSection() {
+  const { generateManualMessage, submitManualLink, phase, error } =
+    useLinkedWallets();
+  const [open, setOpen] = useState(false);
+  const [address, setAddress] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [signature, setSignature] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const reset = () => {
+    setAddress('');
+    setMessage(null);
+    setSignature('');
+    setLocalError(null);
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'rgba(255,255,255,0.5)',
+          padding: 0,
+          cursor: 'pointer',
+          textDecoration: 'underline',
+          fontSize: 12,
+        }}
+      >
+        Trouble linking? Use manual link
+      </button>
+    );
+  }
+
+  const handleGenerate = async () => {
+    setLocalError(null);
+    setBusy(true);
+    try {
+      const msg = await generateManualMessage(address);
+      setMessage(msg);
+    } catch (e) {
+      setLocalError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!message) return;
+    setLocalError(null);
+    setBusy(true);
+    try {
+      await submitManualLink({ message, signature });
+      toast.success('Wallet linked');
+      reset();
+      setOpen(false);
+    } catch (e) {
+      setLocalError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!message) return;
+    copy(message);
+    toast.success('Message copied');
+  };
+
+  return (
+    <OldCol>
+      <h3>Manual link</h3>
+      <h6>
+        Skip the wallet popup. Paste your address, sign the message in any
+        wallet, paste the signature back. Backspace never moves your funds —
+        this signature only proves ownership.
+      </h6>
+      <Space direction="column" />
+
+      <h4>1. Wallet address</h4>
+      <input
+        type="text"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        placeholder="0x…"
+        disabled={!!message}
+        style={{
+          width: '100%',
+          padding: '8px 10px',
+          fontFamily: 'monospace',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.15)',
+          background: 'rgba(0,0,0,0.3)',
+          color: 'white',
+        }}
+      />
+      <Space direction="column" size="sm" />
+      {!message ? (
+        <Button color="primary" onClick={handleGenerate} disabled={busy || !address}>
+          {busy ? 'Generating…' : 'Generate message'}
+        </Button>
+      ) : (
+        <>
+          <Space direction="column" />
+          <h4>2. Sign this message in your wallet</h4>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              padding: 10,
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(0,0,0,0.3)',
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: 12,
+            }}
+          >
+            {message}
+          </pre>
+          <Button color="primary" onClick={handleCopy}>
+            Copy message
+          </Button>
+
+          <Space direction="column" />
+          <h4>3. Paste the signature</h4>
+          <input
+            type="text"
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+            placeholder="0x… (the signature your wallet produced)"
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              fontFamily: 'monospace',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(0,0,0,0.3)',
+              color: 'white',
+            }}
+          />
+          <Space direction="column" size="sm" />
+          <Button
+            color="primary"
+            onClick={handleSubmit}
+            disabled={busy || !signature || phase === 'linking'}
+          >
+            {phase === 'linking' || busy ? 'Linking…' : 'Link wallet'}
+          </Button>
+        </>
+      )}
+
+      {(localError || error) && (
+        <>
+          <Space direction="column" />
+          <h6 style={{ color: 'salmon' }}>{localError ?? error?.message}</h6>
+        </>
+      )}
+
+      <Space direction="column" />
+      <button
+        type="button"
+        onClick={() => {
+          reset();
+          setOpen(false);
+        }}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'rgba(255,255,255,0.5)',
+          padding: 0,
+          cursor: 'pointer',
+          textDecoration: 'underline',
+          fontSize: 12,
+        }}
+      >
+        Cancel manual link
+      </button>
+    </OldCol>
   );
 }
 
