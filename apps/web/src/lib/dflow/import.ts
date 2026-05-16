@@ -23,11 +23,19 @@ import prisma from '@src/api2/prisma';
 
 import { DFLOW_API_BASE, dflowApiKey } from './config';
 
-// Jupiter migrated the token list from `token.jup.ag` (singular,
-// deprecated mid-2024) to `tokens.jup.ag`. The old `/strict` set is
-// now `?tags=verified` — same intent (curated, low-spam list), same
-// JSON shape (array of { address, symbol, name, decimals, logoURI }).
-const JUPITER_STRICT_LIST = 'https://tokens.jup.ag/tokens?tags=verified';
+// Jupiter's public token list. The original `token.jup.ag/strict`
+// host was decommissioned mid-2024; the current public path is the
+// Lite API's `tagged/verified` endpoint — same intent (curated,
+// low-spam list), same JSON shape: an array of
+// { address, symbol, name, decimals, logoURI }.
+//
+// Overridable via JUPITER_TOKEN_LIST_URL so a future Jupiter URL
+// change can be fixed by setting an env var on Railway without a
+// redeploy.
+const DEFAULT_JUPITER_LIST = 'https://lite-api.jup.ag/tokens/v1/tagged/verified';
+function jupiterListUrl(): string {
+  return process.env.JUPITER_TOKEN_LIST_URL || DEFAULT_JUPITER_LIST;
+}
 
 export type ImportSummary = {
   fromDflow: number;
@@ -79,16 +87,17 @@ async function fetchDflowTokens(apiKey: string): Promise<Array<[string, number]>
   return data as Array<[string, number]>;
 }
 
-/** Pull Jupiter's curated strict token list for metadata enrichment. */
+/** Pull Jupiter's curated verified token list for metadata enrichment. */
 async function fetchJupiterStrict(): Promise<Map<string, JupiterToken>> {
+  const url = jupiterListUrl();
   let res: Response;
   try {
-    res = await fetch(JUPITER_STRICT_LIST);
+    res = await fetch(url);
   } catch (err) {
-    throw describeFetchError(JUPITER_STRICT_LIST, err);
+    throw describeFetchError(url, err);
   }
   if (!res.ok) {
-    throw new Error(`Jupiter strict list HTTP ${res.status}: ${await res.text()}`);
+    throw new Error(`Jupiter token list HTTP ${res.status}: ${await res.text()}`);
   }
   const list = (await res.json()) as JupiterToken[];
   const byMint = new Map<string, JupiterToken>();
