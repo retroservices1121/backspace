@@ -7,6 +7,7 @@
 import prisma from '@src/api2/prisma';
 import { Mention, MentionSource, NotificationType, Prisma } from '@prisma/client';
 import { findMentions } from '@src/lib/mention';
+import { findTokenSymbols } from '@src/lib/tokenMention';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { PostFormState } from '@src/types/post';
 import { Post } from '@src/types/prisma';
@@ -46,6 +47,42 @@ handler
       body,
     } = req;
     const typedBody : PostBody = body;
+
+    // Auto-attach a Token from $SYMBOL mentions in the body when the
+    // composer didn't explicitly pick one via TokenPicker. Resolves
+    // the FIRST symbol mentioned against the catalog (case-insensitive,
+    // active only) — multiple-token embeds aren't supported in the UI
+    // and "first mention wins" matches how reading works.
+    // marketId still beats tokenId (mutual exclusion in the composer
+    // means both shouldn't be set, but be defensive).
+    let resolvedTokenId: string | null = typedBody.tokenId ?? null;
+    if (!resolvedTokenId && !typedBody.marketId) {
+      const symbols = findTokenSymbols(typedBody.text ?? '');
+      if (symbols.length > 0) {
+        const matches = await prisma.token.findMany({
+          where: {
+            isActive: true,
+            symbol: { in: symbols, mode: 'insensitive' },
+          },
+          select: { id: true, symbol: true },
+        });
+        // "First symbol in text wins" — walk symbols in author order
+        // and pick the first one that has a catalog hit. Ambiguous
+        // symbols (multiple tokens with the same ticker — uncommon
+        // in the verified-only catalog but possible) take the first
+        // DB row, which is deterministic enough for v1.
+        const bySymbol = new Map(
+          matches.map((m) => [m.symbol.toUpperCase(), m]),
+        );
+        for (const s of symbols) {
+          const hit = bySymbol.get(s.toUpperCase());
+          if (hit) {
+            resolvedTokenId = hit.id.toString();
+            break;
+          }
+        }
+      }
+    }
 
     //Try to create mentions
     const mentionUsernames = findMentions(typedBody.text);
@@ -140,13 +177,16 @@ handler
           id: BigInt(typedBody.marketId),
         },
       } : undefined,
-      // Optional Solana spot Token attachment — set by the CreatePost
-      // TokenPicker. When non-null, MediaPost/ContentContainer renders
-      // the inline <PostTokenCard /> (Dflow swap widget) under the post
-      // text. The composer enforces mutual exclusion with marketId.
-      token: typedBody.tokenId ? {
+      // Optional Solana spot Token attachment. Either the composer
+      // explicitly picked one (TokenPicker) OR the body text contains
+      // a $SYMBOL we resolved against the catalog above. When set,
+      // MediaPost/ContentContainer renders <PostTokenCard /> (Dflow
+      // swap widget) under the post text. Mutually exclusive with
+      // marketId (enforced both in the composer and in the auto-
+      // resolver above).
+      token: resolvedTokenId ? {
         connect: {
-          id: BigInt(typedBody.tokenId),
+          id: BigInt(resolvedTokenId),
         },
       } : undefined,
     };
