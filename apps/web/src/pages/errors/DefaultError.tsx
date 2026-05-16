@@ -34,7 +34,7 @@ const DefaultError: React.FC<FallbackProps> = ({
       {/*<Redirect to={{ pathname: APP.ERRORS.DEFAULT, state: {} }}/>*/}
       <CenterPage $center>
         <OldCol centerY>
-          <ErrorHeader>Oops, something went wrong 🤔</ErrorHeader>
+          <ErrorHeader>Oops, something went wrong.</ErrorHeader>
 
           <Space direction='column'/>
 

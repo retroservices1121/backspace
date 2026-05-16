@@ -47,12 +47,13 @@ handler.post(async (req, res) => {
   // claimed address shows up, capped at ~10s. Without this the link
   // appears successful on the Privy side but our server reads a
   // stale empty list, records nothing, and the UI reverts.
+  const sleep = (ms: number) => new Promise((resolve) => { setTimeout(resolve, ms); });
   let externalWallets: string[] = [];
   const deadline = Date.now() + 10_000;
   const delays = [0, 800, 1500, 2500, 4000];
   let lastError: Error | null = null;
   for (const delay of delays) {
-    if (delay) await new Promise((r) => setTimeout(r, delay));
+    if (delay) await sleep(delay);
     try {
       externalWallets = await getPrivyExternalWalletsById(req.authId, PRIVY_CFG);
       lastError = null;

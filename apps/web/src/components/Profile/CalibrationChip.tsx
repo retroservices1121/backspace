@@ -33,15 +33,21 @@ const CalibrationChip: React.FC<Props> = ({ publicAccuracy, accuracy }) => {
   // Color-code by accuracy band. 60%+ is the "calibrated trader" tier;
   // 50–59% is neutral; below 50% we still show the badge but in a dim
   // tone so opt-in users aren't punished for transparency.
-  const tone =
-    pct >= 60 ? 'text-emerald-300 border-emerald-300/40 bg-emerald-300/10'
-    : pct >= 50 ? 'text-fontTertiary border-white/15 bg-white/5'
-    : 'text-fontTertiary border-white/10 bg-white/[0.03]';
+  let tone: string;
+  if (pct >= 60) {
+    tone = 'text-emerald-300 border-emerald-300/40 bg-emerald-300/10';
+  } else if (pct >= 50) {
+    tone = 'text-fontTertiary border-white/15 bg-white/5';
+  } else {
+    tone = 'text-fontTertiary border-white/10 bg-white/[0.03]';
+  }
+  const chipClass = 'inline-flex items-center gap-1 rounded-full border'
+    + ' px-1.5 py-0.5 text-[10px] font-semibold tabular-nums';
 
   return (
     <span
       title={`${correct}/${resolved} resolved positions correct`}
-      className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${tone}`}
+      className={`${chipClass} ${tone}`}
     >
       {pct}%
     </span>
