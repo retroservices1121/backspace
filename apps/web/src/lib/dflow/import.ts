@@ -42,11 +42,29 @@ type JupiterToken = {
   logoURI?: string;
 };
 
+/** Node's built-in fetch wraps the network failure in a generic
+ *  `TypeError: fetch failed` with the real reason on .cause. Surface
+ *  the cause + the URL we were trying to hit so a Railway egress
+ *  block / DNS failure / wrong env value doesn't look like a generic
+ *  outage. */
+function describeFetchError(url: string, err: unknown): Error {
+  const e = err as { message?: string; cause?: { code?: string; message?: string } };
+  const cause = e.cause;
+  const detail = cause
+    ? `${cause.code ?? 'err'}: ${cause.message ?? 'unknown'}`
+    : (e.message ?? 'unknown');
+  return new Error(`fetch ${url} failed (${detail})`);
+}
+
 /** Pull the active mint+decimals list from Dflow. */
 async function fetchDflowTokens(apiKey: string): Promise<Array<[string, number]>> {
-  const res = await fetch(`${DFLOW_API_BASE}/tokens-with-decimals`, {
-    headers: { 'x-api-key': apiKey },
-  });
+  const url = `${DFLOW_API_BASE}/tokens-with-decimals`;
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+  } catch (err) {
+    throw describeFetchError(url, err);
+  }
   if (!res.ok) {
     throw new Error(`Dflow /tokens-with-decimals HTTP ${res.status}: ${await res.text()}`);
   }
@@ -59,7 +77,12 @@ async function fetchDflowTokens(apiKey: string): Promise<Array<[string, number]>
 
 /** Pull Jupiter's curated strict token list for metadata enrichment. */
 async function fetchJupiterStrict(): Promise<Map<string, JupiterToken>> {
-  const res = await fetch(JUPITER_STRICT_LIST);
+  let res: Response;
+  try {
+    res = await fetch(JUPITER_STRICT_LIST);
+  } catch (err) {
+    throw describeFetchError(JUPITER_STRICT_LIST, err);
+  }
   if (!res.ok) {
     throw new Error(`Jupiter strict list HTTP ${res.status}: ${await res.text()}`);
   }
