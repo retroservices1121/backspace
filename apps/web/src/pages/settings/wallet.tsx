@@ -12,6 +12,7 @@ import { toast } from 'react-toastify';
 import { useDflowSwap } from '@src/hooks/useDflowSwap';
 import { useLinkedWallets } from '@src/hooks/useLinkedWallets';
 import { usePolymarketSession } from '@src/hooks/usePolymarketSession';
+import { usePublicAccuracyToggle } from '@src/hooks/usePublicAccuracyToggle';
 import { useSolanaBalances } from '@src/hooks/useSolanaBalances';
 import settingsLayout from '@src/layouts/settingsLayout';
 import copy from 'copy-to-clipboard';
@@ -139,6 +140,7 @@ const Wallet: ReactLayoutComponentType = () => {
 
 function LinkedPolymarketWalletsSection() {
   const { wallets, isLoading, link } = useLinkedWallets();
+  const accuracyToggle = usePublicAccuracyToggle();
 
   return (
     <>
@@ -187,6 +189,34 @@ function LinkedPolymarketWalletsSection() {
           </Button>
         </>
       )}
+
+      <Space direction="column" />
+      <Space direction="column" />
+      <h3>Show accuracy on profile</h3>
+      <Space direction="column" />
+      <h6>
+        When on, your Calls / Accuracy / Brier stats render on your public
+        profile. When off, only you can see them. Linking a wallet alone
+        never publishes anything — this toggle controls visibility.
+      </h6>
+      <Space direction="column" />
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          cursor: accuracyToggle.isSaving ? 'wait' : 'pointer',
+          opacity: accuracyToggle.isLoading ? 0.5 : 1,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={accuracyToggle.enabled}
+          onChange={(e) => accuracyToggle.set(e.target.checked)}
+          disabled={accuracyToggle.isLoading || accuracyToggle.isSaving}
+        />
+        <span>Show my accuracy stats on my public profile</span>
+      </label>
     </>
   );
 }
