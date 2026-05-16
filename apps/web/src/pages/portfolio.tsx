@@ -15,7 +15,7 @@ import { useSolanaWallets } from '@privy-io/react-auth';
 import { useDflowTrades, DflowTrade } from '@src/hooks/useDflowTrades';
 import { pickEmbeddedSolanaWallet } from '@src/lib/dflow';
 import { useSolanaBalances, SolanaBalance } from '@src/hooks/useSolanaBalances';
-import { usePositions, PolymarketPosition } from '@src/hooks/usePositions';
+import { useAllPositions, SourcedPosition } from '@src/hooks/usePositions';
 
 function usd(n: number): string {
   return `$${n.toFixed(2)}`;
@@ -34,7 +34,7 @@ function fmtAmount(raw: string, decimals: number, max = 6): string {
   return `${whole}.${frac.slice(0, max)}`;
 }
 
-function PnlCell({ position }: { position: PolymarketPosition }) {
+function PnlCell({ position }: { position: SourcedPosition }) {
   const up = position.cashPnl >= 0;
   return (
     <span className={up ? 'text-emerald-300' : 'text-rose-300'}>
@@ -48,7 +48,18 @@ function PnlCell({ position }: { position: PolymarketPosition }) {
   );
 }
 
-function PositionsTable({ positions }: { positions: PolymarketPosition[] }) {
+function SourceBadge({ source }: { source: SourcedPosition['source'] }) {
+  // Only badge the off-platform rows — the embedded-Safe positions
+  // are the default and don't need a tag.
+  if (source !== 'linked') return null;
+  return (
+    <span className="ml-2 rounded-md border border-white/20 bg-white/5 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-white/60">
+      linked
+    </span>
+  );
+}
+
+function PositionsTable({ positions }: { positions: SourcedPosition[] }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-white/10">
       <table className="w-full text-sm">
@@ -65,7 +76,7 @@ function PositionsTable({ positions }: { positions: PolymarketPosition[] }) {
         <tbody>
           {positions.map((p) => (
             <tr
-              key={`${p.conditionId}-${p.asset}`}
+              key={`${p.safeAddress}-${p.conditionId}-${p.asset}`}
               className="border-b border-white/5 last:border-0"
             >
               <td className="px-4 py-3">
@@ -78,8 +89,9 @@ function PositionsTable({ positions }: { positions: PolymarketPosition[] }) {
                     />
                   )}
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-white">
-                      {p.title}
+                    <div className="flex items-center truncate font-medium text-white">
+                      <span className="truncate">{p.title}</span>
+                      <SourceBadge source={p.source} />
                     </div>
                     <div className="text-xs text-white/50">{p.outcome}</div>
                   </div>
@@ -203,8 +215,10 @@ function RecentSwaps({ trades }: { trades: DflowTrade[] }) {
 }
 
 function MarketsTab() {
-  const { data, isLoading, isError, safeAddress } = usePositions();
-  if (!safeAddress) {
+  const { positions, isLoading, isError, safeCount, hasLinkedWallets } =
+    useAllPositions();
+
+  if (safeCount === 0) {
     return (
       <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
         Log in to see your positions.
@@ -223,7 +237,7 @@ function MarketsTab() {
       </div>
     );
   }
-  if (!data || data.length === 0) {
+  if (positions.length === 0) {
     return (
       <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
         No open positions yet.{' '}
@@ -231,12 +245,22 @@ function MarketsTab() {
           <a className="text-white/80 underline hover:text-white">
             Fund your trading wallet
           </a>
-        </Link>{' '}
-        to get started.
+        </Link>
+        {!hasLinkedWallets && (
+          <>
+            {' '}or{' '}
+            <Link href="/settings/wallet">
+              <a className="text-white/80 underline hover:text-white">
+                link an existing Polymarket wallet
+              </a>
+            </Link>
+          </>
+        )}
+        .
       </div>
     );
   }
-  return <PositionsTable positions={data} />;
+  return <PositionsTable positions={positions} />;
 }
 
 function TokensTab() {
