@@ -1,14 +1,16 @@
-# Scheduled Polymarket position-snapshot worker.
+# Scheduled Polymarket accuracy pipeline.
 #
-# Hits /api/cron/snapshot-polymarket — the route walks every linked
-# Polymarket wallet and persists resolved positions into
-# PolymarketPositionSnapshot for the accuracy aggregator (Phase 10.4).
+# Two stages in sequence:
+#   1. Snapshot — walk every linked Polymarket wallet, persist
+#      resolved positions into PolymarketPositionSnapshot.
+#   2. Accuracy — recompute UserAccuracy for everyone with snapshot
+#      rows. Runs immediately after the snapshot so badges don't lag.
 #
 # Cadence: every 30min. Resolved positions don't change very often
-# (markets resolve once), but new resolutions roll in continuously,
+# (markets resolve once) but new resolutions roll in continuously,
 # and a snapshot lag means stale accuracy badges. 30min is a fair
 # compromise between freshness and Data API call volume.
-name: Polymarket position snapshot
+name: Polymarket accuracy pipeline
 
 on:
   schedule:
@@ -29,10 +31,24 @@ jobs:
             exit 1
           fi
           BASE="${CRON_BASE_URL:-https://backspace.to}"
+
+          echo "=== Snapshot ==="
           HTTP=$(curl -sS --max-time 270 -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -o /tmp/body -w '%{http_code}' \
             "$BASE/api/cron/snapshot-polymarket")
+          echo "HTTP $HTTP"
+          cat /tmp/body; echo
+          [ "$HTTP" -lt 400 ] || exit 1
+
+          # Recompute accuracy immediately after the snapshot. They're
+          # tied together — a fresh snapshot without re-aggregation
+          # leaves badges showing stale numbers until the next tick.
+          echo "=== Accuracy ==="
+          HTTP=$(curl -sS --max-time 270 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -o /tmp/body -w '%{http_code}' \
+            "$BASE/api/cron/recompute-accuracy")
           echo "HTTP $HTTP"
           cat /tmp/body; echo
           [ "$HTTP" -lt 400 ]
