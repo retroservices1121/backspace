@@ -139,8 +139,19 @@ const Wallet: ReactLayoutComponentType = () => {
 };
 
 function LinkedPolymarketWalletsSection() {
-  const { wallets, isLoading, link } = useLinkedWallets();
+  const {
+    wallets,
+    isLoading,
+    candidate,
+    phase,
+    error: linkError,
+    startLinking,
+    finishLinking,
+  } = useLinkedWallets();
   const accuracyToggle = usePublicAccuracyToggle();
+  const signing = phase === 'signing' || phase === 'linking';
+  const connecting = phase === 'connecting';
+  const hasCandidate = !!candidate;
 
   return (
     <>
@@ -156,18 +167,6 @@ function LinkedPolymarketWalletsSection() {
 
       {isLoading ? (
         <h6>Loading linked wallets…</h6>
-      ) : wallets.length === 0 ? (
-        <>
-          <h6>
-            No external wallet linked yet. We never move your funds —
-            linking only proves ownership so we can read your on-chain
-            history.
-          </h6>
-          <Space direction="column" />
-          <LargeTextButton color="primary" onClick={link}>
-            Link Polymarket wallet
-          </LargeTextButton>
-        </>
       ) : (
         <>
           {wallets.map((w) => (
@@ -184,9 +183,70 @@ function LinkedPolymarketWalletsSection() {
               <Space direction="column" />
             </OldCol>
           ))}
-          <Button color="primary" onClick={link}>
-            Link another wallet
-          </Button>
+
+          {hasCandidate ? (
+            // A wallet finished connecting but hasn't been signed-
+            // and-linked yet. This is the explicit recovery step the
+            // mobile flow needs — the second deep-link to the wallet
+            // for the actual signature has to come from a fresh user
+            // gesture or it silently drops on iOS / Android.
+            <>
+              {wallets.length === 0 && (
+                <h6>
+                  Wallet connected. Tap below to sign and link it to your
+                  Backspace handle. Backspace never moves your funds —
+                  this signature only proves ownership.
+                </h6>
+              )}
+              <Space direction="column" />
+              <code style={{ wordBreak: 'break-all', display: 'block' }}>
+                {candidate.address}
+              </code>
+              <Space direction="column" size="sm" />
+              <LargeTextButton
+                color="primary"
+                onClick={() => finishLinking().catch(() => undefined)}
+                disabled={signing}
+              >
+                {phase === 'signing'
+                  ? 'Sign in your wallet…'
+                  : phase === 'linking'
+                    ? 'Linking…'
+                    : 'Sign to finish linking'}
+              </LargeTextButton>
+            </>
+          ) : wallets.length === 0 ? (
+            <>
+              <h6>
+                No external wallet linked yet. We never move your funds —
+                linking only proves ownership so we can read your on-chain
+                history.
+              </h6>
+              <Space direction="column" />
+              <LargeTextButton
+                color="primary"
+                onClick={startLinking}
+                disabled={connecting}
+              >
+                {connecting ? 'Opening wallet…' : 'Link Polymarket wallet'}
+              </LargeTextButton>
+            </>
+          ) : (
+            <Button
+              color="primary"
+              onClick={startLinking}
+              disabled={connecting}
+            >
+              {connecting ? 'Opening wallet…' : 'Link another wallet'}
+            </Button>
+          )}
+
+          {linkError && (
+            <>
+              <Space direction="column" />
+              <h6 style={{ color: 'salmon' }}>{linkError.message}</h6>
+            </>
+          )}
         </>
       )}
 
