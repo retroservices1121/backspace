@@ -2,8 +2,9 @@
 //
 // Pulls the set of tradeable Solana mints from Dflow's
 // /tokens-with-decimals endpoint (mint + decimals only — no name,
-// symbol, or logo) and joins them against Jupiter's verified token
-// list (tokens.jup.ag/tokens?tags=verified) for display metadata.
+// symbol, or logo) and joins them against Jupiter's V2 verified
+// token list (lite-api.jup.ag/tokens/v2/tag?tag=verified) for
+// display metadata.
 // Mints not in the verified list are intentionally skipped — that
 // list is curated and keeps the obvious spam/scam tokens out.
 // Upserts into the Token table so the rest of the app — token
@@ -24,15 +25,17 @@ import prisma from '@src/api2/prisma';
 import { DFLOW_API_BASE, dflowApiKey } from './config';
 
 // Jupiter's public token list. The original `token.jup.ag/strict`
-// host was decommissioned mid-2024; the current public path is the
-// Lite API's `tagged/verified` endpoint — same intent (curated,
-// low-spam list), same JSON shape: an array of
-// { address, symbol, name, decimals, logoURI }.
+// host was decommissioned mid-2024 and Jupiter migrated to the V2
+// Tokens API at `api.jup.ag/tokens/v2/tag?tag=verified`. The paid
+// host needs `x-api-key`; `lite-api.jup.ag` is the free public mirror
+// with the same paths. V2 response fields differ slightly from V1
+// (`id` instead of `address`, `icon` instead of `logoURI`) so the
+// parser below tolerates both shapes.
 //
 // Overridable via JUPITER_TOKEN_LIST_URL so a future Jupiter URL
 // change can be fixed by setting an env var on Railway without a
 // redeploy.
-const DEFAULT_JUPITER_LIST = 'https://lite-api.jup.ag/tokens/v1/tagged/verified';
+const DEFAULT_JUPITER_LIST = 'https://lite-api.jup.ag/tokens/v2/tag?tag=verified';
 function jupiterListUrl(): string {
   return process.env.JUPITER_TOKEN_LIST_URL || DEFAULT_JUPITER_LIST;
 }
@@ -53,6 +56,28 @@ type JupiterToken = {
   decimals: number;
   logoURI?: string;
 };
+
+// V2 entries name the mint `id` and the logo `icon`; V1 used
+// `address` and `logoURI`. Normalize so the rest of the importer
+// doesn't care which shape Jupiter is serving today.
+type JupiterRawToken = Partial<JupiterToken> & {
+  id?: string;
+  icon?: string;
+  logo?: string;
+};
+function normalizeJupiterToken(t: JupiterRawToken): JupiterToken | null {
+  const address = t.address ?? t.id;
+  if (!address || typeof t.symbol !== 'string' || typeof t.name !== 'string') {
+    return null;
+  }
+  return {
+    address,
+    symbol: t.symbol,
+    name: t.name,
+    decimals: typeof t.decimals === 'number' ? t.decimals : 0,
+    logoURI: t.logoURI ?? t.icon ?? t.logo,
+  };
+}
 
 /** Node's built-in fetch wraps the network failure in a generic
  *  `TypeError: fetch failed` with the real reason on .cause. Surface
@@ -99,10 +124,14 @@ async function fetchJupiterStrict(): Promise<Map<string, JupiterToken>> {
   if (!res.ok) {
     throw new Error(`Jupiter token list HTTP ${res.status}: ${await res.text()}`);
   }
-  const list = (await res.json()) as JupiterToken[];
+  const list = (await res.json()) as JupiterRawToken[];
+  if (!Array.isArray(list)) {
+    throw new Error('Jupiter token list: expected array');
+  }
   const byMint = new Map<string, JupiterToken>();
-  for (const t of list) {
-    if (typeof t.address === 'string') byMint.set(t.address, t);
+  for (const raw of list) {
+    const t = normalizeJupiterToken(raw);
+    if (t) byMint.set(t.address, t);
   }
   return byMint;
 }
