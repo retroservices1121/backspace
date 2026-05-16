@@ -2,10 +2,10 @@
 //
 // Pulls the set of tradeable Solana mints from Dflow's
 // /tokens-with-decimals endpoint (mint + decimals only — no name,
-// symbol, or logo) and joins them against Jupiter's strict token
-// list (token.jup.ag/strict) for display metadata. Mints not in
-// Jupiter's strict list are intentionally skipped — that list is
-// curated and keeps the obvious spam/scam tokens out of the catalog.
+// symbol, or logo) and joins them against Jupiter's verified token
+// list (tokens.jup.ag/tokens?tags=verified) for display metadata.
+// Mints not in the verified list are intentionally skipped — that
+// list is curated and keeps the obvious spam/scam tokens out.
 // Upserts into the Token table so the rest of the app — token
 // picker, PostTokenCard — can read directly from Postgres.
 //
@@ -23,7 +23,11 @@ import prisma from '@src/api2/prisma';
 
 import { DFLOW_API_BASE, dflowApiKey } from './config';
 
-const JUPITER_STRICT_LIST = 'https://token.jup.ag/strict';
+// Jupiter migrated the token list from `token.jup.ag` (singular,
+// deprecated mid-2024) to `tokens.jup.ag`. The old `/strict` set is
+// now `?tags=verified` — same intent (curated, low-spam list), same
+// JSON shape (array of { address, symbol, name, decimals, logoURI }).
+const JUPITER_STRICT_LIST = 'https://tokens.jup.ag/tokens?tags=verified';
 
 export type ImportSummary = {
   fromDflow: number;
