@@ -1,0 +1,36 @@
+# Scheduled Dflow token-catalog import.
+#
+# Hits the web service's cron route — the route itself
+# (apps/web/src/pages/api/cron/import-dflow.ts) does the work and owns
+# the DATABASE_URL. This workflow is just the scheduler.
+#
+# Setup (one-time, same as cron-import.yml):
+#   - Secret  CRON_SECRET     — same value as the web service env var.
+#   - Variable CRON_BASE_URL   — Railway origin (e.g. *.up.railway.app).
+#
+# Cadence: Dflow's tradeable-mint set doesn't churn the way Polymarket
+# markets do — once an hour is more than enough.
+name: Dflow token catalog import
+
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger import
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_BASE_URL: ${{ vars.CRON_BASE_URL }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET repo secret is not set" >&2
+            exit 1
+          fi
+          BASE="${CRON_BASE_URL:-https://backspace.to}"
+          curl -fsS --max-time 270 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BASE/api/cron/import-dflow"
