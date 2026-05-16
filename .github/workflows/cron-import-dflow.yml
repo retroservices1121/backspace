@@ -31,6 +31,12 @@ jobs:
             exit 1
           fi
           BASE="${CRON_BASE_URL:-https://backspace.to}"
-          curl -fsS --max-time 270 -X POST \
+          # Print body on non-2xx (curl -f hides it). Status is checked
+          # after the call so the run still fails when the import does.
+          HTTP=$(curl -sS --max-time 270 -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "$BASE/api/cron/import-dflow"
+            -o /tmp/body -w '%{http_code}' \
+            "$BASE/api/cron/import-dflow")
+          echo "HTTP $HTTP"
+          cat /tmp/body; echo
+          [ "$HTTP" -lt 400 ]
