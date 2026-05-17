@@ -28,7 +28,10 @@ import { fetchFollowedUsers, fetchRecentUsers, setFeaturedPost } from 'store/fee
 import { RootState, useAppDispatch } from 'store/store';
 import { Col } from 'styles/Flex';
 
-import MediaPost from '../MediaPost';
+import NewPost from '../Post/NewPost';
+// MediaPost is still used on profile + post permalink pages — only
+// the feed has been migrated to NewPost (Phase 12.4). Don't remove
+// the legacy component until those routes are ported too.
 
 type Props = {};
 
@@ -154,7 +157,7 @@ const Feed: React.FC<Props> = ({}) => {
                 <SkeletonLoader renderCount={10} />
               )
             ) : myFeed.posts ? (
-              myFeed.posts.map((post) => <MediaPost post={post} />)
+              myFeed.posts.map((post) => <NewPost key={post.id?.toString()} post={post} />)
             ) : (
               <SkeletonLoader renderCount={10} />
             )}
