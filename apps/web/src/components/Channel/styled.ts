@@ -7,8 +7,9 @@ import styled, { css } from 'styled-components';
 import { Icon } from 'styles/Globals';
 
 export const Container = styled.div`
-  background-color: inherit;
-  border-bottom: 1px solid ${({ theme }) => theme.backgroundLight};
+  background-color: var(--canvas);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
 `;
 
 export const ClickableContainer = styled.div<{ clickable?: boolean }>`
@@ -28,6 +29,7 @@ export const Avatar = styled.img`
 
 export const Title = styled.h3`
   margin: 0px 15px;
+  color: var(--ink);
 `;
 
 export const VerificationIcon = styled(Icon)`
@@ -38,12 +40,12 @@ export const VerificationIcon = styled(Icon)`
 `;
 export const Description = styled.h5`
   margin-left: 10px;
-  color: ${({ theme }) => theme.fontTertiary};
+  color: var(--ink-3);
   overflow-wrap: break-word; //Shouldn't be need, but might be on mobile
 `;
 
 export const TextHighlight = styled.span`
   margin: 0px 15px;
-  font-weight: bold;
-  color: ${({ theme }) => theme.fontTertiary};
+  font-weight: 600;
+  color: var(--brand-2);
 `;

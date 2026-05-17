@@ -9,15 +9,16 @@ import { ClickableSpan } from 'styles/Buttons';
 
 export const InputContainer = styled.div`
 	position: relative;
-	margin: 1.5rem;
-	padding: 0 1.0rem;
-	border: 1px solid transparent;
-	border-radius: 1rem;
+	margin: 1rem 1.25rem 1.25rem;
+	padding: 0 1rem;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--surface);
+	color: var(--ink);
+	transition: border-color 0.15s ease;
 	&:focus-within{
-		border: 1px solid #fff;
-		border-radius: 1rem;
+		border-color: var(--brand-2);
 	}
-	background: ${({ theme }) => theme.backgroundLight};
 `;
 
 export const ActionsContainer = styled.div`
@@ -40,9 +41,12 @@ export const Counter = styled.div`
 	position: absolute;
 	bottom: 60px;
 	right: 15px;
-	padding: 5px 10px;
-	border-radius: 0.5rem;
-  background: ${({ theme }) => theme.error};
+	padding: 4px 8px;
+	border-radius: 8px;
+	background: var(--pink-vivid);
+	color: var(--ink);
+	font-size: 11px;
+	font-family: 'JetBrains Mono', monospace;
 `;
 
 // type SlateInputProps = Editable.EditableProps & { maxHeight?: number };
@@ -83,13 +87,16 @@ export const PreviewImage = styled.img`
 
 
 export const CodeCustom = styled.pre`
-	background-color: ${({ theme }) => theme.backgroundMedium};
-	color: ${({ theme }) => theme.fontSecondary};
-	font-style: italic;
+	background-color: var(--canvas);
+	color: var(--ink-2);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 6px 10px;
+	font-family: 'JetBrains Mono', monospace;
 `;
 
 export const MentionSpan = styled(ClickableSpan)`
-  color: ${({ theme }) => theme.primary};
+  color: var(--brand-2);
   font-size: inherit;
   line-height: inherit;
 `;

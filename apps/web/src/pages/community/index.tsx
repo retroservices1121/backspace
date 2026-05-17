@@ -98,16 +98,22 @@ const Community: React.FC<Props> = ({ }) => {
         // channels yet, or mobile users landed before auto-select kicked
         // in. Surface a Browse rooms CTA that opens the drawer rather
         // than a dead-end message.
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-          <h4 className="text-fontFocus">Pick a room to get started</h4>
-          <p className="text-sm text-fontTertiary max-w-xs">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center font-display">
+          <h4 className="text-[18px] font-semibold text-ink m-0">Pick a room to get started</h4>
+          <p className="text-[13px] text-ink-3 max-w-xs leading-snug">
             Rooms are where the conversation happens. Open the room list to
             jump in.
           </p>
           <button
             type="button"
             onClick={() => dispatch(toggleDrawer())}
-            className="mt-2 flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="
+              mt-2 flex items-center gap-2 rounded-full
+              bg-brand hover:bg-brand-2
+              px-5 h-10 text-[14px] font-semibold text-ink
+              transition-colors duration-150
+              shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+            "
           >
             <MenuAlt2Icon className="w-5 h-5" />
             Browse rooms

@@ -17,23 +17,31 @@ type MediaProps = {
 };
 
 export const DeleteButton = styled.div`
-  color: red;
+  color: var(--pink-2);
   display: none;
   text-align: right;
 `;
 
 export const ActionButton = styled(IconButton)`
-  background-color: ${({ theme }) => theme.backgroundLight};
-  border-radius: 20%;
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
   margin: 0px 4px;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  color: var(--ink-2);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  &:hover {
+    background-color: var(--hover);
+    color: var(--ink);
+  }
 `;
 
 
 export const Block = styled(OldRow)`
+  transition: background-color 0.15s ease;
   &:hover {
-    background-color: ${({ theme }) => theme.backgroundMedium};
+    background-color: var(--hover);
   }
   &:hover ${DeleteButton} {
     display: inline;
@@ -50,32 +58,33 @@ export const Content = styled.div`
 export const Title = styled.div<Props>`
   cursor: pointer;
 
-  font-weight: bold;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 14px;
   line-height: 20px;
-  color: ${({ theme }) => theme.fontPrimary};
-  margin-bottom: 10px;  
- 
-  /* If Self, Change color */
-  ${({ isSelf, theme }) => isSelf && css`
-    color: ${theme.primary};
+  color: var(--ink);
+  margin-bottom: 6px;
+
+  /* If Self, tint to brand-2 so own messages stand out */
+  ${({ isSelf }) => isSelf && css`
+    color: var(--brand-2);
   `}
 `;
 
 export const Time = styled.span`
-  padding-left: 20px;
-  opacity: 0.3;
-  font-size: 12px;
+  padding-left: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink-3);
+  font-size: 11px;
   line-height: 20px;
 `;
 
 
 export const Text = styled.div`
-  font-weight: normal;
-  font-size: 16px;
-  line-height: 20px;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 22px;
   overflow-wrap: anywhere;
-  color: ${({ theme }) => theme.fontPrimary};
+  color: var(--ink);
   white-space: pre-line;
 `;
 

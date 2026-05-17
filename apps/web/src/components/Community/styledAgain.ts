@@ -15,12 +15,14 @@ export const Container = styled(OldRow)`
   // below the sm breakpoint, so on mobile this row's only in-flow child
   // is the channel feed — which then gets the full viewport width.
   overflow-x: hidden;
-  background-color: ${({ theme }) => theme.backgroundDark};
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 `;
 
 export const TextHighlight = styled.span`
   margin: 0px 5px;
-  font-weight: bold;
-  color: ${({ theme }) => theme.primary};
+  font-weight: 600;
+  color: var(--brand-2);
 `;
 
