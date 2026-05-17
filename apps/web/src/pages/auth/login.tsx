@@ -214,14 +214,13 @@ const Login: ReactLayoutComponentType = () => {
               Email
             </label>
             <div className="relative flex items-center h-[52px] rounded-[12px] bg-surface border border-line focus-within:border-brand-2 focus-within:shadow-[0_0_0_4px_rgba(88,34,251,0.18)] transition">
-              <span className="absolute left-3.5 text-ink-3"><MailIcon /></span>
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.com"
                 type="email"
                 className="
-                  flex-1 h-full pl-11 pr-2 bg-transparent text-[15px] text-ink
+                  flex-1 h-full pl-4 pr-2 bg-transparent text-[15px] text-ink
                   placeholder:text-ink-3 outline-none font-display
                 "
               />
@@ -378,9 +377,6 @@ function SocialButton({
   );
 }
 
-const MailIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>
-);
 const ArrowIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
 );
