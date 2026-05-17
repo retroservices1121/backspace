@@ -1,7 +1,7 @@
-// Copyright 2021 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
+// Creator account — Stripe Express onboarding for community payouts.
+// State machine has three branches: no account, onboarding-incomplete
+// (with a time-limited link), and fully onboarded (Go To Dashboard).
+// New design tokens; Stripe API wiring unchanged.
 
 import { useEffect, useState } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
@@ -11,10 +11,6 @@ import settingsLayout from '@src/layouts/settingsLayout';
 import Stripe from 'stripe';
 
 import { createStripeAccount, getStripeCreator } from 'api/billing';
-import { Container } from 'components/Settings/styledAgain';
-import { ButtonLarge } from 'styles/Buttons';
-import { OldCol } from 'styles/Flex';
-import { Footer, Space } from 'styles/layout';
 import { openInNewTab } from 'utils/common_utils';
 
 const CreatorSettings: ReactLayoutComponentType = () => {
@@ -38,7 +34,7 @@ const CreatorSettings: ReactLayoutComponentType = () => {
 
   // Onboarding links from Stripe expire fast (a few minutes) — show
   // a countdown so the user knows when to re-request. Dashboard
-  // login links don't carry an `expires_at`, so the countdown only
+  // login links don't carry an expires_at, so the countdown only
   // runs in the onboarding case.
   useEffect(() => {
     if (linkType !== 'onboarding' || !link || !('expires_at' in link)) {
@@ -61,7 +57,6 @@ const CreatorSettings: ReactLayoutComponentType = () => {
     const result = await createStripeAccount();
     if (result?.accountLink?.url) {
       openInNewTab(result.accountLink.url);
-      // Refresh state so we move out of the no-account view.
       await refresh();
     }
     setCreateLoading(false);
@@ -72,88 +67,130 @@ const CreatorSettings: ReactLayoutComponentType = () => {
     if (link && 'url' in link) openInNewTab(link.url);
   };
 
-  const noAccount = () => (
-    <OldCol $center $full style={{ textAlign: 'center' }}>
-      <h1>Communities and Creators</h1>
-      <br />
-      <h4>Creator accounts require more information than a user account.</h4><br />
-      <h4>Only do this if you intend on collecting money from subscriptions.</h4><br />
-      <Space direction="column" />
-      <ButtonLarge color="none" onClick={attemptCreateAccount}>
-        Create Creator Account
-      </ButtonLarge>
-      <Space direction="column" />
-      <h3>This requires SSN, US address, and 5–20 minutes to setup.</h3>
-    </OldCol>
-  );
+  const renderBody = () => {
+    if (!stripeAccount) {
+      return (
+        <Section
+          title="Communities and Creators"
+          sub="Creator accounts require more information than a user account. Only do this if you intend to collect money from community subscriptions."
+        >
+          <p className="mt-3 text-[12px] text-ink-3">
+            Setup requires SSN, US address, and 5–20 minutes.
+          </p>
+          <PrimaryButton onClick={attemptCreateAccount}>
+            Create creator account
+          </PrimaryButton>
+        </Section>
+      );
+    }
 
-  const continueSetup = () => {
-    const dueActions = stripeAccount?.requirements?.currently_due ?? [];
-    const linkValid = link && 'url' in link
-      && (linkExpiration === null || linkExpiration > 0);
-    return (
-      <OldCol $center $full style={{ textAlign: 'center' }}>
-        <h1>Communities and Creators</h1>
-        <br />
-        {stripeAccount?.email}
-        <br />
-        <p>Your account has been created but is missing some requirements:</p><br />
-        <p>{dueActions.join(', ')}</p><br />
-        <Space direction="column" />
-        {linkValid ? (
-          <>
-            <ButtonLarge color="none" onClick={() => link && 'url' in link && openInNewTab(link.url)}>
-              Continue to Setup
-            </ButtonLarge>
-            {linkExpiration !== null && (
-              <h4>Link expires in {Math.max(0, linkExpiration)} seconds</h4>
-            )}
-          </>
-        ) : (
-          <ButtonLarge color="none" onClick={requestNewLink}>
-            Request New Setup Link
-          </ButtonLarge>
-        )}
-        <Space direction="column" />
-        <p>You will be redirected to complete your account information in a secure portal.</p>
-      </OldCol>
-    );
-  };
-
-  const creatorAccount = () => (
-    <OldCol $center $full>
-      <h2>Your Creator Account</h2>
-      <h6>{stripeAccount?.email}</h6>
-      <br />
-      <ButtonLarge color="none" onClick={requestNewLink}>
-        Go To Dashboard
-      </ButtonLarge>
-      <Space direction="column" size="sm" />
-      <h6>Insights and analytics coming soon…</h6>
-      <Space direction="column" size="lg" />
-    </OldCol>
-  );
-
-  const stateMachine = () => {
-    if (!stripeAccount) return noAccount();
     const dueActions = stripeAccount.requirements?.currently_due ?? [];
     const onboarded = stripeAccount.charges_enabled
       && stripeAccount.payouts_enabled
       && dueActions.length === 0;
-    return onboarded ? creatorAccount() : continueSetup();
+
+    if (onboarded) {
+      return (
+        <Section
+          title="Your creator account"
+          sub={stripeAccount.email ?? undefined}
+        >
+          <PrimaryButton onClick={requestNewLink}>Go to dashboard</PrimaryButton>
+          <p className="mt-3 text-[12px] text-ink-3">
+            Insights and analytics coming soon…
+          </p>
+        </Section>
+      );
+    }
+
+    const linkValid = link && 'url' in link
+      && (linkExpiration === null || linkExpiration > 0);
+    return (
+      <Section
+        title="Finish setting up your creator account"
+        sub={stripeAccount.email ?? undefined}
+      >
+        <p className="mt-3 text-[13px] text-ink-3">
+          Your account has been created but is missing some requirements:
+        </p>
+        {dueActions.length > 0 && (
+          <div className="mt-2 rounded-[10px] border border-line bg-canvas px-3 py-2">
+            <code className="text-[12px] font-mono text-ink break-all">
+              {dueActions.join(', ')}
+            </code>
+          </div>
+        )}
+        {linkValid ? (
+          <>
+            <PrimaryButton
+              onClick={() => link && 'url' in link && openInNewTab(link.url)}
+            >
+              Continue to setup
+            </PrimaryButton>
+            {linkExpiration !== null && (
+              <p className="mt-2 text-[11px] font-mono text-ink-3">
+                Link expires in {Math.max(0, linkExpiration)} seconds
+              </p>
+            )}
+          </>
+        ) : (
+          <PrimaryButton onClick={requestNewLink}>
+            Request new setup link
+          </PrimaryButton>
+        )}
+        <p className="mt-3 text-[12px] text-ink-3">
+          You will be redirected to complete your account information in a secure portal.
+        </p>
+      </Section>
+    );
   };
 
   return (
-    <Container>
-      {createLoading || fetchLoading ? <ReactLoading type="bubbles" /> : stateMachine()}
-      <Footer>
-        <h6 style={{ textAlign: 'center' }}>
-          Actions on this page open new tabs in your browser. If you click a button and nothing happens, make sure to check your pop-up blocker.
-        </h6>
-      </Footer>
-    </Container>
+    <div className="font-display text-ink flex flex-col gap-5">
+      {createLoading || fetchLoading ? (
+        <div className="flex justify-center py-10">
+          <ReactLoading type="bubbles" color="#7B4CFF" height={32} width={32} />
+        </div>
+      ) : renderBody()}
+      <p className="text-center text-[11px] font-mono text-ink-3 px-4">
+        Actions on this page open new tabs in your browser. If you click a button and nothing happens, check your pop-up blocker.
+      </p>
+    </div>
   );
 };
+
+function Section({
+  title, sub, children,
+}: { title: string; sub?: string; children?: React.ReactNode }) {
+  return (
+    <section className="rounded-[14px] border border-line bg-surface p-5">
+      <h2 className="m-0 text-[18px] font-semibold tracking-[-0.01em] text-ink">{title}</h2>
+      {sub && <p className="mt-1.5 text-[13px] text-ink-3 leading-snug">{sub}</p>}
+      {children}
+    </section>
+  );
+}
+
+function PrimaryButton({
+  children, onClick, disabled,
+}: { children: React.ReactNode; onClick?: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="
+        self-start mt-3 rounded-full bg-brand hover:bg-brand-2
+        text-ink text-[14px] font-semibold h-10 px-5
+        disabled:opacity-50 disabled:cursor-not-allowed
+        transition-colors duration-150
+        shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+      "
+    >
+      {children}
+    </button>
+  );
+}
 
 CreatorSettings.Layout = settingsLayout;
 
