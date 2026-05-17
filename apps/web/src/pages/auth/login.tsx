@@ -232,7 +232,7 @@ const Login: ReactLayoutComponentType = () => {
                   mr-1.5 h-[42px] px-4 rounded-[9px]
                   bg-brand hover:bg-brand-2
                   text-ink text-[13px] font-semibold inline-flex items-center gap-1.5
-                  disabled:opacity-50 disabled:cursor-not-allowed
+                  disabled:cursor-not-allowed
                   transition-colors duration-150
                 "
               >
@@ -274,7 +274,7 @@ const Login: ReactLayoutComponentType = () => {
               mt-2.5 w-full h-[52px] px-4 rounded-[12px]
               bg-surface border border-line hover:border-brand-2 hover:bg-surface-2
               flex items-center gap-3 text-left
-              disabled:opacity-50 disabled:cursor-not-allowed
+              disabled:cursor-not-allowed
               transition-colors duration-150
             "
           >
@@ -360,7 +360,7 @@ function SocialButton({
         h-[52px] px-3 rounded-[12px]
         bg-surface border border-line hover:border-line-2 hover:bg-surface-2
         flex items-center gap-2.5 text-left
-        disabled:opacity-50 disabled:cursor-not-allowed
+        disabled:cursor-not-allowed
         transition-colors duration-150
       "
     >
