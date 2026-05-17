@@ -1,7 +1,6 @@
-// Dedicated post-thread route — X parity for /username/status/<id>.
-// Pulls the post by uuid, reuses MediaPost for the head, drops a
-// reply composer below it, then renders the flat reply list. Back
-// arrow + page title match the X header pattern.
+// Dedicated post-thread route — /post/[uuid]. Sticky back-arrow
+// header, the post itself rendered in the new design via NewPost,
+// reply composer, and the flat reply list. No legacy wrapper.
 
 import React, { useEffect } from 'react';
 import { ArrowLeftIcon } from '@heroicons/react/outline';
@@ -10,11 +9,7 @@ import { useRouter } from 'next/router';
 
 import CommentsList from 'components/Comment/CommentsList';
 import ReplyComposer from 'components/Comment/ReplyComposer';
-import { Container, FeedContainer } from 'components/Feed/styles';
-import MediaPost from 'components/MediaPost';
-import { HideOnMobile } from 'components/NavigationV2/styled';
-import DesktopFeedDrawer from 'components/Feed/DesktopFeedDrawer';
-import FeedDrawer from 'components/Feed/FeedDrawer';
+import NewPost from 'components/Post/NewPost';
 import axios from 'lib/axios';
 import { setPageTitle } from 'store/appSlice';
 import { useAppDispatch } from 'store/store';
@@ -55,38 +50,41 @@ const PostThreadPage: React.FC = () => {
   };
 
   return (
-    <Container>
-      <HideOnMobile className="hidden sm:flex">
-        <DesktopFeedDrawer contentPosition={0} />
-      </HideOnMobile>
-      <FeedDrawer />
-      <FeedContainer>
-        <div className="w-screen md:w-media">
-          {/* Sticky thread header — back arrow + 'Post' title. */}
-          <div className="sticky top-0 z-10 flex items-center gap-6 border-b border-dividerColor bg-backgroundDark/80 px-4 py-3 backdrop-blur">
-            <button
-              type="button"
-              onClick={goBack}
-              className="p-1 rounded-full hover:bg-backgroundLight"
-              aria-label="Back"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-            </button>
-            <span className="text-lg font-semibold">Post</span>
-          </div>
+    <div className="font-display text-ink">
+      <div
+        className="
+          sticky top-0 z-10
+          px-5 py-3
+          border-b border-line
+          bg-canvas/[0.78]
+          backdrop-blur-[14px] backdrop-saturate-[160%]
+          flex items-center gap-4
+        "
+      >
+        <button
+          type="button"
+          onClick={goBack}
+          className="
+            w-9 h-9 rounded-full flex items-center justify-center
+            text-ink-2 hover:bg-hover hover:text-ink transition-colors
+          "
+          aria-label="Back"
+        >
+          <ArrowLeftIcon className="w-5 h-5" />
+        </button>
+        <span className="text-[18px] font-semibold text-ink">Post</span>
+      </div>
 
-          {post && <MediaPost post={post} />}
+      {post && <NewPost post={post} />}
 
-          <ReplyComposer
-            postId={post?.id}
-            replyToUsername={post?.author?.username}
-            onPosted={() => refetchComments()}
-          />
+      <ReplyComposer
+        postId={post?.id}
+        replyToUsername={post?.author?.username}
+        onPosted={() => refetchComments()}
+      />
 
-          <CommentsList comments={comments} />
-        </div>
-      </FeedContainer>
-    </Container>
+      <CommentsList comments={comments} />
+    </div>
   );
 };
 
