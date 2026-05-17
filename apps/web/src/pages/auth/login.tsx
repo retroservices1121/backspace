@@ -108,34 +108,31 @@ const Login: ReactLayoutComponentType = () => {
             </em>
           </h1>
           <p className="mt-4 max-w-[48ch] text-[15px] leading-snug text-ink-2">
-            Post takes. Spin them into prediction markets. Earn fees as your
-            audience trades against you. The social platform built for traders.
+            Browse markets and tokens, take a position right from a post, and
+            build a verifiable track record.
           </p>
 
           <div className="mt-7 flex flex-col gap-2.5 max-w-[460px]">
             <FeatureCard
               title="Trade any take"
-              sub="Every post can become a YES/NO or multi-outcome market."
+              sub="Attach a Polymarket market or a Solana token to any post — readers buy or sell in one tap."
               icon={<MarketIcon />}
             />
             <FeatureCard
-              title="Earn for being right"
-              sub="Climb the leaderboard. Build a verifiable hit rate. Get paid as an oracle."
+              title="Build a track record"
+              sub="Closed positions feed your accuracy rating. Better record, more reach."
               icon={<SparkIcon />}
             />
             <FeatureCard
-              title="Communities & tribes"
-              sub="Macro heads, degens, onchain. Find your edge."
+              title="Communities"
+              sub="Channels for the people you actually want to argue with."
               icon={<CommIcon />}
             />
           </div>
         </div>
 
         <div className="relative flex items-center gap-3 text-[11px] font-mono text-ink-3">
-          <span className="flex items-center gap-0.5 text-gold">
-            {[0, 1, 2, 3, 4].map((i) => <SparkIcon key={i} small />)}
-          </span>
-          <span>Trusted by 32,847+ on the waitlist</span>
+          <span>Waitlist invite-only</span>
           <span className="w-1 h-1 rounded-full bg-ink-4" />
           <span>v0.4 beta</span>
         </div>
@@ -182,7 +179,7 @@ const Login: ReactLayoutComponentType = () => {
               </em>
             </h1>
             <p className="mt-2 text-[14px] text-ink-2 max-w-[34ch]">
-              Sign in to claim your handle and start trading takes.
+              Sign in to claim your handle and take a position from any post.
             </p>
           </div>
 
@@ -207,8 +204,8 @@ const Login: ReactLayoutComponentType = () => {
               </em>
             </h2>
             <p className="mt-2 text-[14px] text-ink-2">
-              The feed where every opinion has a price. Sign in to claim
-              your handle and start trading.
+              Browse markets and tokens, take a position right from a post,
+              and build a verifiable track record.
             </p>
           </div>
 
