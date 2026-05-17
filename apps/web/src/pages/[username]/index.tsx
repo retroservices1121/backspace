@@ -1,25 +1,17 @@
-// X-style profile route. Header (banner + avatar + bio + counts +
-// Edit/Follow) followed by sticky Posts/Replies/Media/Likes tabs and
-// an MediaPost-row content list per tab. Each tab loads its own data
-// via react-query so switching tabs doesn't re-fetch the profile.
+// Profile route. Ports the design's profile screen (banner + bio +
+// stats + tabs) via NewProfileScreen. Data still flows through the
+// same hooks: useGetProfileByUsernameQuery for the profile blob,
+// react-query for per-tab content, useUser for the viewer's follow
+// graph.
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeftIcon } from '@heroicons/react/outline';
 import Loading from 'react-loading';
 import { useSelector } from 'react-redux';
 import { useQuery } from 'react-query';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/router';
 
-import ProfileCommunityCard from 'components/Profile/ProfileCommunityCard';
-import ProfileHeader from 'components/Profile/ProfileHeader';
-import ProfileReplyCard from 'components/Profile/ProfileReplyCard';
-import ProfileTabs, { ProfileTab } from 'components/Profile/ProfileTabs';
-import { Container, FeedContainer } from 'components/Feed/styles';
-import DesktopFeedDrawer from 'components/Feed/DesktopFeedDrawer';
-import FeedDrawer from 'components/Feed/FeedDrawer';
-import { HideOnMobile } from 'components/NavigationV2/styled';
-import MediaPost from 'components/MediaPost';
+import NewProfileScreen, { ProfileTab } from 'components/Profile/NewProfileScreen';
 import { useAxios } from 'hooks/useAxios';
 import useUser from 'hooks/useUser';
 import { useGetProfileByUsernameQuery } from 'services/user';
@@ -27,7 +19,6 @@ import { APP } from 'pages';
 import { setPageTitle } from 'store/appSlice';
 import { fetchUser } from 'store/userSlice';
 import { RootState, useAppDispatch } from 'store/store';
-import { Post } from 'types/prisma';
 import { FollowBody } from '../api/follow';
 
 const TAB_TO_PATH: Record<ProfileTab, string> = {
@@ -92,116 +83,28 @@ function Profile() {
     }
   };
 
-  const goBack = () => {
-    if (window.history.length > 1) router.back();
-    else router.push('/');
-  };
-
   if (isLoading || !profile) {
     return (
-      <Container>
-        <div className="flex w-full justify-center py-10">
-          <Loading type="spinningBubbles" color="#09A0F1" height={50} width={50} />
-        </div>
-      </Container>
+      <div className="flex w-full justify-center py-10">
+        <Loading type="spinningBubbles" color="#7B4CFF" height={50} width={50} />
+      </div>
     );
   }
 
   const isSelf = profile.id === currentUser.id;
 
   return (
-    <Container>
-      <HideOnMobile className="hidden sm:flex">
-        <DesktopFeedDrawer contentPosition={0} />
-      </HideOnMobile>
-      <FeedDrawer />
-      <FeedContainer>
-        <div className="w-screen md:w-media">
-          {/* Sticky thread-style header — back arrow + name + post count. */}
-          <div className="sticky top-0 z-20 flex items-center gap-6 border-b border-dividerColor bg-backgroundDark/80 px-4 py-3 backdrop-blur">
-            <button
-              type="button"
-              onClick={goBack}
-              className="p-1 rounded-full hover:bg-backgroundLight"
-              aria-label="Back"
-            >
-              <ArrowLeftIcon className="w-5 h-5" />
-            </button>
-            <div className="flex flex-col">
-              <span className="text-lg font-semibold leading-tight">
-                {profile.name || profile.username}
-              </span>
-              <span className="text-xs text-fontTertiary">
-                {(profile._count?.posts ?? 0).toLocaleString()} posts
-              </span>
-            </div>
-          </div>
-
-          <ProfileHeader
-            profile={profile as any}
-            isSelf={isSelf}
-            isFollowing={isFollowing}
-            onFollowToggle={toggleFollow}
-            onMessage={() => router.push(APP.MESSAGES.INDEX)}
-          />
-
-          {/* Pinned community card — prefer the explicit featured one,
-              fall back to the first owned community. Backspace's
-              communities are core to the product so this slot sits
-              above the tabs (X uses it for pinned posts). */}
-          {(() => {
-            const featured = (profile as any).featuredCommunity
-              ?? (profile.communities?.[0] ?? null);
-            return featured
-              ? <ProfileCommunityCard community={featured} ownerName={profile.name} />
-              : null;
-          })()}
-
-          <ProfileTabs active={tab} onChange={setTab} />
-
-          <ProfileTabContent tab={tab} items={tabData} />
-        </div>
-      </FeedContainer>
-    </Container>
+    <NewProfileScreen
+      profile={profile as any}
+      isSelf={isSelf}
+      isFollowing={isFollowing}
+      onFollowToggle={toggleFollow}
+      onMessage={() => router.push(APP.MESSAGES.INDEX)}
+      tab={tab}
+      onTabChange={setTab}
+      tabData={tabData}
+    />
   );
 }
-
-type ContentProps = {
-  tab: ProfileTab;
-  items: any[] | undefined;
-};
-
-const ProfileTabContent: React.FC<ContentProps> = ({ tab, items }) => {
-  if (items === undefined) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loading type="bubbles" color="#09A0F1" height={32} width={32} />
-      </div>
-    );
-  }
-  if (items.length === 0) {
-    return (
-      <div className="px-4 py-10 text-center text-fontTertiary text-sm">
-        {tab === 'posts'   && 'No posts yet.'}
-        {tab === 'replies' && 'No replies yet.'}
-        {tab === 'media'   && 'No media yet.'}
-        {tab === 'likes'   && 'No likes yet.'}
-      </div>
-    );
-  }
-  if (tab === 'replies') {
-    return (
-      <div>
-        {items.map((c) => <ProfileReplyCard key={c.id?.toString()} comment={c} />)}
-      </div>
-    );
-  }
-  // Posts / Media / Likes all render the same way — feed-style rows.
-  return (
-    <div>
-      {items.map((p: Post) => <MediaPost key={p.id?.toString()} post={p} />)}
-    </div>
-  );
-};
 
 export default Profile;
