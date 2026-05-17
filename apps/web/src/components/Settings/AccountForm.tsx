@@ -14,10 +14,6 @@ import { FormDatePicker } from 'components/DatePicker/DatePicker';
 import FormInput from 'components/FormInput';
 import UploadBanner from 'components/Settings/UploadBanner';
 import UsernameInput from 'components/UsernameInput';
-import { RootState } from 'store/store';
-import { LargeTextButton } from 'styles/Buttons';
-import { Space } from 'styles/layout';
-import { PrivateUserDocument } from 'types/documents';
 import { FormType } from 'types/forms';
 import { AccountFields, AccountFormState } from 'types/settings';
 import { FormDebug } from 'utils/FormDebug';
@@ -73,122 +69,158 @@ const AccountForm: FormType<AccountFormState, Props> = ({
       validationSchema={AccountSchema}
     >
       {({  }) => (
-        <Form>
+        <Form className="flex flex-col gap-5 font-display text-ink">
           <FormDebug name="User Account Settings" />
 
-          <ImageHeader>
-            <Field
-              name={AccountFields.BannerPic}
-              component={UploadBanner}
-              preview={banner}
-            />
+          {/* Banner + avatar upload — kept in the original styled
+              wrapper since UploadBanner / UploadPfp control their
+              own surface. The card around it just provides padding
+              on the new tokens. */}
+          <section className="rounded-[14px] border border-line bg-surface p-5">
+            <ImageHeader>
+              <Field name={AccountFields.BannerPic} component={UploadBanner} preview={banner} />
+              <Field name={AccountFields.ProfilePic} component={UploadPfp} preview={avatar} />
+            </ImageHeader>
+          </section>
 
-            <Field
-              name={AccountFields.ProfilePic}
-              component={UploadPfp}
-              preview={avatar}
-            />
-          </ImageHeader>
+          <section className="rounded-[14px] border border-line bg-surface p-5">
+            <h2 className="m-0 text-[18px] font-semibold tracking-[-0.01em] text-ink">Profile</h2>
+            <p className="mt-1.5 text-[13px] text-ink-3 leading-snug">
+              Your public account information. This is how people will see, interact, and know you.
+            </p>
 
-          <h3>Profile</h3>
-          <h5>Your public account information. This is how people will see, interact, and know you.</h5>
-          <div className="my-12 flex flex-wrap sm:flex-nowrap">
-              <Field
-                name={AccountFields.DisplayName}
-                label="Display Name"
-                placeholder='Elon'
-                as={FormInput}
-              />
-              <ErrorMessage name={AccountFields.DisplayName}>
-                {msg => `username  ${msg}`}
-              </ErrorMessage>
-
-              <Field
-                name={AccountFields.Username}
-                label="Username"
-                placeholder='ElonMuskFan420'
-                as={UsernameInput}
-              />
-              <ErrorMessage name={AccountFields.Username}>
-                {msg => `username  ${msg}`}
-              </ErrorMessage>
-          </div>
-
-          <Field
-            name={AccountFields.Description}
-            label="About You"
-            placeholder='Tell us about yourself'
-            as={FormInput}
-          />
-          <h3 className="mt-12">Personal Information</h3>
-          <h5>This information will NOT be publicly accessible.</h5>
-          <br />
-
-          <div className="grid sm:grid-cols-2 sm:gap-12 ">
-            <Field
-              name={AccountFields.Firstname}
-              label="First Name"
-              placeholder="Nikola"
-              as={FormInput}
-            />
-            <ErrorMessage name={AccountFields.Firstname}>
-              {msg => `first name  ${msg}`}
-            </ErrorMessage>
-
-
-            <Field
-              name={AccountFields.Lastname}
-              label="Last Name"
-              placeholder="Tesla"
-              as={FormInput}
-            />
-            <ErrorMessage name={AccountFields.Lastname}>
-              {msg => `last name  ${msg}`}
-            </ErrorMessage>
-          </div>
-
-          <div className="grid sm:grid-cols-2 sm:gap-12 ">
-              <Field
-                readonly
-                name={AccountFields.Email}
-                label="Email"
-                placeholder="you@email.com"
-                as={FormInput}
-              />
-              <ErrorMessage name={AccountFields.Email}/>
-
-            <Field
-              name={AccountFields.PhoneNumber}
-              label="Phone Number"
-              placeholder="555-555-0123"
-              as={FormInput}
-            />
-          </div>
-
-          <Field
-            name={AccountFields.DateOfBirth}
-            component={FormDatePicker}
-            label="Date of Birth"
-          />
-
-          <Space direction='column'/>
-
-          <div className="flex justify-between mt-12 sm:mt-24">
-            <div/>
-
-            <div className="flex flex-wrap-reverse justify-center">
-              <div className="my-4 sm:my-0 mx-12">
-                <LargeTextButton color='none' type='reset'>Cancel</LargeTextButton>
+            <div className="mt-4 grid sm:grid-cols-2 sm:gap-6 gap-3">
+              <div>
+                <Field
+                  name={AccountFields.DisplayName}
+                  label="Display Name"
+                  placeholder="Elon"
+                  as={FormInput}
+                />
+                <FieldError name={AccountFields.DisplayName}>display name</FieldError>
               </div>
-              <div className="my-4 sm:my-0">
-                <LargeTextButton color='primary' type='submit'>Save Changes</LargeTextButton>
+              <div>
+                <Field
+                  name={AccountFields.Username}
+                  label="Username"
+                  placeholder="ElonMuskFan420"
+                  as={UsernameInput}
+                />
+                <FieldError name={AccountFields.Username}>username</FieldError>
               </div>
             </div>
+
+            <div className="mt-4">
+              <Field
+                name={AccountFields.Description}
+                label="About You"
+                placeholder="Tell us about yourself"
+                as={FormInput}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-[14px] border border-line bg-surface p-5">
+            <h2 className="m-0 text-[18px] font-semibold tracking-[-0.01em] text-ink">
+              Personal Information
+            </h2>
+            <p className="mt-1.5 text-[13px] text-ink-3 leading-snug">
+              This information will NOT be publicly accessible.
+            </p>
+
+            <div className="mt-4 grid sm:grid-cols-2 sm:gap-6 gap-3">
+              <div>
+                <Field
+                  name={AccountFields.Firstname}
+                  label="First Name"
+                  placeholder="Nikola"
+                  as={FormInput}
+                />
+                <FieldError name={AccountFields.Firstname}>first name</FieldError>
+              </div>
+              <div>
+                <Field
+                  name={AccountFields.Lastname}
+                  label="Last Name"
+                  placeholder="Tesla"
+                  as={FormInput}
+                />
+                <FieldError name={AccountFields.Lastname}>last name</FieldError>
+              </div>
+            </div>
+
+            <div className="mt-4 grid sm:grid-cols-2 sm:gap-6 gap-3">
+              <div>
+                <Field
+                  readonly
+                  name={AccountFields.Email}
+                  label="Email"
+                  placeholder="you@email.com"
+                  as={FormInput}
+                />
+                <FieldError name={AccountFields.Email} />
+              </div>
+              <div>
+                <Field
+                  name={AccountFields.PhoneNumber}
+                  label="Phone Number"
+                  placeholder="555-555-0123"
+                  as={FormInput}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <Field
+                name={AccountFields.DateOfBirth}
+                component={FormDatePicker}
+                label="Date of Birth"
+              />
+            </div>
+          </section>
+
+          <div className="flex items-center justify-end gap-3 px-1">
+            <button
+              type="reset"
+              className="
+                rounded-full border border-line-2 text-ink text-[14px] font-semibold
+                h-10 px-5 hover:bg-hover transition-colors
+              "
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="
+                rounded-full bg-brand hover:bg-brand-2
+                text-ink text-[14px] font-semibold
+                h-10 px-5
+                transition-colors duration-150
+                shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+              "
+            >
+              Save Changes
+            </button>
           </div>
         </Form>
       )}
     </Formik>
   );
 };
+
+// Small wrapper around Formik's ErrorMessage so the field-name
+// prefix renders in the new token's pink-2 instead of inheriting
+// whatever wrapping text color was around.
+function FieldError({ name, children }: { name: string; children?: React.ReactNode }) {
+  return (
+    <ErrorMessage name={name}>
+      {(msg) => (
+        <div className="mt-1 text-[12px] text-pink-2 font-mono">
+          {children ? <>{children} {msg}</> : msg}
+        </div>
+      )}
+    </ErrorMessage>
+  );
+}
 
 export default AccountForm;

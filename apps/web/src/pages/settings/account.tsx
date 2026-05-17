@@ -15,7 +15,6 @@ import { CreateMediaBody } from '@src/types/requests/media';
 import { getFileExtension } from '@src/utils/common_utils';
 
 import AccountForm from 'components/Settings/AccountForm';
-import { Container } from 'components/Settings/styledAgain';
 import { RootState } from 'store/store';
 import { AccountFields, AccountFormState } from 'types/settings';
 
@@ -86,9 +85,9 @@ const Account: ReactLayoutComponentType = () => {
   };
 
   return (
-    <Container>
+    <div className="font-display text-ink">
       <AccountForm onSubmit={handleSubmit} />
-    </Container>
+    </div>
   );
 };
 
