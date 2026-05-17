@@ -1,7 +1,6 @@
 import { Fragment, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XIcon } from '@heroicons/react/solid';
-import { useTheme } from 'styled-components';
 
 interface OwnProps {
   open: boolean,
@@ -20,8 +19,6 @@ export default function Modal({
   shouldCloseOnOverlayClick = true,
   closeButton = true,
 }: OwnProps) {
-  const theme = useTheme();
-
   useEffect(() => {
     if (open && afterOpen) afterOpen();
   }, [open]);
@@ -40,7 +37,7 @@ export default function Modal({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-75 transition-opacity" />
+            <Dialog.Overlay className="fixed inset-0 bg-canvas/80 backdrop-blur-sm transition-opacity" />
           </Transition.Child>
 
           {/* This element is to trick the browser into centering the modal contents. */}
@@ -55,8 +52,17 @@ export default function Modal({
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <div style={{ background: theme.backgroundNormal }} className="inline-block rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:align-middle">
-              {closeButton && <XIcon className="absolute right-4 top-4 w-8 cursor-pointer" onClick={handleClose} />}
+            <div className="relative inline-block bg-surface border border-line rounded-2xl text-left overflow-hidden shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] transform transition-all sm:align-middle font-display text-ink">
+              {closeButton && (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="absolute right-3 top-3 z-10 w-9 h-9 rounded-full flex items-center justify-center text-ink-2 hover:bg-hover hover:text-ink transition-colors"
+                  aria-label="Close"
+                >
+                  <XIcon className="w-5 h-5" />
+                </button>
+              )}
               {children}
             </div>
           </Transition.Child>

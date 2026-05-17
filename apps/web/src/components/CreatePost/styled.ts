@@ -49,11 +49,15 @@ export const BackgroundOverlay = styled.div<Props>`
 export const PostOptions = styled(OldCol)`
   width: 100%;
   height: 100%;
-  min-width: 500px;
-  padding: 20px;
+  min-width: 560px;
+  max-width: 640px;
+  padding: 24px 24px 20px;
   text-align: left;
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  color: var(--ink);
   ${mediaQuery.sm} {
     min-width: 100%;
+    padding: 18px 18px 16px;
   }
 `;
 
@@ -100,37 +104,46 @@ export const InputText = styled(MentionsInput)`
 export const Option = styled(OldRow)`
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
-  font-size: 16px;
-  line-height: 34px;
-  color: ${({ theme }) => theme.fontFocus};
-  border-top: 1px dotted ${({ theme }) => theme.backgroundLight};
-  padding: 10px 0px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 28px;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  padding: 12px 0px;
 `;
 
 export const OptionDescription = styled.div`
   width: 100%;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 20px;
-  color: ${({ theme }) => theme.fontTertiary};
+  color: var(--ink-3);
   text-align: left;
 `;
 
 export const Select = styled.select`
-  background-color: transparent;
-  margin: 10px 20px;
+  background-color: var(--canvas);
+  margin: 10px 12px;
   min-width: 200px;
-  min-height: 34px;
-  border: 1px solid ${({ theme }) => theme.backgroundLight};
-  border-radius: 8px;
-  color: ${({ theme }) => theme.primary};
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  padding: 0 12px;
+  font-family: 'Poppins', sans-serif;
+  &:focus { border-color: var(--line-2); outline: none; }
 `;
 
 export const ColoredSpan = styled.span`
-  color: ${({ theme }) => theme.primary};
+  color: var(--brand-2);
+  font-size: 13px;
 `;
 
 export const CancelButton = styled(ButtonLarge)`
-  background: none;
-  border: 3px solid ${({ theme }) => theme.primary};
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-weight: 600;
+  &:hover { background: var(--hover); }
 `;
