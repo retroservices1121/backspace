@@ -34,6 +34,14 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          {/* Favicon + brand mark — declared here so every route
+              carries them regardless of whether the page sets its
+              own <Head>. backspace-icon.png is the same mark the
+              auth pages + LeftNav render, so the tab matches. */}
+          <link rel="icon" type="image/png" href="/webui/backspace-icon.png" />
+          <link rel="apple-touch-icon" href="/webui/backspace-icon.png" />
+          <meta name="theme-color" content="#08070d" />
+
           {/* Poppins + JetBrains Mono — design system fonts.
               Next 12 doesn't have next/font (added in 13), so load
               from Google Fonts directly. preconnect first so the

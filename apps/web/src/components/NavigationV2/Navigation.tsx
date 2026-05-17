@@ -19,6 +19,13 @@ const Navigation: React.FC = ({
 }) => {
   const { postModalOpen } = useSelector((state: RootState) => state.app);
   const { pageTitle } = useSelector((state : RootState) => state.app);
+  // Tab title: "<page> · Backspace" so the brand name is always
+  // visible. The default pageTitle is 'backspace' (legacy lowercase) —
+  // when that's all we have, render just "Backspace".
+  const tabTitle =
+    !pageTitle || pageTitle.toLowerCase() === 'backspace'
+      ? 'Backspace'
+      : `${pageTitle} · Backspace`;
   const router = useRouter();
   // All /auth/* routes render bare — login, register, forgot,
   // logout, onboarding. They own their own chrome (full-bleed
@@ -36,9 +43,8 @@ const Navigation: React.FC = ({
     return (
       <>
         <Head>
-          <title>{pageTitle}</title>
+          <title>{tabTitle}</title>
           <meta name="backspace" content="backspace application" />
-          <link rel="icon" type="image/png" href="favicon.ico" sizes="16x16" />
         </Head>
         <SafeArea className='flex h-screen flex-col'>
           {children}
@@ -55,9 +61,8 @@ const Navigation: React.FC = ({
   return (
     <>
       <Head>
-        <title>{pageTitle}</title>
+        <title>{tabTitle}</title>
         <meta name="backspace" content="backspace application" />
-        <link rel="icon" type="image/png" href="favicon.ico" sizes="16x16" />
       </Head>
 
       {/* Mobile-only top nav + drawer. MobileNavigation has its own
