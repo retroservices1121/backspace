@@ -44,7 +44,7 @@ const SettingsIndex: LayoutComponent = () => {
   }, []);
 
   return (
-    <div className="sm:hidden">
+    <div className="sm:hidden font-display text-ink">
       {TABS_ORDER.map((t) => {
         const cfg = SettingsCfg[t];
         return (
@@ -52,14 +52,18 @@ const SettingsIndex: LayoutComponent = () => {
             type="button"
             key={t}
             onClick={() => router.push(`${APP.SETTINGS.INDEX}/${t.toLowerCase()}`)}
-            className="flex w-full items-center gap-4 border-b border-dividerColor px-4 py-4 text-left hover:bg-backgroundLight transition-colors"
+            className="
+              flex w-full items-center gap-4 px-5 py-4
+              border-b border-line text-left
+              hover:bg-hover transition-colors
+            "
           >
             <Icon $solid={cfg.iconFill} as={cfg.icon} $color="primary" />
             <div className="flex-1 min-w-0">
-              <div className="text-base font-semibold text-fontFocus">{cfg.title}</div>
-              <div className="text-sm text-fontTertiary truncate">{cfg.description}</div>
+              <div className="text-[15px] font-semibold text-ink">{cfg.title}</div>
+              <div className="text-[12px] text-ink-3 truncate">{cfg.description}</div>
             </div>
-            <ChevronRightIcon className="w-5 h-5 text-fontTertiary" />
+            <ChevronRightIcon className="w-5 h-5 text-ink-3" />
           </button>
         );
       })}

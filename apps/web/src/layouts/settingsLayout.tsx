@@ -1,9 +1,11 @@
-// Settings shell. Desktop keeps the side Drawer with the SettingsList
-// (the user expects to bounce between tabs from there). Mobile drops
-// the duplicate slide-in — the global AccountDrawer already exposes
-// Wallet / Billing / Settings, and the page itself gets an X-style
-// sticky header with a back arrow + tab title so the user always knows
-// where they are and how to leave.
+// Settings shell on the new design tokens. Desktop: 2-column split
+// inside the desktop shell's center column — slim left sub-nav with
+// the 7 settings tabs, content on the right. Mobile keeps the
+// X-style sticky back-arrow header so the user always has a way
+// out without the new shell rails to anchor them.
+//
+// All categories live behind /settings/<key>; this layout owns the
+// nav highlight + the sticky title + the logout / legal footer.
 
 import { useEffect, useState } from 'react';
 import { ArrowLeftIcon } from '@heroicons/react/outline';
@@ -11,26 +13,28 @@ import useConstructor from '@src/hooks/useConstructor';
 import useLogout from '@src/hooks/useLogout';
 import { useRouter } from 'next/router';
 
-import Drawer from 'components/Drawer';
-import { Tabs } from 'components/Settings/common';
-import SettingsList from 'components/Settings/SettingsList';
-import { Card, Footer } from 'components/Settings/styledAgain';
+import { Settings, Tabs } from 'components/Settings/common';
 import { logEventScreen, Screens } from 'lib/events';
 import { setPageTitle } from 'store/appSlice';
 import { useAppDispatch } from 'store/store';
-import { ClickableSpan, MediumTextButton } from 'styles/Buttons';
-import { Col, Row } from 'styles/Flex';
-import { Layout, Space } from 'styles/layout';
 import { openInNewTab } from 'utils/common_utils';
 import { PRIVACY_URL, TOS_URL } from 'utils/constants';
+
+const TABS_ORDER: Tabs[] = [
+  Tabs.Account,
+  Tabs.Notifications,
+  Tabs.Security,
+  Tabs.Appearance,
+  Tabs.Billing,
+  Tabs.Creator,
+  Tabs.Wallet,
+];
 
 export default function settingsLayout({ children }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const pagePosition = 2; // when you split path on /, settings page is 3rd
+  const pagePosition = 2; // /settings/<key>  →  index 2 after split('/')
   const routeTab = router.pathname.split('/')[pagePosition];
-  // `null` means "no specific tab" — i.e. /settings root. The mobile
-  // header shows 'Settings' in that case, otherwise the tab name.
   let startTab: Tabs | null = null;
   Object.keys(Tabs).forEach((key) => {
     if (key.toLowerCase() === routeTab?.toLowerCase()) {
@@ -44,15 +48,8 @@ export default function settingsLayout({ children }) {
   });
 
   const logout = useLogout();
-  const handleLogout = () => {
-    logout('user logout from settings');
-  };
+  const handleLogout = () => { logout('user logout from settings'); };
 
-  // Keep the local tab in sync with the URL — without this, deep-links
-  // (Wallet/Billing/etc. from the AccountDrawer) leave the sidebar
-  // highlighting the wrong row. Defaults to Account when the URL
-  // doesn't pick one out (so the desktop sidebar still has something
-  // highlighted on /settings root).
   const [tab, setTab] = useState<Tabs>(startTab ?? Tabs.Account);
   useEffect(() => {
     const next = startTab ?? Tabs.Account;
@@ -69,50 +66,117 @@ export default function settingsLayout({ children }) {
     else router.push('/');
   };
 
-  return (
-    <Layout>
-      <Row $full>
-        {/* Desktop: settings sidebar. Mobile: not rendered — the global
-            AccountDrawer is the menu. */}
-        <div className="hidden sm:flex">
-          <Drawer title="Settings">
-            <Card>
-              <SettingsList activeTab={tab} setActive={(value: Tabs) => changeTab(value)} />
-              <Col className="justify-center">
-                <Space direction="column" />
-                <MediumTextButton color="none" onClick={handleLogout}>Logout</MediumTextButton>
-                <Space direction="column" />
-              </Col>
-              <Footer $center>
-                <ClickableSpan onClick={() => openInNewTab(TOS_URL)}>
-                  Terms and Conditions
-                </ClickableSpan>
-                <ClickableSpan onClick={() => openInNewTab(PRIVACY_URL)}>
-                  Privacy Policy
-                </ClickableSpan>
-              </Footer>
-            </Card>
-          </Drawer>
-        </div>
+  const currentTitle = startTab ?? 'Settings';
 
-        <Col className="w-full">
-          {/* Mobile-only: X-style sticky header with back arrow + tab
-              name. Removed on desktop because the sidebar handles
-              orientation. */}
-          <div className="sm:hidden sticky top-0 z-10 flex items-center gap-6 border-b border-dividerColor bg-backgroundDark/80 px-4 py-3 backdrop-blur">
+  return (
+    <div className="font-display text-ink">
+      {/* Mobile-only sticky back-arrow header — the new desktop
+          shell already places this page in the center column with
+          its own LeftNav, so on desktop we render the sub-nav inline
+          rather than a second sticky bar. */}
+      <div
+        className="
+          sm:hidden sticky top-0 z-10
+          flex items-center gap-4
+          border-b border-line bg-canvas/[0.78]
+          backdrop-blur-[14px] backdrop-saturate-[160%]
+          px-5 py-3
+        "
+      >
+        <button
+          type="button"
+          onClick={goBack}
+          className="
+            w-9 h-9 rounded-full flex items-center justify-center
+            text-ink-2 hover:bg-hover hover:text-ink transition-colors
+          "
+          aria-label="Back"
+        >
+          <ArrowLeftIcon className="w-5 h-5" />
+        </button>
+        <span className="text-[18px] font-semibold text-ink">{currentTitle}</span>
+      </div>
+
+      {/* Desktop sticky title strip — matches the feed / profile
+          TopTabs visually so settings doesn't feel orphaned. */}
+      <div
+        className="
+          hidden sm:flex sticky top-0 z-10
+          items-center justify-between
+          px-6 py-3.5
+          border-b border-line
+          bg-canvas/[0.78]
+          backdrop-blur-[14px] backdrop-saturate-[160%]
+        "
+      >
+        <h1 className="m-0 text-[20px] font-bold tracking-[-0.02em] text-ink">
+          {currentTitle}
+        </h1>
+      </div>
+
+      <div className="sm:grid sm:grid-cols-[220px_minmax(0,1fr)] sm:gap-6 sm:px-6 sm:py-5">
+        {/* Desktop sub-nav. Hidden on mobile — the /settings index
+            page renders the same list when there's no tab picked. */}
+        <aside className="hidden sm:flex flex-col gap-1">
+          {TABS_ORDER.map((value) => {
+            const cfg = Settings[value];
+            const isActive = tab === value;
+            return (
+              <button
+                type="button"
+                key={value}
+                onClick={() => changeTab(value)}
+                className={[
+                  'group text-left px-3 py-2.5 rounded-[10px]',
+                  'transition-colors duration-150',
+                  isActive
+                    ? 'bg-brand-soft text-ink'
+                    : 'text-ink-2 hover:bg-hover hover:text-ink',
+                ].join(' ')}
+              >
+                <div className={`text-[14px] font-semibold ${isActive ? 'text-ink' : ''}`}>
+                  {cfg.title}
+                </div>
+                <div className="text-[11px] text-ink-3 mt-0.5 truncate">
+                  {cfg.description}
+                </div>
+              </button>
+            );
+          })}
+
+          <div className="mt-3 pt-3 border-t border-line">
             <button
               type="button"
-              onClick={goBack}
-              className="p-1 rounded-full hover:bg-backgroundLight"
-              aria-label="Back"
+              onClick={handleLogout}
+              className="
+                w-full text-left px-3 py-2.5 rounded-[10px]
+                text-[14px] font-semibold text-pink-2
+                hover:bg-pink-vivid/10 transition-colors
+              "
             >
-              <ArrowLeftIcon className="w-5 h-5" />
+              Logout
             </button>
-            <span className="text-lg font-semibold">{startTab ?? 'Settings'}</span>
+            <div className="mt-3 px-3 flex flex-col gap-1 text-[11px] font-mono text-ink-3">
+              <button
+                type="button"
+                onClick={() => openInNewTab(TOS_URL)}
+                className="text-left hover:text-ink-2 transition-colors"
+              >
+                Terms and Conditions
+              </button>
+              <button
+                type="button"
+                onClick={() => openInNewTab(PRIVACY_URL)}
+                className="text-left hover:text-ink-2 transition-colors"
+              >
+                Privacy Policy
+              </button>
+            </div>
           </div>
-          {children}
-        </Col>
-      </Row>
-    </Layout>
+        </aside>
+
+        <main className="min-w-0">{children}</main>
+      </div>
+    </div>
   );
 }
