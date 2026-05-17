@@ -115,7 +115,7 @@ const Login: ReactLayoutComponentType = () => {
           <div className="mt-7 flex flex-col gap-2.5 max-w-[460px]">
             <FeatureCard
               title="Trade any take"
-              sub="Attach a Polymarket market or a Solana token to any post — readers buy or sell in one tap."
+              sub="Attach a prediction market or a Solana token to any post — readers buy or sell in one tap."
               icon={<MarketIcon />}
             />
             <FeatureCard
