@@ -15,6 +15,7 @@ import { solanaRpcUrl } from '@src/lib/dflow/config';
 import { polygonRpcUrl } from '@src/lib/polymarket/config';
 import { AuthStatus } from '@src/store/authSlice';
 import { AppLayoutProps } from 'next/app';
+import { useRouter } from 'next/router';
 import { polygon } from 'viem/chains';
 
 import Navigation from 'components/NavigationV2';
@@ -22,6 +23,7 @@ import useAttribution from 'hooks/useAttribution';
 import { TryCatch } from 'lib/errorHandling';
 import { authorizeNotifications } from 'lib/notification';
 import ToastContainer from 'lib/ToastContainer';
+import { APP } from 'pages';
 import DefaultError from 'pages/errors/DefaultError';
 import { wrapper } from 'store/store';
 import ThemeProvider from 'styles/ThemeProvider';
@@ -65,6 +67,12 @@ const AppBody = ({ Component, pageProps } : AppLayoutProps) => {
   authorizeNotifications();
   const authState = useAuthentication();
   useWalletSync();
+  // Auth routes (login, register, onboarding, etc.) are reachable
+  // by definition unauthenticated, so blocking them behind the
+  // auth-state Loading splash just flashes the legacy blue logo on
+  // every refresh. Let those pages render immediately.
+  const router = useRouter();
+  const onAuth = router.pathname.startsWith(APP.AUTH.INDEX);
   //Remove me eventually
   const queryClient = new QueryClient();
   // useEffect(() => {
@@ -98,7 +106,7 @@ const AppBody = ({ Component, pageProps } : AppLayoutProps) => {
             <PostViewer />
             <CreatePost />
 
-            {authState === AuthStatus.Unknown
+            {authState === AuthStatus.Unknown && !onAuth
               ? <Loading loading={true}/>
               : <Layout><Component {...pageProps} /></Layout>
             }
