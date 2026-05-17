@@ -145,3 +145,20 @@ a {
     background: transparent;
   }
 }
+
+/* Browser autofill (Chrome / Edge / Safari) paints a translucent
+   light-blue overlay on autofilled inputs that overrides our dark
+   surface. background-color can't override it — only an inset
+   box-shadow as tall as the input can. Forces the text color too,
+   so the value doesn't render dark-on-light. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink);
+  transition: background-color 5000s ease-in-out 0s;
+}
