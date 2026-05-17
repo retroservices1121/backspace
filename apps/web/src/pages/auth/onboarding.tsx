@@ -1,7 +1,7 @@
-// Copyright 2021 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
+// First-run profile setup. Runs after Privy sign-in but before
+// the app shell unlocks — claims a handle, captures display
+// name + dob, and (if a waitlist row exists for the email)
+// honors the reservation.
 
 import React, { useEffect } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
@@ -17,22 +17,20 @@ import { logEventScreen, Screens } from 'lib/events';
 import { APP } from 'pages';
 import { setPageTitle } from 'store/appSlice';
 import { RootState, useAppDispatch, useAppSelector } from 'store/store';
-import {  OnboardingFormState } from 'types/auth';
+import { OnboardingFormState } from 'types/auth';
 
-const pageTitle = 'You’re almost ready!';
+const pageTitle = 'Finish setting up';
 
 const Onboarding: ReactLayoutComponentType = ({}) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const onboard = useOnboarding();
   const auth = useAppSelector((state: RootState) => state.auth);
-  
 
   useConstructor(() => {
     dispatch(setPageTitle(pageTitle));
     logEventScreen(Screens.Onboarding);
   });
-  
 
   const handleSubmitOnboarding = async (data: OnboardingFormState) => {
     const toastId = toast.loading('Checking Username');
@@ -86,7 +84,6 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
     }
   };
 
-  //FIXME: To Support Google Signin
   useEffect(() => {
     if (onboard.isOnboarded === false) {
       router.push(APP.INDEX);
@@ -95,13 +92,20 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
 
   return (
     <>
-      <h1>{pageTitle}</h1>
-      <h5>Let's connect with your communites around the world!</h5>
+      <h1 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ink">
+        Finish setting up
+      </h1>
+      <p className="mt-2 text-[14px] text-ink-2 leading-snug">
+        Claim your handle and a few basics. You can refine the rest from
+        settings later.
+      </p>
 
-      <OnboardingForm
-        onSubmit={handleSubmitOnboarding}
-        initialUsername={onboard.reservedUsername}
-      />
+      <div className="mt-5">
+        <OnboardingForm
+          onSubmit={handleSubmitOnboarding}
+          initialUsername={onboard.reservedUsername}
+        />
+      </div>
     </>
   );
 };
