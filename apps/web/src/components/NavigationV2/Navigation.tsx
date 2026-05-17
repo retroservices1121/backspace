@@ -75,31 +75,41 @@ const Navigation: React.FC = ({
 
       {/* Shell. Mobile = single column (rails hidden); desktop =
           3-column grid with sticky rails. Body scrolls — the rails
-          use the body as the sticky reference. */}
-      <div
-        className="
-          relative isolate min-h-screen
-          sm:grid sm:grid-cols-[280px_minmax(0,1fr)_360px]
-          sm:bg-canvas sm:text-ink sm:font-display
-        "
-      >
+          use the body as the sticky reference.
+
+          On ultra-wide monitors, cap the shell at 1320px and center
+          it (X-style). The middle column is capped at 680px so post
+          content doesn't sprawl on 27"+ displays. The outer wrapper
+          paints bg-canvas across the full viewport so the empty
+          space on either side of the centered shell stays on-brand,
+          not body-default. */}
+      <div className="sm:bg-canvas">
         <div
-          aria-hidden
-          className="hidden sm:block pointer-events-none absolute left-1/2 -top-[15%] -translate-x-1/2 -z-10 w-[900px] h-[600px]"
-          style={{
-            background:
-              'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(88,34,251,0.18) 0%, transparent 65%)',
-          }}
-        />
+          className="
+            relative isolate min-h-screen
+            sm:grid sm:grid-cols-[280px_minmax(0,680px)_360px]
+            sm:max-w-[1320px] sm:mx-auto
+            sm:text-ink sm:font-display
+          "
+        >
+          <div
+            aria-hidden
+            className="hidden sm:block pointer-events-none absolute left-1/2 -top-[15%] -translate-x-1/2 -z-10 w-[900px] h-[600px]"
+            style={{
+              background:
+                'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(88,34,251,0.18) 0%, transparent 65%)',
+            }}
+          />
 
-        <div className="hidden sm:block">
-          <LeftNav />
-        </div>
+          <div className="hidden sm:block">
+            <LeftNav />
+          </div>
 
-        <main className="min-w-0">{children}</main>
+          <main className="min-w-0">{children}</main>
 
-        <div className="hidden sm:block">
-          <RightRail />
+          <div className="hidden sm:block">
+            <RightRail />
+          </div>
         </div>
       </div>
 
