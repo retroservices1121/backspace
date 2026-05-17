@@ -146,19 +146,47 @@ a {
   }
 }
 
-/* Browser autofill (Chrome / Edge / Safari) paints a translucent
-   light-blue overlay on autofilled inputs that overrides our dark
-   surface. background-color can't override it — only an inset
-   box-shadow as tall as the input can. Forces the text color too,
-   so the value doesn't render dark-on-light. */
+/* Browser autofill — Chrome/Edge/Safari paint a translucent
+   light overlay on inputs they've remembered values for. The
+   overlay ignores background-color and background-image; the only
+   reliable override is a giant inset box-shadow that repaints the
+   whole input. Pin the text fill so values don't render
+   dark-on-light, and stretch the bg transition to ~7 days so the
+   highlight doesn't animate in on page load. Covers the legacy
+   -webkit-autofill chain, the newer :autofill pseudo (Safari 16.4+,
+   Firefox), and Chrome's internal autofill flag. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active,
+input:-internal-autofill-selected,
+input:autofill,
 textarea:-webkit-autofill,
-select:-webkit-autofill {
+textarea:autofill,
+select:-webkit-autofill,
+select:autofill {
   -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+          box-shadow: 0 0 0 1000px var(--surface) inset !important;
   -webkit-text-fill-color: var(--ink) !important;
-  caret-color: var(--ink);
-  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--ink) !important;
+  background-color: var(--surface) !important;
+  background-image: none !important;
+  transition:
+    background-color 600000s ease-in-out 0s,
+    color           600000s ease-in-out 0s !important;
+}
+
+/* Belt-and-suspenders for inputs sitting inside transparent parents
+   (login email field is bg-transparent so the parent's surface tint
+   shows through — strip native chrome so type=email doesn't render
+   a subtle inner gray on Chrome/macOS). */
+input[type='email'],
+input[type='text'],
+input[type='password'],
+input[type='search'],
+input[type='url'],
+input[type='tel'],
+input[type='number'] {
+  -webkit-appearance: none;
+          appearance: none;
 }
