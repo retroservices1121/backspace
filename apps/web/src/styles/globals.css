@@ -40,6 +40,11 @@ body {
   padding: 0;
   margin: 0;
   font-family: var(--font-display);
+  /* Tell Chrome/Edge/Safari this is a dark-themed surface so native
+     form controls (inputs, scrollbars, date pickers) render with
+     dark defaults instead of painting a white/light gray background
+     under our bg-transparent inputs. */
+  color-scheme: dark;
 }
 
 @tailwind base;

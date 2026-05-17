@@ -213,7 +213,7 @@ const Login: ReactLayoutComponentType = () => {
             <label className="block text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3 mb-1.5">
               Email
             </label>
-            <div className="relative flex items-center h-[52px] rounded-[12px] bg-surface border border-line focus-within:border-brand-2 focus-within:shadow-[0_0_0_4px_rgba(88,34,251,0.18)] transition">
+            <div className="relative flex items-center h-[52px] rounded-[12px] bg-surface border border-line hover:border-line-2 focus-within:border-brand-2 transition-colors duration-150">
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
