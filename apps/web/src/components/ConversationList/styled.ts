@@ -1,96 +1,75 @@
-// Copyright 2021 NewSocial Inc.
-// Author(s): Dylan Trafford
-// Description: Styling
+// Conversation row styling on the new design tokens. Block is the
+// row container; Title is the headline (display name / group name);
+// Description is the muted secondary line; UnreadCount is the small
+// brand-2 badge for unread counts (unused for now, retained for
+// future wiring).
 import styled, { css } from 'styled-components';
 
 import { OldRow } from 'styles/Flex';
-import constants from 'styles/Globals';
 
 type Props = {
   active?: boolean;
 };
 
 export const Block = styled.div<Props>`
-
   cursor: pointer;
-
-  height: 68px;
-  width: calc(100% - ${constants.DRAWER_TAB});
-  padding: 10px;
-  margin-right: ${constants.DRAWER_TAB};
-  text-align: left;
+  display: flex;
   align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.15s ease;
 
-  /* If Active */
-  ${({ active, theme }) => active && css`
-    background-color: ${theme.primary};
+  ${({ active }) => active && css`
+    background-color: var(--brand-soft);
   `}
 
   &:hover {
-    background-color: var(--backgroundLight);
+    background-color: var(--hover);
   }
 `;
 
 export const Title = styled.span`
-  width: 100%;
-  min-width: fit-content;
-  font-weight: bold;
-  font-size: 16px;
-  line-height: 24px;
-  color: ${({ theme }) => theme.fontFocus};
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
   text-align: left;
-
-  ${Block}:hover & {
-    color: ${({ theme }) => theme.primary};
-  }
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const Time = styled.span<Props>`
-  width: 100%;
-  font-size: 12px;
-  line-height: 24px; //Must match title
-  color: ${({ theme }) => theme.fontTertiary};
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 20px;
+  color: var(--ink-3);
   margin-left: auto;
-  margin-right: 0px;
-  text-align: right;
-
-  /* If Active */
-  ${({ active, theme }) => active && css`
-    color: ${theme.fontPrimary};
-  `}
-
-  ${Block}:hover & {
-    color: ${({ theme }) => theme.primary};
-  }
 `;
 
 export const Description = styled.span<Props>`
-  width: 100%;
-  overflow-wrap: break-word;
-  font-size: 14px;
-  line-height: 24px;
-  color: ${({ theme }) => theme.fontTertiary};
-
-  ${Block}:hover & {
-    color: ${({ theme }) => theme.primary};
-  }
-
-   /* If Active */
-   ${({ active, theme }) => active && css`
-    color: ${theme.fontPrimary};
-  `}
-
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const UnreadCount = styled(OldRow)`
   justify-content: center;
   align-items: center;
-  width: 25px;
-  min-width: 25px;
-  height: 25px;
-  min-height: 25px;
-  border-radius: 50%;
-  background-color: ${({ theme }) => theme.primary};
-  color: ${({ theme }) => theme.fontPrimary};
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  border-radius: 99px;
+  background-color: var(--brand-2);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
 `;
-

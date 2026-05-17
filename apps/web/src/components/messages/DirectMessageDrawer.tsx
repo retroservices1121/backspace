@@ -1,17 +1,14 @@
-// Copyright 2022 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
+// Desktop DM sidebar — list of conversations + a New conversation
+// CTA at the top. Hidden on mobile; the mobile branch in
+// messages/index.tsx renders the same conversation rows inline
+// with an X-style sticky back-arrow header.
 
+import { PlusIcon } from '@heroicons/react/outline';
 import Loading from 'react-loading';
 import useConversations from '@src/hooks/useConversations';
 
 import ConversationItem from 'components/ConversationList';
-import Drawer from 'components/Drawer';
-import Icons from 'icons';
-import { ClickableSpan } from 'styles/Buttons';
 import constants from 'styles/Globals';
-import { Space } from 'styles/layout';
 import { Conversation } from 'types/prisma';
 
 export default function DirectMessageDrawer() {
@@ -19,45 +16,67 @@ export default function DirectMessageDrawer() {
 
   const handleConversationClick = (id: bigint) => () => {
     actions.changeConversation(id);
-    // Below the sm breakpoint the drawer is a fixed overlay — close it
-    // on selection so the conversation pane is visible.
-    if (window.innerWidth <= parseInt(constants.SMALLSCREEN_WIDTH, 10)) {
+    if (typeof window !== 'undefined'
+      && window.innerWidth <= parseInt(constants.SMALLSCREEN_WIDTH, 10)) {
       actions.toggleDrawer();
     }
   };
 
   return (
-  // Hidden on mobile — the legacy Drawer is position:fixed top:0 there,
-  // which overlapped the mobile top nav (the New Conversation row sat
-  // right under the logo). Mobile uses the inline list in messages/
-  // index.tsx instead.
-  <Drawer title={'Direct Messages'} hideOnMobile>
-    <div className='col w-full justify-between items-center py-3 px-10'>
-      <ClickableSpan onClick={actions.newConversation}>
-        <div className='row center m-2 justify-between'>
-          <Icons.PlusBox color='primary'/>
-          <span className='pl-6'>New Conversation</span>
-        </div>
-      </ClickableSpan>
-      {/* <Search callbackText={null} callback={(selectedUser) =>
-        dispatch(setConversationFromUid(selectedUser.id))
-      }/> */}
-    </div>
-    {!conversations && (
-      // The usual better than nothing spinner
-      <div className='relative left-1/2'>
-        <Loading type='spinningBubbles' height={0} width={25} />
+    <aside
+      className="
+        hidden sm:flex flex-col flex-none
+        w-[320px] h-screen
+        border-r border-line bg-canvas
+        font-display text-ink
+      "
+    >
+      <div
+        className="
+          sticky top-0 z-10
+          px-5 py-3.5
+          border-b border-line
+          bg-canvas/[0.78]
+          backdrop-blur-[14px] backdrop-saturate-[160%]
+          flex items-center justify-between
+        "
+      >
+        <h2 className="m-0 text-[18px] font-bold tracking-[-0.02em] text-ink">
+          Messages
+        </h2>
+        <button
+          type="button"
+          onClick={actions.newConversation}
+          className="
+            w-9 h-9 rounded-full flex items-center justify-center
+            text-brand-2 hover:bg-brand-soft transition-colors
+          "
+          aria-label="New conversation"
+        >
+          <PlusIcon className="w-5 h-5" />
+        </button>
       </div>
-    )}
-    {Object.values(conversations)?.map(convo => (
-      <ConversationItem
-        key={`convo-${convo.id}`}
-        active={activeId === convo.id}
-        conversation={convo as Conversation}
-        handler={handleConversationClick(convo.id)}
-      />
-    ))}
-  </Drawer>
+
+      <div className="flex-1 overflow-y-auto">
+        {!conversations && (
+          <div className="flex justify-center py-6">
+            <Loading type="spinningBubbles" color="#7B4CFF" height={32} width={32} />
+          </div>
+        )}
+        {conversations && Object.values(conversations).length === 0 && (
+          <div className="px-5 py-10 text-center text-[13px] text-ink-3">
+            No conversations yet. Tap + to start one.
+          </div>
+        )}
+        {Object.values(conversations)?.map((convo) => (
+          <ConversationItem
+            key={`convo-${convo.id}`}
+            active={activeId === convo.id}
+            conversation={convo as Conversation}
+            handler={handleConversationClick(convo.id)}
+          />
+        ))}
+      </div>
+    </aside>
   );
 }
-
