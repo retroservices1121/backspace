@@ -15,13 +15,12 @@ import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
 import axios from '@src/lib/axios';
 
 import type { MessageUnion } from 'types/legacy-aliases';
-import DesktopFeedDrawer from 'components/Feed/DesktopFeedDrawer';
 import FeedDrawer from 'components/Feed/FeedDrawer';
 import InlineCompose from 'components/Feed/InlineCompose';
 import { Container, FeedContainer } from 'components/Feed/styles';
 import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
 import DiscoverModal from 'components/modals/DiscoverModal';
-import { HideOnMobile } from 'components/NavigationV2/styled';
+import TopTabs from 'components/Shell/TopTabs';
 import { logEventScreen, Screens } from 'lib/events';
 import useQuery from 'lib/getQuery';
 import { setPageTitle } from 'store/appSlice';
@@ -67,8 +66,6 @@ function useFeaturedPost() {
 const Feed: React.FC<Props> = ({}) => {
   const user = useSelector((state: RootState) => state.user);
   const authState = useAuthentication();
-  const [contentPosition, setContentPosition] = useState(0);
-  const loadingPlaceholderCount = 10;
   const featuredPost = useFeaturedPost();
   const myFeed = useFeed();
   const dispatch = useAppDispatch();
@@ -104,17 +101,43 @@ const Feed: React.FC<Props> = ({}) => {
   }
 
 
+  // Filter tabs map directly to FilterOptions. Order matches the
+  // design's pattern: rank-first tab leading, then the discoverable
+  // alternatives, with the Markets catalog last. The LIVE pill on
+  // Markets mirrors the LeftNav badge so the navigation language
+  // stays consistent.
+  const tabs = [
+    { key: FilterOptions.ACCURACY, label: 'For you' },
+    { key: FilterOptions.DISCOVER, label: 'Discover' },
+    { key: FilterOptions.FOLLOWING, label: 'Following' },
+    { key: FilterOptions.COMMUNITY, label: 'Communities' },
+    { key: FilterOptions.MARKETS, label: 'Markets' },
+  ];
+
   return (
     <>
       <DiscoverModal />
-      <Container>
 
-        <HideOnMobile className="hidden sm:flex">
-          <DesktopFeedDrawer contentPosition={contentPosition} />
-        </HideOnMobile>
+      {/* Desktop: TopTabs at the top of the center column, sticky.
+          Replaces the legacy DesktopFeedDrawer (the side strip with
+          radio-style filter buttons) — same destination, much
+          tighter visual. */}
+      <div className="hidden sm:block">
+        <TopTabs
+          title="Home"
+          tabs={tabs.map((t) => ({ key: t.key as string, label: t.label }))}
+          active={myFeed.filter as string}
+          onChange={(key) => myFeed.setFilter(key as FilterOptions)}
+        />
+      </div>
 
+      {/* Mobile keeps the existing collapsible drawer until the mobile
+          UI lands separately. */}
+      <div className="sm:hidden">
         <FeedDrawer />
+      </div>
 
+      <Container>
         <FeedContainer>
           <Col>
             {/* Inline composer at the top of every post-style filter
