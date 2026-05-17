@@ -20,7 +20,11 @@ const Navigation: React.FC = ({
   const { postModalOpen } = useSelector((state: RootState) => state.app);
   const { pageTitle } = useSelector((state : RootState) => state.app);
   const router = useRouter();
-  const onAuth = router.asPath === APP.AUTH.INDEX;
+  // All /auth/* routes render bare — login, register, forgot,
+  // logout, onboarding. They own their own chrome (full-bleed
+  // gradient, brand mark, etc.) so the desktop shell would
+  // squish them into the 280/360 rails.
+  const onAuth = router.pathname.startsWith(APP.AUTH.INDEX);
   const dispatch = useDispatch();
 
   const handleOpenPostModal = () => {
