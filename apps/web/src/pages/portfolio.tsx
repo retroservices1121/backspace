@@ -1,11 +1,14 @@
-// Portfolio — the user's open positions across venues.
+// Portfolio — open positions + balances across venues, rebuilt on
+// the new design tokens. Two tabs:
+//   - Markets: Polymarket positions from /api/polymarket/positions
+//     (venue is the source of truth — nothing computed locally).
+//   - Tokens:  SOL + SPL balances pulled live from Solana RPC, plus
+//     the user's recent Dflow swap audit rows.
 //
-// Two tabs:
-//   - Markets: Polymarket positions read straight from Polymarket's
-//     Data API via /api/polymarket/positions (the venue is the source
-//     of truth; nothing is computed from our local Trade log).
-//   - Tokens: SOL + SPL balances pulled live from Solana RPC, plus the
-//     user's recent Dflow swap audit rows.
+// Sticky TopTabs at the top + horizontal pos-row layout from the
+// /webui design (square YES/NO outcome tile + question + size +
+// days remaining + unrealized P&L). Token rows mirror the same
+// shape so the two tabs visually rhyme.
 
 import React, { useState } from 'react';
 import Head from 'next/head';
@@ -26,7 +29,6 @@ function price(n: number): string {
 }
 
 function fmtAmount(raw: string, decimals: number, max = 6): string {
-  // Convert atomic -> human, capping fractional digits for display.
   const padded = raw.padStart(decimals + 1, '0');
   const whole = padded.slice(0, padded.length - decimals) || '0';
   const frac = padded.slice(padded.length - decimals).replace(/0+$/, '');
@@ -34,133 +36,125 @@ function fmtAmount(raw: string, decimals: number, max = 6): string {
   return `${whole}.${frac.slice(0, max)}`;
 }
 
-function PnlCell({ position }: { position: SourcedPosition }) {
+function daysUntil(d?: string | Date | null): number | null {
+  if (!d) return null;
+  const target = new Date(d).getTime();
+  if (Number.isNaN(target)) return null;
+  const diffMs = target - Date.now();
+  if (diffMs <= 0) return 0;
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function PnlBlock({ position }: { position: SourcedPosition }) {
   const up = position.cashPnl >= 0;
+  const tone = up ? 'text-green-2' : 'text-pink-2';
+  const sign = up ? '+' : '';
   return (
-    <span className={up ? 'text-emerald-300' : 'text-rose-300'}>
-      {up ? '+' : ''}
-      {usd(position.cashPnl)}{' '}
-      <span className="text-white/40">
-        ({up ? '+' : ''}
-        {position.percentPnl.toFixed(1)}%)
-      </span>
-    </span>
-  );
-}
-
-function SourceBadge({ source }: { source: SourcedPosition['source'] }) {
-  // Only badge the off-platform rows — the embedded-Safe positions
-  // are the default and don't need a tag.
-  if (source !== 'linked') return null;
-  return (
-    <span className="ml-2 rounded-md border border-white/20 bg-white/5 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-white/60">
-      linked
-    </span>
-  );
-}
-
-function PositionsTable({ positions }: { positions: SourcedPosition[] }) {
-  return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-widest text-white/40">
-            <th className="px-4 py-3 font-medium">Market</th>
-            <th className="px-4 py-3 text-right font-medium">Shares</th>
-            <th className="px-4 py-3 text-right font-medium">Avg</th>
-            <th className="px-4 py-3 text-right font-medium">Current</th>
-            <th className="px-4 py-3 text-right font-medium">Value</th>
-            <th className="px-4 py-3 text-right font-medium">P&amp;L</th>
-          </tr>
-        </thead>
-        <tbody>
-          {positions.map((p) => (
-            <tr
-              key={`${p.safeAddress}-${p.conditionId}-${p.asset}`}
-              className="border-b border-white/5 last:border-0"
-            >
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  {p.icon && (
-                    <img
-                      src={p.icon}
-                      alt=""
-                      className="h-8 w-8 shrink-0 rounded-md object-cover"
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <div className="flex items-center truncate font-medium text-white">
-                      <span className="truncate">{p.title}</span>
-                      <SourceBadge source={p.source} />
-                    </div>
-                    <div className="text-xs text-white/50">{p.outcome}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-right font-mono tabular-nums text-white/80">
-                {p.size.toFixed(2)}
-              </td>
-              <td className="px-4 py-3 text-right font-mono tabular-nums text-white/80">
-                {price(p.avgPrice)}
-              </td>
-              <td className="px-4 py-3 text-right font-mono tabular-nums text-white/80">
-                {price(p.curPrice)}
-              </td>
-              <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
-                {usd(p.currentValue)}
-              </td>
-              <td className="px-4 py-3 text-right font-mono tabular-nums">
-                <PnlCell position={p} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="text-right flex-none">
+      <div className={`text-[15px] font-mono font-semibold tabular-nums ${tone}`}>
+        {sign}{usd(position.cashPnl)}
+      </div>
+      <div className="text-[11px] text-ink-3 font-mono">
+        unrealized · {sign}{position.percentPnl.toFixed(1)}%
+      </div>
     </div>
   );
 }
 
-function BalancesTable({ balances }: { balances: SolanaBalance[] }) {
+function OutcomeTile({ outcome, source }: { outcome: string; source: SourcedPosition['source'] }) {
+  // Best-effort YES/NO classification — Polymarket binary outcomes
+  // come back with these exact labels. Anything else gets a neutral
+  // tile in brand-soft so multi-outcome rows still render.
+  const isYes = /^yes$/i.test(outcome);
+  const isNo = /^no$/i.test(outcome);
+  let bg = 'bg-brand-soft text-brand-2 border border-brand-2/30';
+  let label: string = outcome.slice(0, 3).toUpperCase();
+  if (isYes) {
+    bg = 'bg-green-vivid/12 text-green-2 border border-green-vivid/30';
+    label = 'YES';
+  } else if (isNo) {
+    bg = 'bg-pink-vivid/12 text-pink-2 border border-pink-vivid/30';
+    label = 'NO';
+  }
+
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-widest text-white/40">
-            <th className="px-4 py-3 font-medium">Token</th>
-            <th className="px-4 py-3 text-right font-medium">Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {balances.map((b) => (
-            <tr key={b.mint} className="border-b border-white/5 last:border-0">
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  {b.logoURI && (
-                    <img
-                      src={b.logoURI}
-                      alt=""
-                      className="h-8 w-8 shrink-0 rounded-full object-cover"
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <div className="font-medium text-white">
-                      {b.symbol ?? `${b.mint.slice(0, 4)}…${b.mint.slice(-4)}`}
-                    </div>
-                    {b.name && (
-                      <div className="text-xs text-white/50">{b.name}</div>
-                    )}
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-right font-mono tabular-nums text-white">
-                {b.uiAmount.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="relative flex-none">
+      <div
+        className={`w-[42px] h-[42px] rounded-[8px] flex items-center justify-center text-[11px] font-mono font-semibold ${bg}`}
+      >
+        {label}
+      </div>
+      {source === 'linked' && (
+        <span
+          className="absolute -bottom-1 -right-1 px-1 py-[1px] rounded text-[8px] uppercase tracking-widest bg-canvas border border-line text-ink-3 font-mono"
+        >
+          linked
+        </span>
+      )}
+    </div>
+  );
+}
+
+function PositionRow({ position }: { position: SourcedPosition }) {
+  const days = daysUntil(position.endDate);
+  const closesLabel = days == null
+    ? null
+    : days === 0
+      ? 'resolves today'
+      : `${days} day${days === 1 ? '' : 's'} remaining`;
+
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line last:border-0 hover:bg-hover transition-colors">
+      <OutcomeTile outcome={position.outcome} source={position.source} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 text-[11px] font-mono text-ink-3">
+          <span className="text-ink-2">
+            {position.outcome} · {price(position.curPrice)}
+          </span>
+          {/* Category isn't on the position payload yet — leave the
+              slot open so we can wire it without a layout shift. */}
+        </div>
+        <div className="text-[14px] font-medium text-ink leading-snug truncate">
+          {position.title}
+        </div>
+        <div className="text-[11px] text-ink-3 font-mono mt-0.5 truncate">
+          <span>{usd(position.currentValue)} value</span>
+          {closesLabel && (
+            <>
+              <span className="mx-1.5">·</span>
+              <span>{closesLabel}</span>
+            </>
+          )}
+          <span className="mx-1.5">·</span>
+          <span>{position.size.toFixed(2)} shares</span>
+        </div>
+      </div>
+      <PnlBlock position={position} />
+    </div>
+  );
+}
+
+function BalanceRow({ balance }: { balance: SolanaBalance }) {
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-line last:border-0 hover:bg-hover transition-colors">
+      <div className="flex-none w-[42px] h-[42px] rounded-full overflow-hidden bg-surface-2 border border-line">
+        {balance.logoURI && (
+          <img src={balance.logoURI} alt="" className="w-full h-full object-cover" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[14px] font-medium text-ink truncate">
+          {balance.symbol ?? `${balance.mint.slice(0, 4)}…${balance.mint.slice(-4)}`}
+        </div>
+        {balance.name && (
+          <div className="text-[11px] text-ink-3 font-mono truncate">{balance.name}</div>
+        )}
+      </div>
+      <div className="text-right flex-none">
+        <div className="text-[15px] font-mono font-semibold tabular-nums text-ink">
+          {balance.uiAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -168,99 +162,101 @@ function BalancesTable({ balances }: { balances: SolanaBalance[] }) {
 function RecentSwaps({ trades }: { trades: DflowTrade[] }) {
   if (trades.length === 0) return null;
   return (
-    <div className="mt-6">
-      <h3 className="mb-2 text-sm font-semibold text-white/70">Recent swaps</h3>
-      <div className="overflow-hidden rounded-2xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-widest text-white/40">
-              <th className="px-4 py-3 font-medium">When</th>
-              <th className="px-4 py-3 font-medium">Swap</th>
-              <th className="px-4 py-3 font-medium">Tx</th>
-            </tr>
-          </thead>
-          <tbody>
-            {trades.map((t) => {
-              const inDec = t.inputToken?.decimals ?? 0;
-              const outDec = t.outputToken?.decimals ?? 0;
-              const inSym = t.inputToken?.symbol ?? `${t.inputMint.slice(0, 4)}…`;
-              const outSym = t.outputToken?.symbol ?? `${t.outputMint.slice(0, 4)}…`;
-              return (
-                <tr key={t.id} className="border-b border-white/5 last:border-0">
-                  <td className="px-4 py-3 text-white/60">
-                    {new Date(t.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 font-mono tabular-nums text-white">
-                    {fmtAmount(t.inputAmount, inDec)} {inSym} →{' '}
-                    {fmtAmount(t.outputAmount, outDec)} {outSym}
-                  </td>
-                  <td className="px-4 py-3">
-                    <a
-                      href={`https://solscan.io/tx/${t.txSignature}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-xs text-white/60 underline hover:text-white/80"
-                    >
-                      {t.txSignature.slice(0, 6)}…{t.txSignature.slice(-6)}
-                    </a>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div className="mt-6 mx-5">
+      <h3 className="text-[10px] uppercase tracking-[0.08em] text-ink-3 font-mono mb-2">
+        Recent swaps
+      </h3>
+      <div className="rounded-[14px] border border-line bg-surface overflow-hidden">
+        {trades.map((t) => {
+          const inDec = t.inputToken?.decimals ?? 0;
+          const outDec = t.outputToken?.decimals ?? 0;
+          const inSym = t.inputToken?.symbol ?? `${t.inputMint.slice(0, 4)}…`;
+          const outSym = t.outputToken?.symbol ?? `${t.outputMint.slice(0, 4)}…`;
+          return (
+            <div
+              key={t.id}
+              className="flex items-center gap-3 px-4 py-3 border-b border-line last:border-0 text-[13px]"
+            >
+              <span className="text-ink-3 font-mono w-[10ch] flex-none">
+                {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </span>
+              <span className="flex-1 font-mono tabular-nums text-ink truncate">
+                {fmtAmount(t.inputAmount, inDec)} {inSym}
+                <span className="text-ink-3 mx-1.5">→</span>
+                {fmtAmount(t.outputAmount, outDec)} {outSym}
+              </span>
+              <a
+                href={`https://solscan.io/tx/${t.txSignature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[11px] text-brand-2 hover:underline flex-none"
+              >
+                {t.txSignature.slice(0, 6)}…{t.txSignature.slice(-6)}
+              </a>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function MarketsTab() {
-  const { positions, isLoading, isError, safeCount, hasLinkedWallets } =
-    useAllPositions();
+function EmptyCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-5 rounded-[14px] border border-line bg-surface px-5 py-6 text-[13px] text-ink-3">
+      {children}
+    </div>
+  );
+}
 
+function ErrorCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-5 rounded-[14px] border border-pink-vivid/30 bg-pink-vivid/10 px-5 py-6 text-[13px] text-pink-2">
+      {children}
+    </div>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <div className="mx-5 h-32 animate-pulse rounded-[14px] border border-line bg-surface" />
+  );
+}
+
+function MarketsTab() {
+  const { positions, isLoading, isError, safeCount, hasLinkedWallets } = useAllPositions();
   if (safeCount === 0) {
-    return (
-      <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
-        Log in to see your positions.
-      </div>
-    );
+    return <EmptyCard>Log in to see your positions.</EmptyCard>;
   }
-  if (isLoading) {
-    return (
-      <div className="h-32 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
-    );
-  }
-  if (isError) {
-    return (
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-6 text-sm text-rose-200">
-        Couldn’t load your positions. Try refreshing.
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingCard />;
+  if (isError) return <ErrorCard>Couldn’t load your positions. Try refreshing.</ErrorCard>;
   if (positions.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
+      <EmptyCard>
         No open positions yet.{' '}
         <Link href="/settings/wallet">
-          <a className="text-white/80 underline hover:text-white">
-            Fund your trading wallet
-          </a>
+          <a className="text-brand-2 hover:underline">Fund your trading wallet</a>
         </Link>
         {!hasLinkedWallets && (
           <>
             {' '}or{' '}
             <Link href="/settings/wallet">
-              <a className="text-white/80 underline hover:text-white">
+              <a className="text-brand-2 hover:underline">
                 link an existing Polymarket wallet
               </a>
             </Link>
           </>
-        )}
-        .
-      </div>
+        )}.
+      </EmptyCard>
     );
   }
-  return <PositionsTable positions={positions} />;
+  return (
+    <div className="mx-5 rounded-[14px] border border-line bg-surface overflow-hidden">
+      {positions.map((p) => (
+        <PositionRow key={`${p.safeAddress}-${p.conditionId}-${p.asset}`} position={p} />
+      ))}
+    </div>
+  );
 }
 
 function TokensTab() {
@@ -272,34 +268,32 @@ function TokensTab() {
 
   if (!address) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
+      <EmptyCard>
         No Solana wallet yet.{' '}
         <Link href="/settings/wallet">
-          <a className="text-white/80 underline hover:text-white">
-            Create one in settings
-          </a>
+          <a className="text-brand-2 hover:underline">Create one in settings</a>
         </Link>{' '}
         to start swapping.
-      </div>
+      </EmptyCard>
     );
   }
   return (
     <>
-      <div className="mb-3 text-xs text-white/50 break-all">
-        Solana wallet: <span className="font-mono">{address}</span>
+      <div className="mx-5 mb-3 text-[11px] font-mono text-ink-3 break-all">
+        Solana wallet: <span className="text-ink-2">{address}</span>
       </div>
       {balances.isLoading ? (
-        <div className="h-32 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
+        <LoadingCard />
       ) : balances.isError ? (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-6 text-sm text-rose-200">
-          Couldn’t load balances. Try refreshing.
-        </div>
+        <ErrorCard>Couldn’t load balances. Try refreshing.</ErrorCard>
       ) : !balances.data || balances.data.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-6 text-sm text-white/60">
+        <EmptyCard>
           No tokens yet. Fund the wallet above with SOL to start swapping.
-        </div>
+        </EmptyCard>
       ) : (
-        <BalancesTable balances={balances.data} />
+        <div className="mx-5 rounded-[14px] border border-line bg-surface overflow-hidden">
+          {balances.data.map((b) => <BalanceRow key={b.mint} balance={b} />)}
+        </div>
       )}
       <RecentSwaps trades={trades.data ?? []} />
     </>
@@ -310,35 +304,61 @@ type Tab = 'markets' | 'tokens';
 
 const Portfolio: React.VFC = () => {
   const [tab, setTab] = useState<Tab>('markets');
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'markets', label: 'Markets' },
+    { key: 'tokens', label: 'Tokens' },
+  ];
+
   return (
-    <div className="mx-auto h-full w-full max-w-4xl px-4 py-8">
-      <Head>
-        <title>Portfolio</title>
-      </Head>
+    <div className="font-display text-ink">
+      <Head><title>Portfolio</title></Head>
 
-      <h1 className="mb-1 text-2xl font-semibold text-white">Portfolio</h1>
-      <p className="mb-6 text-sm text-white/50">
-        Your positions and balances across venues.
-      </p>
-
-      <div className="mb-4 flex gap-2 border-b border-white/10">
-        {(['markets', 'tokens'] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`px-3 py-2 text-sm font-medium transition ${
-              tab === t
-                ? 'border-b-2 border-white text-white'
-                : 'text-white/50 hover:text-white/80'
-            }`}
-          >
-            {t === 'markets' ? 'Markets' : 'Tokens'}
-          </button>
-        ))}
+      <div
+        className="
+          sticky top-0 z-10
+          px-6 pt-3.5
+          border-b border-line
+          bg-canvas/[0.78]
+          backdrop-blur-[14px] backdrop-saturate-[160%]
+        "
+      >
+        <div className="flex items-center justify-between pb-3.5">
+          <div>
+            <h1 className="m-0 text-[20px] font-bold tracking-[-0.02em] text-ink">
+              Portfolio
+            </h1>
+            <div className="mt-0.5 text-[11.5px] font-mono tracking-[0.06em] text-ink-3">
+              Positions and balances across venues
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 -mx-1">
+          {tabs.map((t) => {
+            const isActive = t.key === tab;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={[
+                  'relative px-3 py-3 text-[14px] font-medium tracking-[-0.005em]',
+                  'transition-colors duration-150',
+                  isActive ? 'text-ink' : 'text-ink-2 hover:text-ink',
+                ].join(' ')}
+              >
+                <span>{t.label}</span>
+                {isActive && (
+                  <span className="absolute left-2 right-2 -bottom-px h-[3px] rounded-full bg-brand-2" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {tab === 'markets' ? <MarketsTab /> : <TokensTab />}
+      <div className="py-5">
+        {tab === 'markets' ? <MarketsTab /> : <TokensTab />}
+      </div>
     </div>
   );
 };
