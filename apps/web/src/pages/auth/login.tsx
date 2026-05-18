@@ -213,14 +213,19 @@ const Login: ReactLayoutComponentType = () => {
             <label className="block text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3 mb-1.5">
               Email
             </label>
-            <div className="relative flex items-center h-[52px] rounded-[12px] border border-line hover:border-line-2 focus-within:border-brand-2 transition-colors duration-150">
+            <div className="relative flex items-center h-[52px] rounded-[12px] bg-surface border border-line hover:border-line-2 focus-within:border-brand-2 transition-colors duration-150">
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.com"
                 type="email"
+                /* Inline style wins over Chrome's UA default bg for
+                   type=email in dark color-scheme (rgb(59,59,59)),
+                   which Tailwind's bg-transparent class doesn't
+                   override consistently. */
+                style={{ background: 'transparent' }}
                 className="
-                  flex-1 h-full pl-4 pr-2 bg-transparent text-[15px] text-ink
+                  flex-1 h-full pl-4 pr-2 text-[15px] text-ink
                   placeholder:text-ink-3 outline-none font-display
                 "
               />
