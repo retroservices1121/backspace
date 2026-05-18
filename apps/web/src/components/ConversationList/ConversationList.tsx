@@ -123,33 +123,44 @@ const ConversationList: React.FC<Props> = ({ conversation, active,  handler, onD
             <TrashIcon className="w-4 h-4" />
           </button>
         )}
-        {onDelete && confirming && (
-          <div className="ml-2 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              className="
-                rounded-full px-2.5 h-7 text-[11px] font-semibold
-                bg-pink-vivid text-ink hover:opacity-90
-                transition-opacity
-              "
-            >
-              Delete
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="
-                rounded-full px-2.5 h-7 text-[11px] font-medium
-                text-ink-2 hover:bg-hover hover:text-ink
-                transition-colors
-              "
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </OldRow>
+      {onDelete && confirming && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="
+            absolute inset-y-0 right-0 z-10
+            flex items-center gap-1.5 pl-4 pr-3
+            bg-canvas
+          "
+          style={{
+            background:
+              'linear-gradient(to right, transparent 0, var(--canvas) 18px)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleConfirm}
+            className="
+              rounded-full px-2.5 h-7 text-[11px] font-semibold
+              bg-pink-vivid text-ink hover:opacity-90
+              transition-opacity
+            "
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="
+              rounded-full px-2.5 h-7 text-[11px] font-medium
+              text-ink-2 hover:bg-hover hover:text-ink
+              transition-colors
+            "
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </Block>
   );
 };
