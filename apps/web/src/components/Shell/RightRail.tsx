@@ -14,10 +14,15 @@
 import React from 'react';
 import { useQuery } from 'react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useSelector } from 'react-redux';
 import type { Media } from '@prisma/client';
 
 import axios from '@src/lib/axios';
 import useMedia from '@src/hooks/useMedia';
+import { actions as communityActions } from 'store/community/slice';
+import { selectMemberships } from 'store/user/selectors';
+import { useAppDispatch } from 'store/store';
 
 import { ShellIcons as I } from './icons';
 
@@ -265,8 +270,26 @@ function LeaderboardRow({
 
 function CommunityRow({ community }: { community: TrendingCommunity }) {
   const avatarUrl = useMedia(community.avatar);
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const memberships = useSelector(selectMemberships);
+  const isMember = memberships.some(
+    (m: any) => String(m.communityId) === community.id,
+  );
+
+  const go = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    // If the user isn't a member yet, join first — the /community
+    // route loads only the caller's memberships, so a bare push
+    // would land them on someone else's community instead.
+    if (!isMember) {
+      await dispatch(communityActions.joinCommunity(BigInt(community.id)));
+    }
+    router.push(`/community?c=${community.uuid}`);
+  };
+
   return (
-    <Link href={`/community/${community.uuid}`}>
+    <a href={`/community?c=${community.uuid}`} onClick={go}>
       <div className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-hover -mx-2 px-2 rounded-lg transition-colors">
         {avatarUrl ? (
           <img
@@ -287,7 +310,7 @@ function CommunityRow({ community }: { community: TrendingCommunity }) {
           </div>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }
 
