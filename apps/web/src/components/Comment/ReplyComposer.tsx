@@ -70,10 +70,10 @@ const ReplyComposer: React.FC<Props> = ({ postId, replyToUsername, onPosted, aut
   const canSubmit = text.trim().length > 0 && !submitting && remaining >= 0;
 
   return (
-    <div className="border-b border-dividerColor px-4 py-3">
+    <div className="border-b border-line px-4 py-3 font-display text-ink">
       {replyToUsername && (
-        <div className="mb-2 ml-14 text-sm text-fontTertiary">
-          Replying to <span className="text-primary">@{replyToUsername}</span>
+        <div className="mb-2 ml-14 text-[13px] text-ink-3">
+          Replying to <span className="text-brand-2">@{replyToUsername}</span>
         </div>
       )}
       <div className="flex gap-3">
@@ -88,11 +88,12 @@ const ReplyComposer: React.FC<Props> = ({ postId, replyToUsername, onPosted, aut
             onChange={(e) => { setText(e.target.value); autoSize(); }}
             onKeyDown={onKeyDown}
             rows={1}
-            className="w-full resize-none bg-transparent text-fontFocus placeholder-fontTertiary text-lg leading-6 focus:outline-none"
+            style={{ background: 'transparent' }}
+            className="w-full resize-none text-ink placeholder:text-ink-3 text-[17px] leading-6 focus:outline-none"
           />
           <div className="mt-2 flex items-center justify-end gap-3">
             {text.length > 0 && remaining < 200 && (
-              <span className={`text-xs ${remaining < 0 ? 'text-error' : 'text-fontTertiary'}`}>
+              <span className={`text-[11px] font-mono ${remaining < 0 ? 'text-pink-vivid' : 'text-ink-3'}`}>
                 {remaining}
               </span>
             )}
@@ -100,7 +101,13 @@ const ReplyComposer: React.FC<Props> = ({ postId, replyToUsername, onPosted, aut
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="
+                rounded-full bg-brand hover:bg-brand-2
+                px-4 h-9 text-[14px] font-semibold text-ink
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-colors duration-150
+                shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+              "
             >
               Reply
             </button>
