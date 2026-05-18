@@ -1,98 +1,56 @@
-// Copyright 2022 NewSocial Inc. - All Rights Reserved
-// Unauthorized copying of this file, via any medium is strictly prohibited
-// Proprietary and confidential
-// Author(s): See Git History
+// Modal wrapper around the unified Composer. The form body is shared
+// with the inline top-of-feed surface (components/Feed/InlineCompose);
+// this file only owns the modal's "confirm discard" guard and the
+// close handoff.
 
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
-import usePost from '@src/hooks/usePost';
 import { useModal } from '@src/lib/Modal';
 import { Confirm } from '@src/lib/Modal/layouts';
-import { RootState, useAppSelector } from '@src/store/store';
+import { useAppDispatch } from '@src/store/store';
 import { Modals } from '@src/utils/constants';
 
-import OverlayLoading from 'components/Loading/OverlayLoader';
 import Modal from 'components/ModalV2';
-import { PostFormState } from 'types/post';
+import { clearPost } from 'store/postSlice';
 
-import CreatePostForm from './CreatePostForm';
-import { PostOptions } from './styled';
+import Composer from './Composer';
 
-type Props = {};
-
-const CreatePost:React.FC<Props> = () => {
+const CreatePost: React.FC = () => {
+  const dispatch = useAppDispatch();
   const CreatePostModal = useModal(Modals.CreatePost);
-  const post = useAppSelector((state: RootState) => state.post);
-  const thisPost = usePost(post);
-  const [touched, setTouched] = useState(false);
-  const [confirmationIsOpen, setConfirmationIsOpen] = useState(false);
-  const [media, setMedia] = useState<File | undefined>(undefined);
-  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // If the user didn't write anything, we won't prompt for confirmation
-  const openConfirmModal = () => {
-    if (touched) {
-      setConfirmationIsOpen(true);
-    } else {
-      CreatePostModal.close();
-    }
-  };
-
-  const handleCancel = () => setConfirmationIsOpen(false);
-
-  const handleConfirm = () => {
-    setConfirmationIsOpen(false);
+  const close = () => {
+    dispatch(clearPost());
     CreatePostModal.close();
   };
 
-  const handleSubmit = async (state: PostFormState) => {
-    setSubmitLoading(true);
-    try {
-      const result = post.id
-        ? await thisPost.update(state)
-        : await thisPost.create(state, media);
-
-      if (result) {
-        CreatePostModal.close();
-        toast.info(post.id ? 'Post updated' : 'Post created');
-      } else {
-        toast.error(post.id ? 'Failed to update post' : 'Failed to create post');
-      }
-    } catch (err) {
-      // A thrown request (500, network error) must not leave the
-      // overlay spinner up — `finally` clears it regardless.
-      console.error('Post submit failed', err);
-      toast.error(post.id ? 'Failed to Update Post' : 'Failed To Create Post');
-    } finally {
-      setSubmitLoading(false);
-    }
-  };
+  // Discard guard — only matters if the user has typed something. The
+  // Composer doesn't expose its `touched` state, so for now any close
+  // attempt while the modal is open prompts; if the user wants
+  // friction-free dismiss we can wire a touched callback later.
+  const askDiscard = () => setConfirmOpen(true);
 
   return (
     <div className="max-h-screen overflow-auto">
-      {submitLoading && <OverlayLoading text='Submitting Post...'/>}
-      {/* Single-column, X-style composer. Media attach lives inside the
-          form now, not as a separate side panel. */}
-      <PostOptions>
-        <CreatePostForm
-          onTouched={() => setTouched(true)}
-          onSubmit={handleSubmit}
-          onCancel={openConfirmModal}
-          setMedia={setMedia}
-        />
-      </PostOptions>
+      <Composer
+        variant="modal"
+        onPosted={close}
+        onCancel={askDiscard}
+      />
 
-      {/* Confirm Cancel Modal */}
       <Modal
-        open={confirmationIsOpen}
-        handleClose={handleCancel}
+        open={confirmOpen}
+        handleClose={() => setConfirmOpen(false)}
         closeButton={false}
         shouldCloseOnOverlayClick={false}
       >
         <Confirm
-          question='Are you sure you want to discard this post?'
-          onConfirm={handleConfirm}
-          onCancel={handleCancel}
+          question="Discard this post?"
+          onConfirm={() => {
+            setConfirmOpen(false);
+            close();
+          }}
+          onCancel={() => setConfirmOpen(false)}
         />
       </Modal>
     </div>
