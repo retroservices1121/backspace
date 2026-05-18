@@ -5,10 +5,12 @@
 // $SYMBOL is just typed text, not a special node — so we flatten the
 // JSON to a single string and regex over it.
 //
-// Returns symbols in the order they appear, deduped. Uppercase-only
-// so we don't confuse a stray "$10" or "$.50" with a token tag.
+// Returns symbols in the order they appear, deduped and normalized to
+// uppercase. The regex is case-insensitive so $bonk, $Bonk, and $BONK
+// all collapse to BONK. The leading letter requirement keeps stray
+// "$10" or "$.50" out of the match set.
 
-const SYMBOL_RE = /\$([A-Z][A-Z0-9]{1,9})\b/g;
+const SYMBOL_RE = /\$([A-Za-z][A-Za-z0-9]{1,9})\b/g;
 
 function collectText(node: unknown): string {
   if (node == null) return '';
@@ -52,7 +54,10 @@ export function findTokenSymbols(stringifiedBody: string): string[] {
   SYMBOL_RE.lastIndex = 0;
   // eslint-disable-next-line no-cond-assign
   while ((m = SYMBOL_RE.exec(flat)) !== null) {
-    const symbol = m[1];
+    // Normalize to uppercase so the dedupe Set + downstream token
+    // catalog lookup are case-insensitive ($bonk and $BONK fold to
+    // the same BONK entry).
+    const symbol = m[1].toUpperCase();
     if (!seen.has(symbol)) {
       seen.add(symbol);
       out.push(symbol);

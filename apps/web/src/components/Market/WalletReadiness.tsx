@@ -41,7 +41,7 @@ export function WalletReadiness() {
         <button
           onClick={initialize}
           disabled={busy}
-          className="rounded-lg bg-amber-400/80 px-3 py-1 font-semibold text-black transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg bg-amber-400/80 px-3 py-1 font-semibold text-ink transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? STEP_LABEL[step] ?? 'Setting up…' : 'Enable trading'}
         </button>
