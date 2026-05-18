@@ -216,14 +216,20 @@ function ProfileBio({
   const avatar = useMedia(profile.avatar);
   const joined = formatJoined(profile.createdAt);
 
+  // Organizations get a square avatar (X-style hex affordance) +
+  // a white hexagonal verified badge. Individuals get round +
+  // brand-purple scalloped verified badge.
+  const isOrg = profile.accountType === 'ORG';
+  const avatarShape = isOrg ? 'rounded-[20px]' : 'rounded-full';
+  const wrapperShape = isOrg ? 'rounded-[24px]' : 'rounded-full';
   return (
     <div className="px-5">
       {/* Avatar overlaps the banner. Right side: message + bell
           + Follow/Following pill, or Edit profile when isSelf. */}
       <div className="flex items-end justify-between -mt-16">
-        <div className="rounded-full border-4 border-canvas bg-canvas">
+        <div className={`${wrapperShape} border-4 border-canvas bg-canvas`}>
           <div
-            className="w-[120px] h-[120px] rounded-full overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]"
+            className={`w-[120px] h-[120px] ${avatarShape} overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]`}
           >
             {avatar
               ? <img src={avatar} alt="" className="w-full h-full object-cover" />
@@ -279,9 +285,17 @@ function ProfileBio({
             {profile.name || profile.username}
           </span>
           {profile.verified && (
-            <span className="text-brand-2 inline-flex" aria-label="Verified">
-              <I.verified className="w-5 h-5" />
-            </span>
+            isOrg
+              ? (
+                <span className="text-ink inline-flex" aria-label="Verified organization">
+                  <I.verifiedOrg className="w-5 h-5" />
+                </span>
+              )
+              : (
+                <span className="text-brand-2 inline-flex" aria-label="Verified">
+                  <I.verified className="w-5 h-5" />
+                </span>
+              )
           )}
         </div>
         <div className="mt-0.5 text-ink-3 font-mono text-[14px]">

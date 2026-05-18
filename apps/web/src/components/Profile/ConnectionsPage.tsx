@@ -247,9 +247,17 @@ function ConnectionRowItem({
             {row.name}
           </span>
           {row.verified && (
-            <span className="text-brand-2 inline-flex flex-none" aria-label="Verified">
-              <I.verified className="w-4 h-4" />
-            </span>
+            row.accountType === 'ORG'
+              ? (
+                <span className="text-ink inline-flex flex-none" aria-label="Verified organization">
+                  <I.verifiedOrg className="w-4 h-4" />
+                </span>
+              )
+              : (
+                <span className="text-brand-2 inline-flex flex-none" aria-label="Verified">
+                  <I.verified className="w-4 h-4" />
+                </span>
+              )
           )}
         </div>
         <div className="text-[13px] text-ink-3 font-mono truncate">

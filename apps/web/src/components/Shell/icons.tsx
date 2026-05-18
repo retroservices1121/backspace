@@ -65,11 +65,22 @@ export const ShellIcons = {
       <path d="M12 2l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6L4 9l5.5-1.5z"/>
     </svg>
   ),
-  // Twitter-style verified badge: scalloped circle with a checkmark.
-  // Solid fill so we can color the whole badge via currentColor.
+  // Verified badge for individuals — scalloped silhouette filled with
+  // currentColor (set brand-purple from the call site) with an
+  // explicit contrast check on top so it reads against any backdrop.
   verified: (p: IconProps = {}) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={p.className}>
-      <path fillRule="evenodd" clipRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+    <svg viewBox="0 0 24 24" className={p.className}>
+      <path fill="currentColor" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812z"/>
+      <path fill="#fff" d="M13.707 8.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+    </svg>
+  ),
+  // Verified badge for organizations — hexagon silhouette with a
+  // dark check so it pops on a white body. Set text-ink at the call
+  // site for the white body.
+  verifiedOrg: (p: IconProps = {}) => (
+    <svg viewBox="0 0 24 24" className={p.className}>
+      <path fill="currentColor" d="M20.5 12L16.25 19.4 7.75 19.4 3.5 12 7.75 4.6 16.25 4.6 20.5 12z"/>
+      <path fill="#0c0a16" d="M15.707 10.707a1 1 0 00-1.414-1.414L11 12.586 9.707 11.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
     </svg>
   ),
 };

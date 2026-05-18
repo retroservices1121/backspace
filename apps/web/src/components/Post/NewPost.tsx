@@ -117,6 +117,7 @@ export default function NewPost({ post }: Props) {
           name={author.name || author.username}
           username={author.username}
           verified={!!author.verified}
+          isOrg={(author as any).accountType === 'ORG'}
           publicAccuracy={(author as any).publicAccuracy}
           accuracy={(author as any).accuracy}
           createdAt={post.createdAt}
@@ -208,13 +209,14 @@ function CommunityStrip({ name, colorHex }: { name: string; colorHex: string }) 
 }
 
 function PostHead({
-  name, username, verified, publicAccuracy, accuracy,
+  name, username, verified, isOrg, publicAccuracy, accuracy,
   createdAt, onName, onTime,
   menuRef, menuOpen, onMenuToggle, isAuthor, onEdit, onDelete,
 }: {
   name: string;
   username: string;
   verified: boolean;
+  isOrg: boolean;
   publicAccuracy?: boolean;
   accuracy?: any;
   createdAt: Date | string;
@@ -237,9 +239,17 @@ function PostHead({
         {name}
       </button>
       {verified && (
-        <span className="text-brand-2 inline-flex" aria-label="Verified">
-          <I.conv className="w-3.5 h-3.5" />
-        </span>
+        isOrg
+          ? (
+            <span className="text-ink inline-flex" aria-label="Verified organization">
+              <I.verifiedOrg className="w-4 h-4" />
+            </span>
+          )
+          : (
+            <span className="text-brand-2 inline-flex" aria-label="Verified">
+              <I.verified className="w-4 h-4" />
+            </span>
+          )
       )}
       <button
         type="button"
