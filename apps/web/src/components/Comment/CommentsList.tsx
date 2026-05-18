@@ -18,13 +18,13 @@ const CommentsList: React.FC<Props> = ({ comments }) => {
   if (comments === undefined) {
     return (
       <div className="flex justify-center py-8">
-        <ReactLoading type={'bubbles'} color="#09A0F1" height={32} width={32} />
+        <ReactLoading type={'bubbles'} color="#7B4CFF" height={32} width={32} />
       </div>
     );
   }
   if (comments.length === 0) {
     return (
-      <div className="px-4 py-8 text-center text-fontTertiary text-sm">
+      <div className="px-4 py-10 text-center text-[13px] text-ink-3 font-display">
         No replies yet — be the first.
       </div>
     );

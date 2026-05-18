@@ -56,7 +56,7 @@ const DisplayComment: React.FC<Props> = ({ comment, onReply }) => {
   };
 
   return (
-    <div className="flex gap-3 px-4 py-3 border-b border-dividerColor hover:bg-backgroundNormal transition-colors">
+    <div className="flex gap-3 px-4 py-3 border-b border-line hover:bg-hover transition-colors font-display text-ink">
       <Avatar
         type={AvatarTypes.Profile}
         size={40}
@@ -64,20 +64,24 @@ const DisplayComment: React.FC<Props> = ({ comment, onReply }) => {
         image={avatar}
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1 text-sm">
-          <span className="font-semibold text-fontFocus">
+        <div className="flex items-center gap-1.5 text-[14px]">
+          <span className="font-semibold text-ink truncate">
             {comment?.author?.name || comment?.author?.username}
           </span>
-          <span className="text-fontTertiary">@{comment?.author?.username}</span>
-          <span className="text-fontTertiary">·</span>
-          <span className="text-fontTertiary">{timeAgoStringAbbreviation(new Date(comment.createdAt))}</span>
+          <span className="text-ink-3 font-mono text-[13px] truncate">
+            @{comment?.author?.username}
+          </span>
+          <span className="text-ink-4">·</span>
+          <span className="text-ink-3 font-mono text-[12px]">
+            {timeAgoStringAbbreviation(new Date(comment.createdAt))}
+          </span>
           {comment.edited && (
-            <span className="text-fontTertiary text-xs">(edited)</span>
+            <span className="text-ink-3 text-[11px] font-mono">(edited)</span>
           )}
         </div>
 
         {editing ? (
-          <div className="mt-1">
+          <div className="mt-1.5">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -92,60 +96,87 @@ const DisplayComment: React.FC<Props> = ({ comment, onReply }) => {
               }}
               autoFocus
               rows={Math.min(6, Math.max(2, draft.split('\n').length))}
-              className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1 text-sm text-fontFocus focus:border-white/30 focus:outline-none"
+              style={{ background: 'transparent' }}
+              className="
+                w-full rounded-[10px] border border-line hover:border-line-2 focus:border-brand-2
+                px-2.5 py-1.5 text-[14px] text-ink placeholder:text-ink-3
+                outline-none transition-colors duration-150
+              "
             />
-            <div className="mt-1 flex gap-2 text-xs">
+            <div className="mt-1.5 flex items-center gap-2 text-[11px] font-mono">
               <button
                 type="button"
                 onClick={saveEdit}
-                className="rounded-md bg-white/10 px-2 py-0.5 text-fontFocus hover:bg-white/20"
+                className="
+                  rounded-full bg-brand hover:bg-brand-2
+                  px-3 h-7 text-[12px] font-semibold text-ink
+                  transition-colors duration-150
+                "
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="rounded-md px-2 py-0.5 text-fontTertiary hover:text-fontFocus"
+                className="
+                  rounded-full px-3 h-7 text-[12px] font-medium
+                  text-ink-2 hover:bg-hover hover:text-ink
+                  transition-colors
+                "
               >
                 Cancel
               </button>
-              <span className="ml-auto text-fontTertiary">⌘+Enter to save · Esc to cancel</span>
+              <span className="ml-auto text-ink-3">⌘+Enter to save · Esc to cancel</span>
             </div>
           </div>
         ) : (
-          <div className="mt-0.5 text-fontPrimary text-sm leading-5">
+          <div className="mt-0.5 text-ink text-[15px] leading-snug">
             <RichRender value={comment.text} />
           </div>
         )}
 
         {!editing && (
-          <div className="mt-2 flex items-center gap-4 text-fontTertiary text-xs">
+          <div className="mt-2 flex items-center gap-5 text-ink-3">
             {onReply && (
               <button
                 type="button"
                 onClick={() => onReply(comment)}
-                className="flex items-center gap-1 hover:text-primary transition-colors"
+                className="
+                  group inline-flex items-center gap-1 px-1 py-1 rounded-full
+                  hover:text-brand-2 transition-colors duration-150
+                "
                 aria-label="Reply to this comment"
               >
                 <ChatAltIcon className="w-4 h-4" />
-                Reply
+                <span className="text-[12px] font-mono">Reply</span>
               </button>
             )}
             <button
               type="button"
               onClick={() => toggleLike()}
-              className={`flex items-center gap-1 hover:text-error transition-colors ${isLiked ? 'text-error' : ''}`}
+              className={[
+                'group inline-flex items-center gap-1 px-1 py-1 rounded-full',
+                'transition-colors duration-150',
+                isLiked ? 'text-pink-vivid' : 'hover:text-pink-vivid',
+              ].join(' ')}
               aria-label={isLiked ? 'Unlike' : 'Like'}
             >
-              {isLiked ? <HeartSolid className="w-4 h-4" /> : <HeartIcon className="w-4 h-4" />}
-              {likeCount > 0 && <span>{truncateLargeumbers(likeCount)}</span>}
+              {isLiked
+                ? <HeartSolid className="w-4 h-4" />
+                : <HeartIcon className="w-4 h-4" />}
+              <span className="text-[12px] font-mono min-w-[1ch] tabular-nums">
+                {truncateLargeumbers(likeCount)}
+              </span>
             </button>
             {isAuthor && (
               <>
                 <button
                   type="button"
                   onClick={startEdit}
-                  className="flex items-center gap-1 hover:text-primary transition-colors"
+                  className="
+                    inline-flex items-center px-1 py-1 rounded-full
+                    hover:text-brand-2 transition-colors duration-150
+                  "
                   aria-label="Edit comment"
                 >
                   <PencilIcon className="w-4 h-4" />
@@ -153,7 +184,10 @@ const DisplayComment: React.FC<Props> = ({ comment, onReply }) => {
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="flex items-center gap-1 hover:text-error transition-colors"
+                  className="
+                    inline-flex items-center px-1 py-1 rounded-full
+                    hover:text-pink-vivid transition-colors duration-150
+                  "
                   aria-label="Delete comment"
                 >
                   <TrashIcon className="w-4 h-4" />
