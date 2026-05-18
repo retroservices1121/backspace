@@ -59,6 +59,11 @@ export default function useConversations() {
       deselectConversation() {
         dispatch(messageActions.setActiveConversation(null as any));
       },
+      // Leave a conversation. The server hard-deletes if the caller
+      // was the last member.
+      removeConversation(conversationId: bigint) {
+        return dispatch(messageActions.removeConversation(conversationId));
+      },
       toggleDrawer,
     },
   };

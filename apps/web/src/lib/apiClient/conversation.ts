@@ -26,7 +26,11 @@ const Conversation = (route: string) => ({
     return axios().post(`${route}/`, { userId });
   },
   // edit() {},
-  // leave() {},
+  /** Leave the conversation. Server hard-deletes if the caller was
+      the last member. */
+  remove(conversationId: bigint) {
+    return axios().delete<{ id: string }>(`${route}/${conversationId}`);
+  },
 
   /** Includes pagination logic */
   getMessages(conversationId: bigint, lastId?: bigint) {

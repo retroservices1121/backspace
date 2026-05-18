@@ -36,8 +36,11 @@ const Navigation: React.FC = ({
   // MemberList drawer). The shell's RightRail would compete with the
   // MemberList for screen real estate and squish the channel feed,
   // so we hide it and let the community page span the full width
-  // (no 1320px cap).
+  // (no 1320px cap). /messages opts out for the same reason — the
+  // page has its own DM sidebar + conversation pane.
   const onCommunity = router.pathname.startsWith(APP.COMMUNITY.INDEX);
+  const onMessages = router.pathname.startsWith(APP.MESSAGES.INDEX);
+  const wideLayout = onCommunity || onMessages;
   const dispatch = useDispatch();
 
   const handleOpenPostModal = () => {
@@ -98,7 +101,7 @@ const Navigation: React.FC = ({
         <div
           className={[
             'relative isolate min-h-screen sm:text-ink sm:font-display',
-            onCommunity
+            wideLayout
               ? 'sm:grid sm:grid-cols-[280px_minmax(0,1fr)]'
               : 'sm:grid sm:grid-cols-[280px_minmax(0,680px)_360px] sm:max-w-[1320px] sm:mx-auto',
           ].join(' ')}
@@ -118,7 +121,7 @@ const Navigation: React.FC = ({
 
           <main className="min-w-0">{children}</main>
 
-          {!onCommunity && (
+          {!wideLayout && (
             <div className="hidden sm:block">
               <RightRail />
             </div>

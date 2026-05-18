@@ -74,6 +74,7 @@ export default function DirectMessageDrawer() {
             active={activeId === convo.id}
             conversation={convo as Conversation}
             handler={handleConversationClick(convo.id)}
+            onDelete={actions.removeConversation}
           />
         ))}
       </div>

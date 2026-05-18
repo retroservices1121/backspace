@@ -3,6 +3,8 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
+import HttpStatus from 'http-status-codes';
+
 import prisma from '@src/api2/prisma';
 import { buildID, buildSubscriptionChannel, SubEvents } from '@src/lib/ably';
 import { ablyLite } from '@src/lib/ablyServer';
@@ -74,10 +76,38 @@ handler.patch(async (req, res) => {
   throw new Error('Not Implemented yet');
 });
 
-// DELETE  /conversation/:id   Leave conversation (delete if all have left)
-handler.delete(async (req, res) => {
-  res.send('Not implemented');
-  throw new Error('Not Implemented yet');
+// DELETE /conversation/:id   Leave conversation (delete if all have left).
+// DM "delete" semantics: the caller leaves the conversation. If they
+// were the last member we tear down the row + its messages so we
+// don't leak orphans. Other members keep their copy.
+handler.delete(async (req: Rest<{ id: string }>, res) => {
+  const me = await prisma.user.findUnique({
+    where: { authId: req.authId },
+    select: { id: true },
+  });
+  if (!me) return res.status(HttpStatus.NOT_FOUND).end();
+
+  const convoId = BigInt(req.query.id);
+  const convo = await prisma.conversation.findUnique({
+    where: { id: convoId },
+    select: { id: true, members: { select: { id: true } } },
+  });
+  if (!convo) return res.status(HttpStatus.NOT_FOUND).end();
+
+  const isMember = convo.members.some((m) => m.id === me.id);
+  if (!isMember) return res.status(HttpStatus.FORBIDDEN).end();
+
+  await prisma.conversation.update({
+    where: { id: convoId },
+    data: { members: { disconnect: { id: me.id } } },
+  });
+
+  if (convo.members.length <= 1) {
+    await prisma.directMessage.deleteMany({ where: { conversationId: convoId } });
+    await prisma.conversation.delete({ where: { id: convoId } });
+  }
+
+  return res.status(HttpStatus.OK).json({ id: req.query.id });
 });
 
 export default handler;

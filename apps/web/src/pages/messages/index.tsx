@@ -71,6 +71,7 @@ const Messages: React.VFC = () => {
                     active={false}
                     conversation={convo as ConversationType}
                     handler={() => actions.changeConversation(convo.id)}
+                    onDelete={actions.removeConversation}
                   />
                 ))}
               </div>

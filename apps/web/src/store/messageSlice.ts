@@ -127,6 +127,19 @@ const newConversation = createAsyncThunk(
   },
 );
 
+// Leave a conversation. Server detaches the caller and tears down
+// the row if they were the last member. Either way, local state
+// drops the convo so the sidebar updates immediately.
+const removeConversation = createAsyncThunk<void, bigint>(
+  `${NAMESPACE}/removeConversation`,
+  async (conversationId, { dispatch }) => {
+    const { status } = await ApiClient.Conversation.remove(conversationId);
+    if (status >= 200 && status < 300) {
+      dispatch(messageActions.dropConversation(conversationId));
+    }
+  },
+);
+
 type ConversationState = Conversation & {
   lastId: bigint;
   canPaginate: boolean;
@@ -196,6 +209,13 @@ export const directMessageSlice = createSlice({
     setActiveConversation: (state, { payload }: PayloadAction<bigint>) => {
       state.activeConversation = payload;
     },
+    dropConversation: (state, { payload }: PayloadAction<bigint>) => {
+      const key = payload.toString();
+      delete state.conversations[key];
+      if (state.activeConversation?.toString() === key) {
+        state.activeConversation = null;
+      }
+    },
   },
   extraReducers: () => { /* subscribeMessages is a stub; no state mutation */ },
 });
@@ -207,6 +227,7 @@ export const messageActions = {
   changeConversation,
   newConversation,
   paginateMessages,
+  removeConversation,
   removeUserFromConversation,
   sendMessage,
 };
