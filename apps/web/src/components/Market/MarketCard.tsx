@@ -28,7 +28,9 @@ export type MarketCardData = {
   imageUrl: string | null;
   // Polymarket negative-risk flag — needed per order at trade time.
   negRisk: boolean;
-  closesAt: Date;
+  // Date over the wire is an ISO string (JSON has no Date type);
+  // accept both so consumers don't have to remember to coerce.
+  closesAt: Date | string;
   outcomes: MarketCardOutcome[];
 };
 
@@ -60,8 +62,13 @@ function pct(p: string | number | null | undefined) {
   return `${(n * 100).toFixed(0)}%`;
 }
 
-function timeUntil(d: Date) {
-  const ms = d.getTime() - Date.now();
+function timeUntil(d: Date | string) {
+  // Some callers (the catalog endpoint response) hand us an ISO string
+  // because JSON doesn't preserve Date objects; coerce defensively so
+  // d.getTime() doesn't blow up on the string path.
+  const date = d instanceof Date ? d : new Date(d);
+  const ms = date.getTime() - Date.now();
+  if (!Number.isFinite(ms)) return '—';
   if (ms <= 0) return 'closed';
   const days = Math.floor(ms / 86_400_000);
   if (days >= 1) return `${days}d`;

@@ -39,7 +39,7 @@ type Item = {
 
 function deriveActive(pathname: string): NavKey {
   if (pathname === APP.INDEX) return 'home';
-  if (pathname.startsWith(APP.DISCOVER.INDEX)) return 'markets';
+  if (pathname.startsWith(APP.MARKETS.INDEX)) return 'markets';
   if (pathname.startsWith(APP.COMMUNITY.INDEX)) return 'communities';
   if (pathname.startsWith(APP.MESSAGES.INDEX)) return 'messages';
   if (pathname.startsWith(APP.PORTFOLIO.INDEX)) return 'portfolio';
@@ -62,7 +62,7 @@ const LeftNav: React.FC = () => {
   // matches the design without dead 404s. Easy to wire as routes ship.
   const items: Item[] = [
     { key: 'home', label: 'Home', icon: I.home, href: APP.INDEX },
-    { key: 'markets', label: 'Markets', icon: I.markets, href: APP.DISCOVER.INDEX, badge: 'LIVE' },
+    { key: 'markets', label: 'Markets', icon: I.markets, href: APP.MARKETS.INDEX, badge: 'LIVE' },
     { key: 'communities', label: 'Communities', icon: I.comm, href: APP.COMMUNITY.INDEX },
     { key: 'notifications', label: 'Notifications', icon: I.bell, href: null, disabled: true },
     { key: 'messages', label: 'Messages', icon: I.mail, href: APP.MESSAGES.INDEX },

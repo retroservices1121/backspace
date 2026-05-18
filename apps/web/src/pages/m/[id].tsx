@@ -63,7 +63,7 @@ export default function MarketDetail() {
       <div className="px-6 pt-6 pb-4">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
-          <span className="cursor-pointer hover:text-ink" onClick={() => router.push(APP.DISCOVER.INDEX)}>
+          <span className="cursor-pointer hover:text-ink" onClick={() => router.push(APP.MARKETS.INDEX)}>
             Markets
           </span>
           <span className="text-ink-4">›</span>

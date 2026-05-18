@@ -1,4 +1,4 @@
-// /discover — standalone markets catalog page (the URL the LeftNav
+// /markets — standalone markets catalog page (the URL the LeftNav
 // 'Markets' item points at). Reuses the same /api/markets data and
 // CatalogMarketCard rendering as the home feed's Markets tab.
 //

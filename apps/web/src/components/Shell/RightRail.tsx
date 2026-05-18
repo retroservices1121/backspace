@@ -95,7 +95,7 @@ const RightRail: React.FC = () => {
     >
       <SearchBar />
 
-      <RailCard title="Trending markets" cta="See all →" ctaHref="/discover">
+      <RailCard title="Trending markets" cta="See all →" ctaHref="/markets">
         {markets.isLoading && <Placeholder text="Loading…" />}
         {markets.data?.slice(0, 5).map((m) => (
           <TrendingMarketRow key={m.id} market={m} />
@@ -196,7 +196,7 @@ function TrendingMarketRow({ market }: { market: MarketLite }) {
   const thumb = thumbFor(market.category);
 
   return (
-    <Link href="/discover">
+    <Link href="/markets">
       <div className="flex items-center gap-3 cursor-pointer py-1.5 hover:bg-hover -mx-2 px-2 rounded-lg transition-colors">
         <div className="w-9 h-9 rounded-[7px] bg-surface-2 border border-line flex-none overflow-hidden">
           {thumb && <img src={thumb} alt="" className="w-full h-full object-cover" />}

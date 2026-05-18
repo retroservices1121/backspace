@@ -29,8 +29,15 @@ export const APP = {
       username: string,
     ) => `/${username}`,
   },
+  // Catalog of tradeable markets. URL is /markets to match the LeftNav
+  // label; the namespace name follows.
+  MARKETS: {
+    INDEX: `${baseRoute}/markets`,
+  },
+  // Back-compat alias — kept so any out-of-tree callers / saved links
+  // still resolve to the same route. New code should use APP.MARKETS.
   DISCOVER: {
-    INDEX: `${baseRoute}/discover`,
+    INDEX: `${baseRoute}/markets`,
   },
   MESSAGES: {
     INDEX: `${baseRoute}/messages`,
