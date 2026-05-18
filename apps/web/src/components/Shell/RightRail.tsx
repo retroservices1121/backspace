@@ -14,8 +14,10 @@
 import React from 'react';
 import { useQuery } from 'react-query';
 import Link from 'next/link';
+import type { Media } from '@prisma/client';
 
 import axios from '@src/lib/axios';
+import useMedia from '@src/hooks/useMedia';
 
 import { ShellIcons as I } from './icons';
 
@@ -33,7 +35,10 @@ type LeaderRow = {
   userId: string;
   username: string;
   name: string;
-  avatar: string | null;
+  // Media row — resolved client-side via useMedia. host is a
+  // StorageLocation enum (R2, FIREBASE, etc.), so we can't build the
+  // URL on the server without coupling to storage drivers.
+  avatar: Media | null;
   resolvedPositions: number;
   correctPositions: number;
   accuracyPct: number;
@@ -45,7 +50,7 @@ type TrendingCommunity = {
   uuid: string;
   name: string;
   description: string;
-  avatar: string | null;
+  avatar: Media | null;
   memberCount: number;
 };
 
@@ -220,6 +225,7 @@ function TrendingMarketRow({ market }: { market: MarketLite }) {
 function LeaderboardRow({
   rank, name, username, avatar, accuracyPct, resolvedPositions,
 }: LeaderRow) {
+  const avatarUrl = useMedia(avatar);
   const accent =
     rank === 1 ? 'text-gold' : rank === 2 ? 'text-ink-2' : 'text-ink-3';
   return (
@@ -228,9 +234,9 @@ function LeaderboardRow({
         <span className={['text-[12px] font-mono w-7 text-center', accent].join(' ')}>
           #{rank}
         </span>
-        {avatar ? (
+        {avatarUrl ? (
           <img
-            src={avatar}
+            src={avatarUrl}
             alt=""
             className="w-9 h-9 rounded-full flex-none object-cover"
           />
@@ -258,12 +264,13 @@ function LeaderboardRow({
 }
 
 function CommunityRow({ community }: { community: TrendingCommunity }) {
+  const avatarUrl = useMedia(community.avatar);
   return (
     <Link href={`/community/${community.uuid}`}>
       <div className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-hover -mx-2 px-2 rounded-lg transition-colors">
-        {community.avatar ? (
+        {avatarUrl ? (
           <img
-            src={community.avatar}
+            src={avatarUrl}
             alt=""
             className="w-8 h-8 rounded-[7px] flex-none object-cover"
           />

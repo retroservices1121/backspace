@@ -41,7 +41,10 @@ handler.get(async (req: NextApiRequest, res: NextApiResponse) => {
           id: true,
           username: true,
           name: true,
-          avatar: { select: { path: true, host: true } },
+          // Full Media row — client resolves the URL via useMedia.
+          // host is a StorageLocation enum, not a hostname, so we
+          // can't safely stringify the URL here.
+          avatar: true,
         },
       },
     },
@@ -53,9 +56,7 @@ handler.get(async (req: NextApiRequest, res: NextApiResponse) => {
     userId: r.userId.toString(),
     username: r.user?.username ?? '',
     name: r.user?.name ?? r.user?.username ?? '',
-    avatar: r.user?.avatar
-      ? `https://${r.user.avatar.host}/${r.user.avatar.path}`
-      : null,
+    avatar: r.user?.avatar ?? null,
     resolvedPositions: r.resolvedPositions,
     correctPositions: r.correctPositions,
     accuracyPct:

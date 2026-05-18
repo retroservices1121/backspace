@@ -37,7 +37,10 @@ handler.get(async (req: NextApiRequest, res: NextApiResponse) => {
       uuid: true,
       name: true,
       description: true,
-      avatar: { select: { path: true, host: true } },
+      // Return the full Media row so the client can resolve via the
+      // proper storage driver (mediaToURL). Naive https://host/path
+      // doesn't work — host is a StorageLocation enum, not an FQDN.
+      avatar: true,
       _count: { select: { members: true } },
     },
   });
@@ -47,9 +50,7 @@ handler.get(async (req: NextApiRequest, res: NextApiResponse) => {
     uuid: c.uuid,
     name: c.name,
     description: c.description,
-    avatar: c.avatar
-      ? `https://${c.avatar.host}/${c.avatar.path}`
-      : null,
+    avatar: c.avatar ?? null,
     memberCount: c._count.members,
   }));
 
