@@ -1,12 +1,15 @@
-// Right rail (360px) — desktop only. Stack of cards from the design:
+// Right rail (360px) — desktop only. Stack of cards:
 //   1. Search bar         — UI only (typeahead route TBD)
-//   2. Trending markets   — REAL: top 5 active markets (soonest-closing)
-//   3. Top traders        — STUB sample data, "Coming soon" footer
-//   4. Communities        — STUB
-//   5. Trending tags      — STUB
+//   2. Trending markets   — REAL: top 5 by closesAt soon
+//   3. Top traders        — REAL: /api/users/leaderboard (publicAccuracy)
+//   4. Communities        — REAL: /api/communities/trending (member count)
 //
-// Real-data sources are kept narrow (one query, one widget) so we
-// don't pull more than the rail needs.
+// Trending tags card removed — we don't have a real signal source for
+// it yet, so showing fake tags would mislead. Add back when we ship
+// real tag tracking.
+//
+// Each card has its own honest empty state when its endpoint returns
+// nothing (no fake placeholder data).
 
 import React from 'react';
 import { useQuery } from 'react-query';
@@ -25,8 +28,39 @@ type MarketLite = {
   outcomes: Array<{ label: string; lastPrice: string | null }>;
 };
 
+type LeaderRow = {
+  rank: number;
+  userId: string;
+  username: string;
+  name: string;
+  avatar: string | null;
+  resolvedPositions: number;
+  correctPositions: number;
+  accuracyPct: number;
+  rankingScore: string;
+};
+
+type TrendingCommunity = {
+  id: string;
+  uuid: string;
+  name: string;
+  description: string;
+  avatar: string | null;
+  memberCount: number;
+};
+
 async function fetchTrendingMarkets(): Promise<MarketLite[]> {
   const { data } = await axios().get<MarketLite[]>('/markets?limit=5');
+  return data ?? [];
+}
+
+async function fetchLeaderboard(): Promise<LeaderRow[]> {
+  const { data } = await axios().get<LeaderRow[]>('/users/leaderboard?limit=4');
+  return data ?? [];
+}
+
+async function fetchTrendingCommunities(): Promise<TrendingCommunity[]> {
+  const { data } = await axios().get<TrendingCommunity[]>('/communities/trending?limit=4');
   return data ?? [];
 }
 
@@ -34,6 +68,14 @@ const RightRail: React.FC = () => {
   const markets = useQuery(['trending-markets'], fetchTrendingMarkets, {
     refetchInterval: 60_000,
     staleTime: 30_000,
+  });
+  const leaders = useQuery(['top-traders'], fetchLeaderboard, {
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+  });
+  const communities = useQuery(['trending-communities'], fetchTrendingCommunities, {
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
   });
 
   return (
@@ -49,45 +91,29 @@ const RightRail: React.FC = () => {
       <SearchBar />
 
       <RailCard title="Trending markets" cta="See all →" ctaHref="/discover">
-        {markets.isLoading && (
-          <div className="px-1 py-2 text-[12px] text-ink-3">Loading…</div>
-        )}
+        {markets.isLoading && <Placeholder text="Loading…" />}
         {markets.data?.slice(0, 5).map((m) => (
           <TrendingMarketRow key={m.id} market={m} />
         ))}
         {markets.data && markets.data.length === 0 && (
-          <div className="px-1 py-2 text-[12px] text-ink-3">
-            No active markets yet.
-          </div>
+          <Placeholder text="No active markets yet." />
         )}
       </RailCard>
 
-      <RailCard title="Top traders · this week" cta="Leaderboard →">
-        {SAMPLE_TRADERS.map((t) => (
-          <LeaderboardRow key={t.handle} {...t} />
-        ))}
-        <ComingSoonNote text="Leaderboard launches with the next accuracy snapshot." />
+      <RailCard title="Top traders" cta="Leaderboard →">
+        {leaders.isLoading && <Placeholder text="Loading…" />}
+        {leaders.data?.map((t) => <LeaderboardRow key={t.userId} {...t} />)}
+        {leaders.data && leaders.data.length === 0 && (
+          <Placeholder text="Leaderboard fills as accuracy resolves on settled positions." />
+        )}
       </RailCard>
 
-      <RailCard title="Communities to join" cta="Explore →">
-        {SAMPLE_COMMUNITIES.map((c) => (
-          <CommunityRow key={c.name} {...c} />
-        ))}
-        <ComingSoonNote text="Recommendations roll out as community signals stabilize." />
-      </RailCard>
-
-      <RailCard title="Trending tags">
-        <div className="flex flex-col gap-3">
-          {SAMPLE_TAGS.map((t) => (
-            <div key={t.name} className="flex flex-col gap-0.5">
-              <div className="text-[10px] uppercase tracking-[0.06em] text-ink-3 font-mono">
-                {t.type}
-              </div>
-              <div className="text-[14px] font-semibold text-ink">{t.name}</div>
-              <div className="text-[11px] text-ink-3 font-mono">{t.sub}</div>
-            </div>
-          ))}
-        </div>
+      <RailCard title="Communities to join" cta="Explore →" ctaHref="/community">
+        {communities.isLoading && <Placeholder text="Loading…" />}
+        {communities.data?.map((c) => <CommunityRow key={c.id} community={c} />)}
+        {communities.data && communities.data.length === 0 && (
+          <Placeholder text="No public communities yet." />
+        )}
       </RailCard>
     </aside>
   );
@@ -148,6 +174,10 @@ function RailCard({
   );
 }
 
+function Placeholder({ text }: { text: string }) {
+  return <div className="px-1 py-2 text-[12px] text-ink-3">{text}</div>;
+}
+
 function TrendingMarketRow({ market }: { market: MarketLite }) {
   // Binary markets have a YES outcome with lastPrice ∈ [0,1].
   // Multi-outcome markets pick the leading outcome for the rail.
@@ -188,65 +218,69 @@ function TrendingMarketRow({ market }: { market: MarketLite }) {
 }
 
 function LeaderboardRow({
-  rank, name, handle, pnl, wins, accent,
-}: typeof SAMPLE_TRADERS[number]) {
+  rank, name, username, avatar, accuracyPct, resolvedPositions,
+}: LeaderRow) {
+  const accent =
+    rank === 1 ? 'text-gold' : rank === 2 ? 'text-ink-2' : 'text-ink-3';
   return (
-    <div className="flex items-center gap-3 py-1.5">
-      <span
-        className={[
-          'text-[12px] font-mono w-7 text-center',
-          accent === 'gold' ? 'text-gold' : accent === 'silver' ? 'text-ink-2' : 'text-ink-3',
-        ].join(' ')}
-      >
-        #{rank}
-      </span>
-      <div
-        className="w-9 h-9 rounded-full flex-none"
-        style={{ background: 'linear-gradient(135deg,#5822FB,#FF8800)' }}
-      />
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium text-ink truncate">{name}</div>
-        <div className="text-[11px] text-ink-3 font-mono truncate">
-          {handle} · {wins}
+    <Link href={`/${username}`}>
+      <div className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-hover -mx-2 px-2 rounded-lg transition-colors">
+        <span className={['text-[12px] font-mono w-7 text-center', accent].join(' ')}>
+          #{rank}
+        </span>
+        {avatar ? (
+          <img
+            src={avatar}
+            alt=""
+            className="w-9 h-9 rounded-full flex-none object-cover"
+          />
+        ) : (
+          <div
+            className="w-9 h-9 rounded-full flex-none"
+            style={{ background: 'linear-gradient(135deg,#5822FB,#FF8800)' }}
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-medium text-ink truncate">{name}</div>
+          <div className="text-[11px] text-ink-3 font-mono truncate">
+            @{username} · {resolvedPositions} resolved
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[13px] font-mono font-semibold text-green-2">
+            {accuracyPct}%
+          </div>
+          <div className="text-[10px] text-ink-3 font-mono">accuracy</div>
         </div>
       </div>
-      <div className="text-right">
-        <div className="text-[13px] font-mono font-semibold text-green-2">{pnl}</div>
-        <div className="text-[10px] text-ink-3 font-mono">7d P&amp;L</div>
-      </div>
-    </div>
+    </Link>
   );
 }
 
-function CommunityRow({ name, sub, color }: typeof SAMPLE_COMMUNITIES[number]) {
+function CommunityRow({ community }: { community: TrendingCommunity }) {
   return (
-    <div className="flex items-center gap-3 py-1.5">
-      <div
-        className="w-8 h-8 rounded-[7px] flex-none"
-        style={{ background: color }}
-      />
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium text-ink truncate">{name}</div>
-        <div className="text-[11px] text-ink-3 font-mono truncate">{sub}</div>
+    <Link href={`/community/${community.uuid}`}>
+      <div className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-hover -mx-2 px-2 rounded-lg transition-colors">
+        {community.avatar ? (
+          <img
+            src={community.avatar}
+            alt=""
+            className="w-8 h-8 rounded-[7px] flex-none object-cover"
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-[7px] flex-none"
+            style={{ background: 'linear-gradient(135deg,#5822FB,#FF8800)' }}
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-medium text-ink truncate">{community.name}</div>
+          <div className="text-[11px] text-ink-3 font-mono truncate">
+            {community.memberCount} {community.memberCount === 1 ? 'member' : 'members'}
+          </div>
+        </div>
       </div>
-      <button
-        type="button"
-        className="
-          px-3 py-1 rounded-full text-[12px] font-semibold
-          bg-ink text-canvas hover:opacity-90 transition-opacity
-        "
-      >
-        Join
-      </button>
-    </div>
-  );
-}
-
-function ComingSoonNote({ text }: { text: string }) {
-  return (
-    <div className="text-[10px] uppercase tracking-[0.06em] text-ink-4 font-mono pt-2 border-t border-line">
-      {text}
-    </div>
+    </Link>
   );
 }
 
@@ -266,26 +300,5 @@ function thumbFor(category?: string | null): string | null {
   if (c.includes('culture')) return '/webui/thumbs/culture.png';
   return null;
 }
-
-// Sample data — replaces real backend when one ships. Worth keeping
-// thin so the visual lands without faking volume on the page.
-const SAMPLE_TRADERS = [
-  { rank: 1, name: 'venn',      handle: '@venn',      pnl: '+184.2k', wins: '74% W', accent: 'gold' as const },
-  { rank: 2, name: 'ck',        handle: '@ck',        pnl: '+126.8k', wins: '68% W', accent: 'silver' as const },
-  { rank: 3, name: 'macro_dad', handle: '@macro_dad', pnl: '+98.3k',  wins: '62% W', accent: null as null },
-  { rank: 4, name: '0xfeline',  handle: '@0xfeline',  pnl: '+71.0k',  wins: '58% W', accent: null as null },
-];
-
-const SAMPLE_COMMUNITIES = [
-  { name: 'Degenerates', sub: '12.4k members · 240/day', color: '#ff5470' },
-  { name: 'Macro Heads', sub: '8.2k members · 90/day',   color: '#1C70F5' },
-  { name: 'Onchain',     sub: '22.1k members · 410/day', color: '#FFB44C' },
-];
-
-const SAMPLE_TAGS = [
-  { type: 'Topic · in markets', name: '$ETH spot ETF', sub: '312 markets · $4.1M volume' },
-  { type: 'Trending · 1h',      name: '#OpenAIIPO',    sub: '8.4k posts' },
-  { type: 'Topic · in markets', name: '$SOL',          sub: '198 markets · $2.7M volume' },
-];
 
 export default RightRail;
