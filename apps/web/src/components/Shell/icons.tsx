@@ -65,22 +65,23 @@ export const ShellIcons = {
       <path d="M12 2l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6L4 9l5.5-1.5z"/>
     </svg>
   ),
-  // Verified badge for individuals — Twitter-style scalloped body in
-  // currentColor (set brand-purple at the call site) + explicit white
-  // check overlay. Two separate paths so the body fills solidly
-  // instead of relying on evenodd holes.
+  // Verified badge for individuals. Body and check colors are
+  // hardcoded so they don't depend on currentColor inheritance —
+  // earlier attempts to drive the body via text-brand-2 rendered
+  // as white in some contexts. Brand-2 purple silhouette + white
+  // check inside; matches the X verified look.
   verified: (p: IconProps = {}) => (
     <svg viewBox="0 0 24 24" className={p.className}>
-      <path fill="currentColor" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"/>
+      <path fill="#7B4CFF" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"/>
       <path fill="#fff" d="M10.54 16.2L6.8 12.46l1.41-1.42 2.26 2.26 4.85-5.23 1.46 1.36-6.24 6.77z"/>
     </svg>
   ),
-  // Verified badge for organizations — hexagon silhouette + dark
-  // check so it reads against the white body (set text-ink at the
-  // call site for the white body).
+  // Verified badge for organizations — white hexagon body, dark
+  // check on top. Colors hardcoded for the same reason as the
+  // person badge.
   verifiedOrg: (p: IconProps = {}) => (
     <svg viewBox="0 0 24 24" className={p.className}>
-      <path fill="currentColor" d="M20.5 12L16.25 19.4 7.75 19.4 3.5 12 7.75 4.6 16.25 4.6 20.5 12z"/>
+      <path fill="#fff" d="M20.5 12L16.25 19.4 7.75 19.4 3.5 12 7.75 4.6 16.25 4.6 20.5 12z"/>
       <path fill="#0c0a16" d="M10.54 16.2L6.8 12.46l1.41-1.42 2.26 2.26 4.85-5.23 1.46 1.36-6.24 6.77z"/>
     </svg>
   ),
