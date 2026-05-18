@@ -75,6 +75,12 @@ type RawMarket = {
   outcomes?: string;
   outcomePrices?: string;
   clobTokenIds?: string;
+  // Gamma exposes both a string and a numeric flavor for these.
+  // Prefer the string; fall back to stringifying the numeric.
+  volume?: string | number | null;
+  volumeNum?: number | null;
+  volume24hr?: string | number | null;
+  liquidity?: string | number | null;
 };
 
 type RawTag = { label?: string; slug?: string };
@@ -97,6 +103,10 @@ type RawEvent = {
   endDate?: string | null;
   tags?: RawTag[];
   markets?: RawMarket[];
+  // Aggregated event volume (sums across sub-markets on negRisk events).
+  volume?: string | number | null;
+  volume24hr?: string | number | null;
+  liquidity?: string | number | null;
 };
 
 export class PolymarketAdapter implements MarketVenue {
@@ -214,6 +224,38 @@ function parseDate(iso: string | null | undefined): Date | null {
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
+// Gamma sends volume / liquidity as either a string ("12345.67") or a
+// number. Normalize to a fixed-string Cents value so the importer
+// stores a Decimal cleanly. Returns null for missing/0/invalid so the
+// DB column stays null rather than "0" (sort orders treat null as
+// "no data" rather than "least").
+function toCentsOrNull(v: string | number | null | undefined): string | null {
+  if (v == null) return null;
+  const n = typeof v === 'number' ? v : Number.parseFloat(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n.toFixed(6);
+}
+
+// Sum volume fields across an event's sub-markets. Used as a fallback
+// when the event row itself doesn't expose aggregated volume.
+function sumMarketField(
+  markets: RawMarket[] | undefined,
+  pick: (m: RawMarket) => string | number | null | undefined,
+): string | null {
+  if (!markets || markets.length === 0) return null;
+  let total = 0;
+  let saw = false;
+  for (const m of markets) {
+    const raw = pick(m);
+    if (raw == null) continue;
+    const n = typeof raw === 'number' ? raw : Number.parseFloat(raw);
+    if (!Number.isFinite(n)) continue;
+    total += n;
+    saw = true;
+  }
+  return saw && total > 0 ? total.toFixed(6) : null;
+}
+
 function clampLimit(requested: number | undefined): number {
   if (!requested || requested <= 0) return 50;
   return Math.min(requested, 200);
@@ -277,6 +319,18 @@ function mapNegRiskEvent(event: RawEvent): VenueMarket | null {
   // Highest-probability candidates first, then cap the long tail.
   outcomes.sort((a, b) => Number(b.lastPrice ?? 0) - Number(a.lastPrice ?? 0));
 
+  // Volume: prefer event-level aggregate when present, otherwise sum
+  // the sub-markets so a negRisk event still gets ranked.
+  const volumeUsd =
+    toCentsOrNull(event.volume) ??
+    sumMarketField(event.markets, (m) => m.volume ?? m.volumeNum ?? null);
+  const volume24hUsd =
+    toCentsOrNull(event.volume24hr) ??
+    sumMarketField(event.markets, (m) => m.volume24hr ?? null);
+  const liquidityUsd =
+    toCentsOrNull(event.liquidity) ??
+    sumMarketField(event.markets, (m) => m.liquidity ?? null);
+
   return {
     venue: 'POLYMARKET',
     externalId: `${EVENT_PREFIX}${event.id}`,
@@ -293,6 +347,9 @@ function mapNegRiskEvent(event: RawEvent): VenueMarket | null {
     opensAt: parseDate(event.startDate),
     resolvedAt: event.closed ? closesAt : null,
     closesAt,
+    volumeUsd,
+    volume24hUsd,
+    liquidityUsd,
     outcomes: outcomes.slice(0, MAX_OUTCOMES_PER_MARKET),
   };
 }
@@ -321,6 +378,9 @@ function mapRawMarket(raw: RawMarket): VenueMarket | null {
     opensAt: parseDate(raw.startDate) ?? parseDate(raw.startDateIso),
     resolvedAt: raw.closed ? closesAt : null,
     closesAt,
+    volumeUsd: toCentsOrNull(raw.volume ?? raw.volumeNum),
+    volume24hUsd: toCentsOrNull(raw.volume24hr),
+    liquidityUsd: toCentsOrNull(raw.liquidity),
     outcomes: zipOutcomes(raw),
   };
 }

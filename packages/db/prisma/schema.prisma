@@ -722,6 +722,14 @@ model Market {
   opensAt         DateTime?
   closesAt        DateTime
   resolvedAt      DateTime?
+  // Volume + depth snapshots from the venue (Polymarket Gamma).
+  // Refreshed on every catalog import sweep — not real-time, but
+  // good enough for ranking ("trending" = highest 24h volume,
+  // "high volume" = highest all-time). Decimal so USD math stays
+  // exact; nullable because legacy rows pre-date the field.
+  volumeUsd       Decimal?      @db.Decimal(20, 6)
+  volume24hUsd    Decimal?      @db.Decimal(20, 6)
+  liquidityUsd    Decimal?      @db.Decimal(20, 6)
   community       Community?    @relation(fields: [communityId], references: [id])
   communityId     BigInt?
   creator         User?         @relation(name: "marketCreator", fields: [creatorId], references: [id])
@@ -735,6 +743,10 @@ model Market {
   @@unique([venue, externalId], name: "venueExternalId")
   @@index([status, closesAt])
   @@index([communityId])
+  // Sort indexes for the /markets catalog page. (status filter +
+  // ORDER BY one of these.)
+  @@index([status, volumeUsd])
+  @@index([status, volume24hUsd])
 }
 
 // Spot-tradeable token catalog. Solana SPL tokens that Dflow's

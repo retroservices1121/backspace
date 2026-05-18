@@ -1,21 +1,61 @@
-// GET /api/markets — list active markets, soonest-closing first.
+// GET /api/markets — list active markets with selectable sort.
 //
-// Powers the "Markets" feed filter (browse the catalog directly without
-// a Post wrapper). Wire shape mirrors GET /api/markets/[id]: venue +
-// externalId + question + outcomes (Decimal columns serialized as
-// strings, never floats), one row per market.
+// Powers the "Markets" feed filter and the /markets catalog page.
+// Wire shape mirrors GET /api/markets/[id]: venue + externalId +
+// question + outcomes (Decimal columns serialized as strings, never
+// floats), plus volume snapshots refreshed by the import cron.
 //
-// Identity is required so the route is consistent with the rest of the
-// signed-in app, but the response is not user-scoped — every signed-in
-// user sees the same catalog snapshot.
+// Identity required for consistency, but the response is not
+// user-scoped — every signed-in user sees the same catalog snapshot.
+//
+// Sorts:
+//   closing  (default) — soonest closing first (closesAt asc)
+//   trending           — highest 24h volume (volume24hUsd desc)
+//   volume             — highest all-time volume (volumeUsd desc)
+//   volume_asc         — lowest all-time volume first
+// All volume sorts put NULL volumes last so freshly-imported markets
+// without a snapshot don't appear above ranked ones.
 
-import { MarketStatus } from '@prisma/client';
+import { MarketStatus, Prisma } from '@prisma/client';
 
 import prisma from '@src/api2/prisma';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
+
+type SortKey = 'closing' | 'trending' | 'volume' | 'volume_asc';
+
+const SORT_KEYS: ReadonlySet<SortKey> = new Set(['closing', 'trending', 'volume', 'volume_asc']);
+
+function parseSort(raw: unknown): SortKey {
+  return typeof raw === 'string' && SORT_KEYS.has(raw as SortKey)
+    ? (raw as SortKey)
+    : 'closing';
+}
+
+function orderByFor(sort: SortKey): Prisma.MarketOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'trending':
+      return [
+        { volume24hUsd: { sort: 'desc', nulls: 'last' } },
+        { closesAt: 'asc' },
+      ];
+    case 'volume':
+      return [
+        { volumeUsd: { sort: 'desc', nulls: 'last' } },
+        { closesAt: 'asc' },
+      ];
+    case 'volume_asc':
+      return [
+        { volumeUsd: { sort: 'asc', nulls: 'last' } },
+        { closesAt: 'asc' },
+      ];
+    case 'closing':
+    default:
+      return [{ closesAt: 'asc' }];
+  }
+}
 
 const handler = createHandler();
 handler.use(requireAuthMiddleware);
@@ -29,6 +69,7 @@ handler.get(async (req, res) => {
   // Optional question search — powers the CreatePost market picker
   // typeahead. Case-insensitive substring; ignored when empty/short.
   const q = ((req.query.q as string) ?? '').trim();
+  const sort = parseSort(req.query.sort);
 
   const markets = await prisma.market.findMany({
     where: {
@@ -39,7 +80,7 @@ handler.get(async (req, res) => {
         : {}),
     },
     include: { outcomes: true },
-    orderBy: { closesAt: 'asc' },
+    orderBy: orderByFor(sort),
     take: limit,
   });
 
@@ -59,6 +100,9 @@ handler.get(async (req, res) => {
       opensAt: m.opensAt,
       closesAt: m.closesAt,
       resolvedAt: m.resolvedAt,
+      volumeUsd: m.volumeUsd ? m.volumeUsd.toString() : null,
+      volume24hUsd: m.volume24hUsd ? m.volume24hUsd.toString() : null,
+      liquidityUsd: m.liquidityUsd ? m.liquidityUsd.toString() : null,
       outcomes: m.outcomes.map((o) => ({
         externalId: o.externalId,
         label: o.label,

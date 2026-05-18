@@ -1,15 +1,16 @@
 // /markets — standalone markets catalog page (the URL the LeftNav
 // 'Markets' item points at). Reuses /api/markets and CatalogMarketCard.
 //
-// Sort: the API returns active markets ordered by closesAt asc
-// (soonest closing first). A small caption surfaces this so users
-// know why a particular market is at the top.
+// Sort options: passed through to /api/markets?sort=. 'trending' is
+// volume24hr desc (what's hot now); 'volume' / 'volume_asc' are total
+// volume desc/asc; 'closing' is closesAt asc (the original default).
+// Volume snapshots come from the Polymarket Gamma import.
 //
 // Filter affordance: category dropdown (derived from categories
 // actually present in the loaded catalog) + a free-text search box.
 // When the search box has ≥2 chars we ignore the category and ask
 // the API for a substring match (/api/markets?q=...), so users can
-// jump to a market that isn't in the soonest-closing window.
+// jump to a market that isn't in the loaded window.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from 'react-query';
@@ -28,8 +29,19 @@ import TopTabs from 'components/Shell/TopTabs';
 const ALL = 'all';
 const SEARCH_MIN = 2;
 
-async function fetchCatalog(): Promise<MarketCardData[]> {
-  const { data } = await axios().get<MarketCardData[]>('/markets?limit=100');
+type SortKey = 'trending' | 'volume' | 'volume_asc' | 'closing';
+
+const SORTS: Array<{ key: SortKey; label: string; sub: string }> = [
+  { key: 'trending',   label: 'Trending',         sub: 'Highest 24h volume' },
+  { key: 'volume',     label: 'High volume',      sub: 'Most traded all-time' },
+  { key: 'volume_asc', label: 'Low volume',       sub: 'Find under-the-radar markets' },
+  { key: 'closing',    label: 'Soonest closing',  sub: 'Resolving first' },
+];
+
+async function fetchCatalog(sort: SortKey): Promise<MarketCardData[]> {
+  const { data } = await axios().get<MarketCardData[]>(
+    `/markets?limit=100&sort=${sort}`,
+  );
   return data ?? [];
 }
 
@@ -54,33 +66,42 @@ const Markets: React.FC = () => {
   const dispatch = useAppDispatch();
   const [category, setCategory] = useState<string>(ALL);
   const [catOpen, setCatOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>('trending');
+  const [sortOpen, setSortOpen] = useState(false);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounced(query.trim(), 250);
   const catRef = useRef<HTMLDivElement>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(setPageTitle('Markets'));
   }, []);
 
-  // Close the category dropdown on outside click.
+  // Close the dropdowns on outside click. One handler watches both
+  // refs so a click into the other popover doesn't bounce.
   useEffect(() => {
-    if (!catOpen) return;
+    if (!catOpen && !sortOpen) return;
     const onDown = (e: MouseEvent) => {
-      if (catRef.current && !catRef.current.contains(e.target as Node)) {
+      const t = e.target as Node;
+      if (catOpen && catRef.current && !catRef.current.contains(t)) {
         setCatOpen(false);
+      }
+      if (sortOpen && sortRef.current && !sortRef.current.contains(t)) {
+        setSortOpen(false);
       }
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [catOpen]);
+  }, [catOpen, sortOpen]);
 
   const catalog = useQuery(
-    ['markets-catalog'],
-    fetchCatalog,
+    ['markets-catalog', sort],
+    () => fetchCatalog(sort),
     {
       enabled: authState === AuthStatus.SignedIn,
       refetchInterval: 60_000,
       staleTime: 30_000,
+      keepPreviousData: true,
     },
   );
 
@@ -126,6 +147,7 @@ const Markets: React.FC = () => {
 
   const activeCatLabel =
     categories.find((c) => c.key === category)?.label ?? 'All categories';
+  const activeSortLabel = SORTS.find((s) => s.key === sort)?.label ?? 'Trending';
 
   return (
     <>
@@ -195,9 +217,64 @@ const Markets: React.FC = () => {
             )}
           </div>
 
-          <span className="text-[11px] font-mono text-ink-3">
-            Sorted by soonest closing
-          </span>
+          <div className="relative" ref={sortRef}>
+            <button
+              type="button"
+              onClick={() => setSortOpen((v) => !v)}
+              className="
+                inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                border border-line bg-surface text-ink text-[13px] font-medium
+                hover:border-brand-2/50 transition-colors duration-150
+              "
+            >
+              <span className="text-ink-3 text-[11px] font-mono">Sort:</span>
+              <span>{activeSortLabel}</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {sortOpen && (
+              <div
+                className="
+                  absolute z-20 mt-1 w-[260px]
+                  rounded-[12px] border border-line bg-surface
+                  shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
+                "
+              >
+                {SORTS.map((s) => {
+                  const isActive = s.key === sort;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => {
+                        setSort(s.key);
+                        setSortOpen(false);
+                      }}
+                      className={[
+                        'w-full text-left px-2.5 py-2 rounded-[8px]',
+                        'transition-colors duration-150',
+                        isActive ? 'bg-brand-soft' : 'hover:bg-hover',
+                      ].join(' ')}
+                    >
+                      <div
+                        className={[
+                          'text-[13px] font-semibold',
+                          isActive ? 'text-brand-2' : 'text-ink',
+                        ].join(' ')}
+                      >
+                        {s.label}
+                      </div>
+                      <div className="text-[11px] font-mono text-ink-3">
+                        {s.sub}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="relative">

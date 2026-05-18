@@ -120,6 +120,11 @@ async function upsertVenueMarket(vm: VenueMarket): Promise<boolean> {
     opensAt: vm.opensAt,
     closesAt: vm.closesAt,
     resolvedAt: vm.resolvedAt,
+    // Volume snapshots refresh every import sweep. Prisma accepts
+    // string values for Decimal; null when the venue didn't report.
+    volumeUsd: vm.volumeUsd,
+    volume24hUsd: vm.volume24hUsd,
+    liquidityUsd: vm.liquidityUsd,
   };
 
   let marketId: bigint;

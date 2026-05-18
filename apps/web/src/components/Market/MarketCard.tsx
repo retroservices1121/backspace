@@ -31,6 +31,12 @@ export type MarketCardData = {
   // Date over the wire is an ISO string (JSON has no Date type);
   // accept both so consumers don't have to remember to coerce.
   closesAt: Date | string;
+  // Volume snapshots from the venue (USD). Strings to preserve
+  // precision; null when the venue didn't report or the catalog
+  // import predates the field.
+  volumeUsd?: string | null;
+  volume24hUsd?: string | null;
+  liquidityUsd?: string | null;
   outcomes: MarketCardOutcome[];
 };
 
