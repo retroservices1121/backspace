@@ -431,8 +431,8 @@ function ActionButton({
       ].join(' ')}
     >
       {children}
-      <span className="text-[12px] font-mono min-w-[1ch]">
-        {count > 0 ? truncateLargeumbers(count) : ''}
+      <span className="text-[12px] font-mono min-w-[1ch] tabular-nums">
+        {truncateLargeumbers(count)}
       </span>
     </button>
   );
