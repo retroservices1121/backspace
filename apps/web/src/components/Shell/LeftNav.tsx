@@ -43,6 +43,7 @@ function deriveActive(pathname: string): NavKey {
   if (pathname.startsWith(APP.COMMUNITY.INDEX)) return 'communities';
   if (pathname.startsWith(APP.MESSAGES.INDEX)) return 'messages';
   if (pathname.startsWith(APP.PORTFOLIO.INDEX)) return 'portfolio';
+  if (pathname.startsWith(APP.BOOKMARKS.INDEX)) return 'bookmarks';
   return 'home';
 }
 
@@ -65,7 +66,7 @@ const LeftNav: React.FC = () => {
     { key: 'communities', label: 'Communities', icon: I.comm, href: APP.COMMUNITY.INDEX },
     { key: 'notifications', label: 'Notifications', icon: I.bell, href: null, disabled: true },
     { key: 'messages', label: 'Messages', icon: I.mail, href: APP.MESSAGES.INDEX },
-    { key: 'bookmarks', label: 'Bookmarks', icon: I.bookmark, href: null, disabled: true },
+    { key: 'bookmarks', label: 'Bookmarks', icon: I.bookmark, href: APP.BOOKMARKS.INDEX },
     { key: 'portfolio', label: 'Portfolio', icon: I.bag, href: APP.PORTFOLIO.INDEX },
   ];
 

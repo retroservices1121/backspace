@@ -239,8 +239,8 @@ export function MarketCard({
             !walletConnected
               ? 'bg-white/5 text-white/40'
               : side === 'BUY'
-                ? 'bg-emerald-500/80 text-black hover:bg-emerald-400'
-                : 'bg-rose-500/80 text-white hover:bg-rose-400'
+                ? 'bg-emerald-500/80 text-ink hover:bg-emerald-400'
+                : 'bg-rose-500/80 text-ink hover:bg-rose-400'
           } disabled:cursor-not-allowed disabled:opacity-60`}
         >
           {!walletConnected

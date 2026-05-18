@@ -280,7 +280,7 @@ export function DflowSwapCard(props: Props | LegacyProps) {
       ) : !isReady ? (
         <button
           onClick={() => provisionWallet().catch(() => undefined)}
-          className="mt-3 w-full rounded-xl bg-amber-400/80 py-2.5 text-sm font-semibold text-black transition hover:bg-amber-300"
+          className="mt-3 w-full rounded-xl bg-amber-400/80 py-2.5 text-sm font-semibold text-ink transition hover:bg-amber-300"
         >
           Create Solana wallet to swap
         </button>
@@ -290,8 +290,8 @@ export function DflowSwapCard(props: Props | LegacyProps) {
           disabled={buttonDisabled}
           className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
             side === 'BUY'
-              ? 'bg-emerald-500/80 text-black hover:bg-emerald-400'
-              : 'bg-rose-500/80 text-white hover:bg-rose-400'
+              ? 'bg-emerald-500/80 text-ink hover:bg-emerald-400'
+              : 'bg-rose-500/80 text-ink hover:bg-rose-400'
           }`}
         >
           {succeeded

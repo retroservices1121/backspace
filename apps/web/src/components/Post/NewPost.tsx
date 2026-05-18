@@ -60,10 +60,6 @@ export default function NewPost({ post }: Props) {
   // Community variant — show the breadcrumb strip above the header
   // when the post lives in a community channel.
   const community = (post as any).message?.community;
-  // Trade label on the actions row: posts with no embed get the
-  // 'Spin to market' CTA from the design (currently a stub — wires
-  // to the existing CreatePost market picker in a follow-up).
-  const hasEmbed = !!post.marketId || !!(post as any).tokenId;
 
   useEffect(() => { thisPost.trackView(); }, [post.id]);
 
@@ -178,7 +174,6 @@ export default function NewPost({ post }: Props) {
           isReposted={thisPost.isReposted}
           isBookmarked={thisPost.isBookmarked}
           bookmarkCount={thisPost.bookmarkCount}
-          tradeLabel={hasEmbed ? 'Trade' : 'Spin to market'}
           onReply={thisPost.open}
           onRepost={thisPost.setRepost}
           onLike={() => thisPost.setLike(!thisPost.isLiked)}
@@ -324,7 +319,6 @@ function PostMedia({ post }: { post: Post }) {
 function PostActions({
   comments, reposts, likes, views,
   isLiked, isReposted, isBookmarked, bookmarkCount,
-  tradeLabel,
   onReply, onRepost, onLike, onBookmark, onShare,
 }: {
   comments: number;
@@ -335,7 +329,6 @@ function PostActions({
   isReposted: boolean;
   isBookmarked: boolean;
   bookmarkCount: number;
-  tradeLabel: string;
   onReply: () => void;
   onRepost: () => void;
   onLike: () => void;
@@ -390,23 +383,26 @@ function PostActions({
           : <BookmarkIcon className="w-[18px] h-[18px]" />}
       </ActionButton>
 
+      {/* Share — icon-only, sits before the view count per the
+          requested ordering. The button used to carry a 'Trade' /
+          'Spin to market' label, but that mis-named a share action;
+          dropped to leave just the icon. */}
+      <button
+        type="button"
+        onClick={onShare}
+        aria-label="Share"
+        className="
+          w-7 h-7 rounded-full flex items-center justify-center
+          hover:text-brand-2 transition-colors duration-150
+        "
+      >
+        <ShareIcon className="w-[18px] h-[18px]" />
+      </button>
+
       <span className="text-[11px] font-mono flex items-center gap-1">
         <span>{views > 0 ? truncateLargeumbers(views) : '0'}</span>
         <span>views</span>
       </span>
-
-      <button
-        type="button"
-        onClick={onShare}
-        className="
-          inline-flex items-center gap-1 px-2 py-1 rounded-full
-          text-brand-2 hover:bg-brand-soft transition-colors duration-150
-        "
-        aria-label={tradeLabel}
-      >
-        <ShareIcon className="w-[18px] h-[18px]" />
-        <span className="text-[12px] font-semibold">{tradeLabel}</span>
-      </button>
     </div>
   );
 }
