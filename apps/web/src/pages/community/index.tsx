@@ -6,14 +6,16 @@
 import React, { useEffect } from 'react';
 import ReactLoading from 'react-loading';
 import { useDispatch, useSelector } from 'react-redux';
-import { MenuAlt2Icon } from '@heroicons/react/outline';
+import { MenuAlt2Icon, PlusIcon } from '@heroicons/react/outline';
 import useConstructor from '@src/hooks/useConstructor';
+import { useModal } from '@src/lib/Modal';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import ChannelFeed from 'components/Channel';
 import CommunityDrawer from 'components/Community/CommunityDrawer';
 import CreateChannelModal from 'components/Community/CreateChannel';
+import CreateCommunityModal from 'components/Community/CreateCommunity';
 import MemberList from 'components/Community/MemberList';
 import { Container } from 'components/Community/styledAgain';
 import CommunitySettings from 'components/modals/CommunitySettings';
@@ -22,7 +24,10 @@ import useCommunity from 'hooks/entities/useCommunities';
 import { Screens, useScreen } from 'hooks/useAnalytics';
 import useBilling from 'hooks/useBilling';
 import { toggleDrawer } from 'store/appSlice';
+import { selectMemberships } from 'store/user/selectors';
 import { RootState } from 'store/store';
+import { Modals } from 'utils/constants';
+import { Permissions } from '@prisma/client';
 
 type Props = {};
 
@@ -36,6 +41,12 @@ const Community: React.FC<Props> = ({ }) => {
   // Communities map — used to detect "the requested community is loaded"
   // so we can switch to it once getCommunities() resolves.
   const communities = useSelector((s: RootState) => s.community.communities);
+  // One-community-per-user gate: hide the "Create" CTA if the user
+  // already owns one. Membership rows carry the role, so we can
+  // check locally without an extra round-trip.
+  const memberships = useSelector(selectMemberships);
+  const ownsCommunity = memberships.some((m) => m.role === Permissions.OWNER);
+  const createCommunityModal = useModal(Modals.CreateCommunity);
 
   useConstructor(run.init);
 
@@ -71,8 +82,38 @@ const Community: React.FC<Props> = ({ }) => {
 
   if (noFriends) {
     return (
-      <div className='col full'>
-        <h4>You are not part of any communities</h4>
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-24 text-center font-display">
+        <CreateCommunityModal />
+        <h2 className="m-0 text-[22px] font-bold tracking-[-0.02em] text-ink">
+          You're not in any communities yet
+        </h2>
+        <p className="text-[14px] text-ink-2 max-w-sm leading-snug">
+          Communities are where takes turn into conversation. Spin one
+          up of your own, or join a community someone else has started.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          {!ownsCommunity && (
+            <button
+              type="button"
+              onClick={() => createCommunityModal.open()}
+              className="
+                inline-flex items-center gap-2 rounded-full
+                bg-brand hover:bg-brand-2
+                px-5 h-10 text-[14px] font-semibold text-ink
+                transition-colors duration-150
+                shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+              "
+            >
+              <PlusIcon className="w-4 h-4" />
+              Create your community
+            </button>
+          )}
+          {ownsCommunity && (
+            <div className="text-[12px] font-mono text-ink-3">
+              You already own a community — open it from your memberships.
+            </div>
+          )}
+        </div>
       </div>
     );
   }

@@ -28,6 +28,7 @@ export enum Modals {
   AppWelcome = 'AppWelcome',
   CommunitySettings = 'CommunitySettings',
   CreateChannel = 'CreateChannel',
+  CreateCommunity = 'CreateCommunity',
   EditChannel = 'EditChannel',
   CreatePost = 'CreatePost',
   DeleteMessage = 'DeleteMessage',
