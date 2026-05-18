@@ -8,14 +8,19 @@
 //   (Link, router.push) keeps the highlight in sync.
 // - Post button dispatches togglePostModal — same global modal the
 //   legacy NavButtons + AccountDrawer fire.
+// - Profile entry lives as a chip just under the brand mark (not at
+//   the bottom like X) so a) the user's identity is the first thing
+//   they see, and b) we don't duplicate X's exact pattern.
 
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import useMedia from '@src/hooks/useMedia';
 
 import { APP } from 'pages';
 import { togglePostModal } from 'store/appSlice';
+import { RootState } from 'store/store';
 
 import { ShellIcons as I } from './icons';
 
@@ -44,6 +49,11 @@ function deriveActive(pathname: string): NavKey {
 const LeftNav: React.FC = () => {
   const router = useRouter();
   const dispatch = useDispatch();
+  const user = useSelector((s: RootState) => s.user);
+  const avatar = useMedia(user?.avatar);
+  const profileHref = user?.username
+    ? APP.PROFILE.USERNAME(user.username)
+    : null;
   const active = deriveActive(router.pathname);
 
   // Communities / Notifications / Bookmarks / More don't have shipping
@@ -70,7 +80,7 @@ const LeftNav: React.FC = () => {
       "
     >
       <Link href={APP.INDEX}>
-        <div className="flex items-center gap-2.5 px-2.5 py-2 mb-2 cursor-pointer">
+        <div className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer">
           <img
             src="/webui/backspace-icon.png"
             alt=""
@@ -81,6 +91,45 @@ const LeftNav: React.FC = () => {
           </span>
         </div>
       </Link>
+
+      {/* Profile chip — pinned just below the brand mark. Distinct
+          from X's bottom-pill pattern; puts the user's identity at
+          the top of the nav so they always see themselves entering
+          the app. Only renders when signed in. */}
+      {user?.username && profileHref && (
+        <Link href={profileHref}>
+          <div
+            className="
+              mt-1 mb-2 flex items-center gap-3 px-2.5 py-2 rounded-[12px]
+              border border-line bg-surface/60
+              hover:bg-hover-2 hover:border-brand-2/40
+              transition-colors duration-150 cursor-pointer
+            "
+          >
+            {avatar ? (
+              <img
+                src={avatar}
+                alt=""
+                className="w-9 h-9 rounded-full flex-none object-cover"
+              />
+            ) : (
+              <div
+                className="w-9 h-9 rounded-full flex-none"
+                style={{ background: 'linear-gradient(135deg,#5822FB,#FF8800)' }}
+              />
+            )}
+            <div className="flex-1 min-w-0 leading-tight">
+              <div className="text-[13px] font-semibold text-ink truncate">
+                {user.name || user.username}
+              </div>
+              <div className="text-[11.5px] text-ink-3 font-mono truncate">
+                @{user.username}
+              </div>
+            </div>
+            <I.dots className="flex-none w-4 h-4 text-ink-3" />
+          </div>
+        </Link>
+      )}
 
       {items.map((it) => (
         <NavItem
