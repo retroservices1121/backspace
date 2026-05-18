@@ -32,6 +32,12 @@ const Navigation: React.FC = ({
   // gradient, brand mark, etc.) so the desktop shell would
   // squish them into the 280/360 rails.
   const onAuth = router.pathname.startsWith(APP.AUTH.INDEX);
+  // Community is its own multi-pane layout (ChannelBar + ChannelFeed +
+  // MemberList drawer). The shell's RightRail would compete with the
+  // MemberList for screen real estate and squish the channel feed,
+  // so we hide it and let the community page span the full width
+  // (no 1320px cap).
+  const onCommunity = router.pathname.startsWith(APP.COMMUNITY.INDEX);
   const dispatch = useDispatch();
 
   const handleOpenPostModal = () => {
@@ -82,15 +88,20 @@ const Navigation: React.FC = ({
           content doesn't sprawl on 27"+ displays. The outer wrapper
           paints bg-canvas across the full viewport so the empty
           space on either side of the centered shell stays on-brand,
-          not body-default. */}
+          not body-default.
+
+          Community routes opt out of both caps: their own multi-pane
+          layout (ChannelBar + ChannelFeed + MemberList) needs the
+          full viewport width, and there's no RightRail to leave a
+          gap. */}
       <div className="sm:bg-canvas">
         <div
-          className="
-            relative isolate min-h-screen
-            sm:grid sm:grid-cols-[280px_minmax(0,680px)_360px]
-            sm:max-w-[1320px] sm:mx-auto
-            sm:text-ink sm:font-display
-          "
+          className={[
+            'relative isolate min-h-screen sm:text-ink sm:font-display',
+            onCommunity
+              ? 'sm:grid sm:grid-cols-[280px_minmax(0,1fr)]'
+              : 'sm:grid sm:grid-cols-[280px_minmax(0,680px)_360px] sm:max-w-[1320px] sm:mx-auto',
+          ].join(' ')}
         >
           <div
             aria-hidden
@@ -107,9 +118,11 @@ const Navigation: React.FC = ({
 
           <main className="min-w-0">{children}</main>
 
-          <div className="hidden sm:block">
-            <RightRail />
-          </div>
+          {!onCommunity && (
+            <div className="hidden sm:block">
+              <RightRail />
+            </div>
+          )}
         </div>
       </div>
 
