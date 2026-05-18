@@ -287,12 +287,20 @@ function ProfileBio({
           {profile.verified && (
             isOrg
               ? (
-                <span className="text-ink inline-flex" aria-label="Verified organization">
+                <span
+                  className="text-ink inline-flex"
+                  aria-label="Verified organization"
+                  title={verifiedTooltip(true, profile.createdAt)}
+                >
                   <I.verifiedOrg className="w-5 h-5" />
                 </span>
               )
               : (
-                <span className="text-brand-2 inline-flex" aria-label="Verified">
+                <span
+                  className="text-brand-2 inline-flex"
+                  aria-label="Verified"
+                  title={verifiedTooltip(false, profile.createdAt)}
+                >
                   <I.verified className="w-5 h-5" />
                 </span>
               )
@@ -548,6 +556,16 @@ function formatJoined(createdAt?: Date | string): string | null {
   const d = new Date(createdAt);
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+}
+
+// Hover label for the verified badge. We don't track a separate
+// verification timestamp yet, so the "since" date is the account
+// createdAt — a reasonable approximation for our current cohort. If
+// we can't format the date, fall back to the bare label.
+function verifiedTooltip(isOrg: boolean, createdAt?: Date | string): string {
+  const label = isOrg ? 'Verified organization' : 'Verified person';
+  const since = formatJoined(createdAt);
+  return since ? `${label} since ${since}` : label;
 }
 
 function rankingTier(score: number): { label: string; sub: string; tone: 'gold' | 'up' | 'down' | undefined } {

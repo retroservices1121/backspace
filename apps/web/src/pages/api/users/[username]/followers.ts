@@ -42,6 +42,7 @@ handler.get(async (req: NextApiRequest, res: NextApiResponse) => {
           bio: true,
           verified: true,
           accountType: true,
+          createdAt: true,
           avatar: true,
         },
       },
@@ -58,6 +59,7 @@ handler.get(async (req: NextApiRequest, res: NextApiResponse) => {
       bio: u!.bio ?? null,
       verified: u!.verified,
       accountType: u!.accountType,
+      createdAt: u!.createdAt,
       avatar: u!.avatar,
     }));
 

@@ -31,6 +31,7 @@ type ConnectionRow = {
   bio: string | null;
   verified: boolean;
   accountType?: string;
+  createdAt?: string;
   avatar: Media | null;
 };
 
@@ -249,12 +250,20 @@ function ConnectionRowItem({
           {row.verified && (
             row.accountType === 'ORG'
               ? (
-                <span className="text-ink inline-flex flex-none" aria-label="Verified organization">
+                <span
+                  className="text-ink inline-flex flex-none"
+                  aria-label="Verified organization"
+                  title={verifiedRowTooltip(true, row.createdAt)}
+                >
                   <I.verifiedOrg className="w-4 h-4" />
                 </span>
               )
               : (
-                <span className="text-brand-2 inline-flex flex-none" aria-label="Verified">
+                <span
+                  className="text-brand-2 inline-flex flex-none"
+                  aria-label="Verified"
+                  title={verifiedRowTooltip(false, row.createdAt)}
+                >
                   <I.verified className="w-4 h-4" />
                 </span>
               )
@@ -285,6 +294,15 @@ function ConnectionRowItem({
       )}
     </div>
   );
+}
+
+function verifiedRowTooltip(isOrg: boolean, createdAt?: string): string {
+  const label = isOrg ? 'Verified organization' : 'Verified person';
+  if (!createdAt) return label;
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return label;
+  const since = d.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  return `${label} since ${since}`;
 }
 
 export default ConnectionsPage;

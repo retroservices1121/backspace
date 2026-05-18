@@ -118,6 +118,7 @@ export default function NewPost({ post }: Props) {
           username={author.username}
           verified={!!author.verified}
           isOrg={(author as any).accountType === 'ORG'}
+          authorSince={formatMonthYear((author as any).createdAt)}
           publicAccuracy={(author as any).publicAccuracy}
           accuracy={(author as any).accuracy}
           createdAt={post.createdAt}
@@ -209,7 +210,7 @@ function CommunityStrip({ name, colorHex }: { name: string; colorHex: string }) 
 }
 
 function PostHead({
-  name, username, verified, isOrg, publicAccuracy, accuracy,
+  name, username, verified, isOrg, authorSince, publicAccuracy, accuracy,
   createdAt, onName, onTime,
   menuRef, menuOpen, onMenuToggle, isAuthor, onEdit, onDelete,
 }: {
@@ -217,6 +218,8 @@ function PostHead({
   username: string;
   verified: boolean;
   isOrg: boolean;
+  /** Pre-formatted "Month YYYY" string for the verified-since tooltip. */
+  authorSince?: string;
   publicAccuracy?: boolean;
   accuracy?: any;
   createdAt: Date | string;
@@ -241,12 +244,20 @@ function PostHead({
       {verified && (
         isOrg
           ? (
-            <span className="text-ink inline-flex" aria-label="Verified organization">
+            <span
+              className="text-ink inline-flex"
+              aria-label="Verified organization"
+              title={`Verified organization${authorSince ? ` since ${authorSince}` : ''}`}
+            >
               <I.verifiedOrg className="w-4 h-4" />
             </span>
           )
           : (
-            <span className="text-brand-2 inline-flex" aria-label="Verified">
+            <span
+              className="text-brand-2 inline-flex"
+              aria-label="Verified"
+              title={`Verified person${authorSince ? ` since ${authorSince}` : ''}`}
+            >
               <I.verified className="w-4 h-4" />
             </span>
           )
@@ -446,4 +457,13 @@ function ActionButton({
       </span>
     </button>
   );
+}
+
+// Format a date for the verified-since tooltip. Returns "Month YYYY"
+// or undefined if the input is missing/invalid.
+function formatMonthYear(input?: Date | string): string | undefined {
+  if (!input) return undefined;
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleString(undefined, { month: 'long', year: 'numeric' });
 }
