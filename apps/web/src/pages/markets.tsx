@@ -1,13 +1,17 @@
 // /markets — standalone markets catalog page (the URL the LeftNav
-// 'Markets' item points at). Reuses the same /api/markets data and
-// CatalogMarketCard rendering as the home feed's Markets tab.
+// 'Markets' item points at). Reuses /api/markets and CatalogMarketCard.
 //
-// Filter affordance: TopTabs across available categories, derived
-// from the fetched catalog. 'All' is always present; the other tabs
-// only show up once the data lands so we don't render placeholder
-// categories that the catalog doesn't actually have.
+// Sort: the API returns active markets ordered by closesAt asc
+// (soonest closing first). A small caption surfaces this so users
+// know why a particular market is at the top.
+//
+// Filter affordance: category dropdown (derived from categories
+// actually present in the loaded catalog) + a free-text search box.
+// When the search box has ≥2 chars we ignore the category and ask
+// the API for a substring match (/api/markets?q=...), so users can
+// jump to a market that isn't in the soonest-closing window.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from 'react-query';
 
 import axios from '@src/lib/axios';
@@ -22,24 +26,57 @@ import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
 import TopTabs from 'components/Shell/TopTabs';
 
 const ALL = 'all';
+const SEARCH_MIN = 2;
 
-async function fetchMarkets(): Promise<MarketCardData[]> {
+async function fetchCatalog(): Promise<MarketCardData[]> {
   const { data } = await axios().get<MarketCardData[]>('/markets?limit=100');
   return data ?? [];
 }
 
-const Discover: React.FC = () => {
+async function fetchSearch(q: string): Promise<MarketCardData[]> {
+  const { data } = await axios().get<MarketCardData[]>(
+    `/markets?q=${encodeURIComponent(q)}&limit=50`,
+  );
+  return data ?? [];
+}
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return v;
+}
+
+const Markets: React.FC = () => {
   const authState = useAuthentication();
   const dispatch = useAppDispatch();
-  const [active, setActive] = useState<string>(ALL);
+  const [category, setCategory] = useState<string>(ALL);
+  const [catOpen, setCatOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounced(query.trim(), 250);
+  const catRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(setPageTitle('Markets'));
   }, []);
 
-  const markets = useQuery(
-    ['discover-markets'],
-    fetchMarkets,
+  // Close the category dropdown on outside click.
+  useEffect(() => {
+    if (!catOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (catRef.current && !catRef.current.contains(e.target as Node)) {
+        setCatOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [catOpen]);
+
+  const catalog = useQuery(
+    ['markets-catalog'],
+    fetchCatalog,
     {
       enabled: authState === AuthStatus.SignedIn,
       refetchInterval: 60_000,
@@ -47,47 +84,168 @@ const Discover: React.FC = () => {
     },
   );
 
-  // Categories present in the loaded catalog. Lowercase keys so the
-  // tab compare is stable; render the original casing.
+  const search = useQuery(
+    ['markets-search', debouncedQuery],
+    () => fetchSearch(debouncedQuery),
+    {
+      enabled:
+        authState === AuthStatus.SignedIn && debouncedQuery.length >= SEARCH_MIN,
+      keepPreviousData: true,
+    },
+  );
+
+  // Categories derived from the loaded catalog. Lowercase keys so the
+  // compare is stable; original casing kept for display.
   const categories = useMemo(() => {
-    if (!markets.data) return [] as Array<{ key: string; label: string }>;
+    if (!catalog.data) return [] as Array<{ key: string; label: string }>;
     const seen = new Map<string, string>();
-    for (const m of markets.data) {
+    for (const m of catalog.data) {
       if (m.category) {
         const key = m.category.toLowerCase();
         if (!seen.has(key)) seen.set(key, m.category);
       }
     }
-    return Array.from(seen, ([key, label]) => ({ key, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [markets.data]);
+    return [
+      { key: ALL, label: 'All categories' },
+      ...Array.from(seen, ([key, label]) => ({ key, label })).sort((a, b) =>
+        a.label.localeCompare(b.label),
+      ),
+    ];
+  }, [catalog.data]);
 
-  const tabs = useMemo(
-    () => [{ key: ALL, label: 'All' }, ...categories],
-    [categories],
-  );
+  const isSearching = debouncedQuery.length >= SEARCH_MIN;
 
   const visible = useMemo(() => {
-    if (!markets.data) return [];
-    if (active === ALL) return markets.data;
-    return markets.data.filter((m) => (m.category ?? '').toLowerCase() === active);
-  }, [markets.data, active]);
+    if (isSearching) return search.data ?? [];
+    if (!catalog.data) return [];
+    if (category === ALL) return catalog.data;
+    return catalog.data.filter(
+      (m) => (m.category ?? '').toLowerCase() === category,
+    );
+  }, [isSearching, search.data, catalog.data, category]);
+
+  const activeCatLabel =
+    categories.find((c) => c.key === category)?.label ?? 'All categories';
 
   return (
     <>
       <div className="hidden sm:block">
-        <TopTabs
-          title="Markets"
-          tabs={tabs}
-          active={active}
-          onChange={setActive}
-        />
+        <TopTabs title="Markets" tabs={[]} active="" onChange={() => undefined} />
+      </div>
+
+      {/* Filter bar — category dropdown + search. Sticky just under
+          the TopTabs header so the controls stay reachable while the
+          catalog scrolls. */}
+      <div
+        className="
+          sticky top-[64px] z-[5]
+          px-6 py-3 border-b border-line
+          bg-canvas/[0.78] backdrop-blur-[14px] backdrop-saturate-[160%]
+          flex flex-col gap-2.5
+        "
+      >
+        <div className="flex items-center gap-2">
+          <div className="relative" ref={catRef}>
+            <button
+              type="button"
+              onClick={() => setCatOpen((v) => !v)}
+              className="
+                inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                border border-line bg-surface text-ink text-[13px] font-medium
+                hover:border-brand-2/50 transition-colors duration-150
+              "
+            >
+              <span>{activeCatLabel}</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {catOpen && (
+              <div
+                className="
+                  absolute z-20 mt-1 w-[240px] max-h-[320px] overflow-y-auto
+                  rounded-[12px] border border-line bg-surface
+                  shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
+                "
+              >
+                {categories.map((c) => {
+                  const isActive = c.key === category;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => {
+                        setCategory(c.key);
+                        setCatOpen(false);
+                      }}
+                      className={[
+                        'w-full text-left px-2.5 py-2 rounded-[8px]',
+                        'text-[13px] transition-colors duration-150',
+                        isActive
+                          ? 'bg-brand-soft text-brand-2 font-semibold'
+                          : 'text-ink hover:bg-hover',
+                      ].join(' ')}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <span className="text-[11px] font-mono text-ink-3">
+            Sorted by soonest closing
+          </span>
+        </div>
+
+        <div className="relative">
+          <svg
+            viewBox="0 0 24 24"
+            width="16" height="16"
+            fill="none" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search markets not in this list…"
+            style={{ background: 'transparent' }}
+            className="
+              w-full h-10 pl-10 pr-4 rounded-full
+              border border-line text-[14px] text-ink placeholder:text-ink-3
+              outline-none focus:border-brand-2
+              transition-colors duration-150 font-display
+            "
+          />
+        </div>
       </div>
 
       <div className="font-display text-ink">
         {authState !== AuthStatus.SignedIn ? (
           <EmptyState text="Sign in to browse markets." />
-        ) : markets.isLoading ? (
+        ) : isSearching ? (
+          search.isLoading ? (
+            <SkeletonLoader renderCount={4} />
+          ) : visible.length > 0 ? (
+            visible.map((m) => (
+              <CatalogMarketCard
+                key={`${m.venue}:${m.externalId}`}
+                market={m}
+              />
+            ))
+          ) : (
+            <EmptyState
+              title="No matches"
+              text={`Nothing matched "${debouncedQuery}". Try a different keyword.`}
+            />
+          )
+        ) : catalog.isLoading ? (
           <SkeletonLoader renderCount={8} />
         ) : visible.length > 0 ? (
           visible.map((m) => (
@@ -96,14 +254,14 @@ const Discover: React.FC = () => {
         ) : (
           <EmptyState
             title={
-              active === ALL
+              category === ALL
                 ? 'No active markets'
                 : 'No markets in this category yet'
             }
             text={
-              active === ALL
+              category === ALL
                 ? 'Check back soon — the catalog refreshes on a cron.'
-                : 'Try another category.'
+                : 'Try another category, or search above.'
             }
           />
         )}
@@ -125,4 +283,4 @@ function EmptyState({ title, text }: { title?: string; text: string }) {
   );
 }
 
-export default Discover;
+export default Markets;

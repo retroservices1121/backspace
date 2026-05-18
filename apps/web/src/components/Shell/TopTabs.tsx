@@ -50,35 +50,42 @@ const TopTabs: React.FC<Props> = ({ title, tabs, active, onChange, actions }) =>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-1 -mx-1">
-        {tabs.map((t) => {
-          const isActive = t.key === active;
-          return (
-            <button
-              type="button"
-              key={t.key}
-              onClick={() => onChange(t.key)}
-              className={[
-                'relative px-3 py-3 text-[14px] font-medium tracking-[-0.005em]',
-                'transition-colors duration-150',
-                isActive ? 'text-ink' : 'text-ink-2 hover:text-ink',
-              ].join(' ')}
-            >
-              <span>{t.label}</span>
-              {typeof t.count === 'number' && (
-                <span className="ml-1.5 text-[11px] font-mono text-ink-3">
-                  · {t.count}
-                </span>
-              )}
-              {isActive && (
-                <span
-                  className="absolute left-2 right-2 -bottom-px h-[3px] rounded-full bg-brand-2"
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* Skip the tab row entirely when no tabs are passed — title-only
+          surfaces (Markets, Bookmarks) avoid the dead-space band. */}
+      {tabs.length > 0 && (
+        <div className="flex items-center gap-1 -mx-1">
+          {tabs.map((t) => {
+            const isActive = t.key === active;
+            return (
+              <button
+                type="button"
+                key={t.key}
+                onClick={() => onChange(t.key)}
+                className={[
+                  'relative px-3 py-3 text-[14px] font-medium tracking-[-0.005em]',
+                  'transition-colors duration-150',
+                  isActive ? 'text-ink' : 'text-ink-2 hover:text-ink',
+                ].join(' ')}
+              >
+                <span>{t.label}</span>
+                {typeof t.count === 'number' && (
+                  <span className="ml-1.5 text-[11px] font-mono text-ink-3">
+                    · {t.count}
+                  </span>
+                )}
+                {isActive && (
+                  <span
+                    className="absolute left-2 right-2 -bottom-px h-[3px] rounded-full bg-brand-2"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {/* When no tabs, give the title row a little breathing room
+          before the next surface. */}
+      {tabs.length === 0 && <div className="pb-2" />}
     </div>
   );
 };
