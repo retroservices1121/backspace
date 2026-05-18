@@ -14,7 +14,6 @@ import { APP } from 'pages';
 import { selectMembership } from 'store/post/selectors';
 import { actions as communityActions } from 'store/community/slice';
 import { useAppDispatch } from 'store/store';
-import { ButtonLarge } from 'styles/Buttons';
 
 type CommunityLike = {
   id: bigint;
@@ -58,23 +57,39 @@ const ProfileCommunityCard: React.FC<Props> = ({ community, ownerName }) => {
       : 'Access exclusive content by visiting this community.');
 
   return (
-    <div className="mx-4 mb-3 overflow-hidden rounded-2xl border border-dividerColor bg-backgroundNormal">
-      {/* Optional banner strip, mirrors the X 'pinned' look. */}
+    <div className="overflow-hidden rounded-[14px] border border-line bg-surface font-display text-ink">
+      {/* Optional banner strip, mirrors the X 'pinned' look. The
+          fallback paints a soft brand-tinted gradient so the card
+          looks intentional even when no banner is uploaded. */}
       <div
-        className="h-20 w-full bg-backgroundLight"
+        className="h-20 w-full"
         style={banner
           ? { backgroundImage: `url(${banner})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-          : undefined}
+          : {
+            background:
+              'linear-gradient(135deg, rgba(88,34,251,0.35) 0%, rgba(255,136,0,0.18) 100%)',
+          }
+        }
       />
-      <div className="flex items-center gap-4 px-4 py-3">
+      <div className="flex items-center gap-3 px-4 py-3">
         <CommunityIcon size="medium" communityName={community.name} image={avatar} onClick={go} />
         <div className="flex-1 min-w-0">
-          <div className="text-base font-semibold text-fontFocus truncate">{community.name}</div>
-          <div className="text-sm text-fontTertiary line-clamp-2">{description}</div>
+          <div className="text-[15px] font-semibold text-ink truncate">{community.name}</div>
+          <div className="mt-0.5 text-[13px] text-ink-3 line-clamp-2 leading-snug">
+            {description}
+          </div>
         </div>
-        <ButtonLarge color="primary" onClick={go}>
+        <button
+          type="button"
+          onClick={go}
+          className={
+            isMember
+              ? 'rounded-full border border-line-2 px-4 h-9 text-[13px] font-semibold text-ink hover:bg-hover transition-colors'
+              : 'rounded-full bg-brand hover:bg-brand-2 px-4 h-9 text-[13px] font-semibold text-ink transition-colors shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]'
+          }
+        >
           {isMember ? 'Enter' : 'Join'}
-        </ButtonLarge>
+        </button>
       </div>
     </div>
   );

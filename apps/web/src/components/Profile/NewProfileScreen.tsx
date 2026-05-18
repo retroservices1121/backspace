@@ -28,6 +28,7 @@
 
 import React from 'react';
 import Loading from 'react-loading';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import useMedia from '@src/hooks/useMedia';
@@ -222,7 +223,7 @@ function ProfileBio({
       <div className="flex items-end justify-between -mt-16">
         <div className="rounded-full border-4 border-canvas bg-canvas">
           <div
-            className="w-[120px] h-[120px] rounded-full overflow-hidden relative shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]"
+            className="w-[120px] h-[120px] rounded-full overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]"
           >
             {avatar
               ? <img src={avatar} alt="" className="w-full h-full object-cover" />
@@ -232,17 +233,6 @@ function ProfileBio({
                   style={{ background: 'linear-gradient(135deg,#5822FB,#FF8800)' }}
                 />
               )}
-            {profile.verified && (
-              <span
-                className="
-                  absolute bottom-1 right-1 w-8 h-8 rounded-full
-                  flex items-center justify-center
-                  bg-brand text-ink border-2 border-canvas
-                "
-              >
-                <I.conv className="w-4 h-4" />
-              </span>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-2 pb-1">
@@ -289,8 +279,8 @@ function ProfileBio({
             {profile.name || profile.username}
           </span>
           {profile.verified && (
-            <span className="text-gold inline-flex">
-              <I.conv className="w-5 h-5" />
+            <span className="text-brand-2 inline-flex" aria-label="Verified">
+              <I.verified className="w-5 h-5" />
             </span>
           )}
         </div>
@@ -356,16 +346,21 @@ function FollowRow({
     ? Math.round((accuracy.data.stats.accuracy as number) * 100)
     : null;
 
+  const safeUsername = encodeURIComponent(username);
   return (
     <div className="mt-3 mb-4 flex items-center gap-5 text-[14px]">
-      <span className="cursor-pointer hover:underline">
-        <span className="font-semibold text-ink">{makeShortNumber(followingCount)}</span>
-        <span className="text-ink-3"> Following</span>
-      </span>
-      <span className="cursor-pointer hover:underline">
-        <span className="font-semibold text-ink">{makeShortNumber(followerCount)}</span>
-        <span className="text-ink-3"> Followers</span>
-      </span>
+      <Link href={`/${safeUsername}/following`}>
+        <a className="hover:underline">
+          <span className="font-semibold text-ink">{makeShortNumber(followingCount)}</span>
+          <span className="text-ink-3"> Following</span>
+        </a>
+      </Link>
+      <Link href={`/${safeUsername}/followers`}>
+        <a className="hover:underline">
+          <span className="font-semibold text-ink">{makeShortNumber(followerCount)}</span>
+          <span className="text-ink-3"> Followers</span>
+        </a>
+      </Link>
       {hitRatePct != null && (
         <span title="Polymarket resolved positions">
           <span className="font-semibold text-ink">{hitRatePct}%</span>
