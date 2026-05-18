@@ -15,24 +15,29 @@ export default createGlobalStyle`
     padding: 0px;
   }
 
+  /* X-style scrollbar: thin, semi-transparent white thumb on a
+     transparent track so the bar doesn't compete with content.
+     Overrides the legacy blue (theme.primary) thumb that came with
+     the old design. */
   ::-webkit-scrollbar {
-    cursor: pointer;
-    width: 10px;
+    width: 8px;
+    height: 8px;
   }
-  /* Track */
   ::-webkit-scrollbar-track {
-    background: inherit;
-    border: 1px solid ${({ theme }) => theme.backgroundLight};
-    border-radius: 6px;
+    background: transparent;
+    border: none;
   }
-  /* Handle */
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.primary};
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
   }
-  /* Handle on hover */
   ::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.primary};
+    background: rgba(255, 255, 255, 0.20);
+  }
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.10) transparent;
   }
 
   #root{

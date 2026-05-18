@@ -195,3 +195,16 @@ input[type='number'] {
   -webkit-appearance: none;
           appearance: none;
 }
+
+/* Force all native form controls to a transparent background by
+   default. Chrome paints <input>/<textarea>/<select> with a UA-default
+   rgb(59,59,59) when color-scheme is dark, which leaks through any
+   field that doesn't have an explicit Tailwind bg-* utility (composer
+   textarea, settings inputs, etc.). Element selectors are lower
+   specificity than Tailwind's .bg-surface utility, so any field that
+   *does* want a fill (login email wrapper, etc.) still wins. */
+input,
+textarea,
+select {
+  background-color: transparent;
+}

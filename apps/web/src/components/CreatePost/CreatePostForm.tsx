@@ -31,7 +31,6 @@ import { FormDebug } from 'utils/FormDebug';
 import MediaUploadArea from '../MediaUploadArea';
 import UserTile from '../User/UserTile';
 import MarketPicker from './MarketPicker';
-import TokenPicker from './TokenPicker';
 import { CancelButton, ColoredSpan, Option as OptionSection } from './styled';
 
 /** The entire point of this is to reset channel if community changes */
@@ -157,20 +156,13 @@ const CreatePostForm: FormType<PostFormState, Props> = ({
           </ErrorMessage>}
         </div>
 
-        {/* Attach a market OR a token — mutually exclusive, since both
-            embed below the post text in the feed and the renderer
-            shouldn't have to pick between them. Picking one clears the
-            other. */}
-        {!post?.id && !values[PostFormFields.Token] && (
+        {/* Attach a market. Tokens are auto-detected from $TICKER
+            mentions in the post body (see Phase 65 — $SYMBOL auto-
+            detect), so we don't need an explicit token picker here. */}
+        {!post?.id && (
           <MarketPicker
             value={values[PostFormFields.Market] ?? null}
             onChange={(id) => setFieldValue(PostFormFields.Market, id)}
-          />
-        )}
-        {!post?.id && !values[PostFormFields.Market] && (
-          <TokenPicker
-            value={values[PostFormFields.Token] ?? null}
-            onChange={(id) => setFieldValue(PostFormFields.Token, id)}
           />
         )}
 

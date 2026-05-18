@@ -9,11 +9,6 @@
 
 import React, { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import {
-  ChartBarIcon,
-  LocationMarkerIcon,
-  PhotographIcon,
-} from '@heroicons/react/outline';
 import { Permissions } from '@prisma/client';
 import { useModal } from '@src/lib/Modal';
 import { prependPost } from '@src/store/feedSlice';
@@ -161,74 +156,42 @@ const InlineCompose: React.FC = () => {
             </span>
           </button>
 
-          {/* Action row — image / gif / poll / pin / Post. All non-
-              text affordances hand off to the CreatePost modal for
-              now (no inline image picker yet). */}
-          <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <IconAction onClick={() => CreatePostModal.open()} label="Add image">
-                <PhotographIcon className="w-[18px] h-[18px]" />
-              </IconAction>
-              <IconAction onClick={() => CreatePostModal.open()} label="Add GIF">
-                <I.markets className="w-[18px] h-[18px] invisible" />
-                <span className="text-[11px] font-mono font-semibold">GIF</span>
-              </IconAction>
-              <IconAction onClick={() => CreatePostModal.open()} label="Add poll">
-                <ChartBarIcon className="w-[18px] h-[18px]" />
-              </IconAction>
-              <IconAction onClick={() => CreatePostModal.open()} label="Add location">
-                <LocationMarkerIcon className="w-[18px] h-[18px]" />
-              </IconAction>
-            </div>
-            <div className="flex items-center gap-3">
-              {text.length > 0 && remaining < 200 && (
-                <span
-                  className={`text-[12px] font-mono ${
-                    remaining < 0 ? 'text-pink-vivid' : 'text-ink-3'
-                  }`}
-                >
-                  {remaining}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={submit}
-                disabled={!canSubmit}
-                className="
-                  rounded-full bg-brand hover:bg-brand-2
-                  text-ink text-[14px] font-semibold
-                  h-9 px-5
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  transition-colors duration-150
-                  shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
-                "
+          {/* Action row — character counter + Post button. The image /
+              GIF / poll / location placeholders used to live here but
+              all fired the same CreatePost modal, which read as four
+              buttons that did one thing. They're gone until each has
+              a real handler. The market strip above still escalates
+              to the modal for the explicit "attach a market" flow. */}
+          <div className="mt-3 flex items-center justify-end gap-3">
+            {text.length > 0 && remaining < 200 && (
+              <span
+                className={`text-[12px] font-mono ${
+                  remaining < 0 ? 'text-pink-vivid' : 'text-ink-3'
+                }`}
               >
-                Post
-              </button>
-            </div>
+                {remaining}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!canSubmit}
+              className="
+                rounded-full bg-brand hover:bg-brand-2
+                text-ink text-[14px] font-semibold
+                h-9 px-5
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-colors duration-150
+                shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+              "
+            >
+              Post
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-function IconAction({
-  children, onClick, label,
-}: { children: React.ReactNode; onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="
-        w-[34px] h-[34px] rounded-full flex items-center justify-center
-        text-brand-2 hover:bg-brand-soft transition-colors duration-150
-      "
-    >
-      {children}
-    </button>
-  );
-}
 
 export default InlineCompose;

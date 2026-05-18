@@ -8,23 +8,20 @@
 //   (Link, router.push) keeps the highlight in sync.
 // - Post button dispatches togglePostModal — same global modal the
 //   legacy NavButtons + AccountDrawer fire.
-// - The user pill at the bottom is opt-in: only renders when there's
-//   a signed-in user. Avoids a placeholder for guest views.
 
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import { APP } from 'pages';
 import { togglePostModal } from 'store/appSlice';
-import { RootState } from 'store/store';
 
 import { ShellIcons as I } from './icons';
 
 type NavKey =
   | 'home' | 'markets' | 'communities' | 'notifications'
-  | 'messages' | 'bookmarks' | 'portfolio' | 'profile';
+  | 'messages' | 'bookmarks' | 'portfolio';
 
 type Item = {
   key: NavKey;
@@ -35,22 +32,19 @@ type Item = {
   disabled?: boolean;
 };
 
-function deriveActive(pathname: string, profileUsername?: string | null): NavKey {
+function deriveActive(pathname: string): NavKey {
   if (pathname === APP.INDEX) return 'home';
   if (pathname.startsWith(APP.DISCOVER.INDEX)) return 'markets';
   if (pathname.startsWith(APP.COMMUNITY.INDEX)) return 'communities';
   if (pathname.startsWith(APP.MESSAGES.INDEX)) return 'messages';
   if (pathname.startsWith(APP.PORTFOLIO.INDEX)) return 'portfolio';
-  if (profileUsername && pathname === `/${profileUsername}`) return 'profile';
   return 'home';
 }
 
 const LeftNav: React.FC = () => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const user = useSelector((s: RootState) => s.user);
-  const profileHref = user?.username ? APP.PROFILE.USERNAME(user.username) : null;
-  const active = deriveActive(router.pathname, user?.username);
+  const active = deriveActive(router.pathname);
 
   // Communities / Notifications / Bookmarks / More don't have shipping
   // routes yet — they render but go to '#' (no-op) so the visual
@@ -63,7 +57,6 @@ const LeftNav: React.FC = () => {
     { key: 'messages', label: 'Messages', icon: I.mail, href: APP.MESSAGES.INDEX },
     { key: 'bookmarks', label: 'Bookmarks', icon: I.bookmark, href: null, disabled: true },
     { key: 'portfolio', label: 'Portfolio', icon: I.bag, href: APP.PORTFOLIO.INDEX },
-    { key: 'profile', label: 'Profile', icon: I.user, href: profileHref },
   ];
 
   return (
@@ -118,33 +111,6 @@ const LeftNav: React.FC = () => {
       </button>
 
       <div className="flex-1" />
-
-      {user?.username && (
-        <Link href={profileHref ?? APP.INDEX}>
-          <div
-            className="
-              flex items-center gap-2.5 p-2
-              rounded-full border border-line
-              cursor-pointer hover:bg-hover
-              transition-colors duration-150
-            "
-          >
-            <div
-              className="w-[34px] h-[34px] rounded-full flex-none"
-              style={{ background: 'linear-gradient(135deg,#5822FB,#FF8800)' }}
-            />
-            <div className="flex flex-col leading-tight overflow-hidden">
-              <span className="text-[13px] font-semibold text-ink truncate">
-                {user.name || user.username}
-              </span>
-              <span className="text-[12px] text-ink-3 font-mono truncate">
-                @{user.username}
-              </span>
-            </div>
-            <I.dots className="ml-auto w-4 h-4 text-ink-3" />
-          </div>
-        </Link>
-      )}
     </aside>
   );
 };

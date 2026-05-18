@@ -87,7 +87,7 @@ export default function NewPost({ post }: Props) {
       className="
         flex gap-3 px-5 py-4
         border-b border-line
-        bg-canvas hover:bg-hover/40 transition-colors duration-150
+        bg-canvas
         font-display text-ink
       "
     >
