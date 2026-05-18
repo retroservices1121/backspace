@@ -24,10 +24,12 @@ import { selectPostableCommunities } from '@src/store/community/selectors';
 import { clearPost } from '@src/store/postSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@src/store/store';
 import { PostFormFields, PostFormState } from '@src/types/post';
+import Link from 'next/link';
 
 import useMedia from 'hooks/useMedia';
 import usePost from 'hooks/usePost';
 import useUser from 'hooks/useUser';
+import { APP } from 'pages';
 
 import MarketPicker from './MarketPicker';
 
@@ -138,7 +140,9 @@ const Composer: React.FC<Props> = ({ variant = 'inline', onPosted, onCancel }) =
 
   const submit = async () => {
     const trimmed = text.trim();
-    if (!trimmed || submitting) return;
+    // Allow media-only posts (no caption required). At least one of
+    // text/media must be present for there to be a post worth making.
+    if ((!trimmed && !media) || submitting) return;
     setSubmitting(true);
     try {
       const formData: PostFormState = {
@@ -187,7 +191,9 @@ const Composer: React.FC<Props> = ({ variant = 'inline', onPosted, onCancel }) =
   };
 
   const remaining = MAX_LEN - text.length;
-  const canSubmit = text.trim().length > 0 && !submitting && remaining >= 0;
+  // Submittable when there's at least text or media. Media-only posts
+  // are valid (a photo with no caption).
+  const canSubmit = (text.trim().length > 0 || !!media) && !submitting && remaining >= 0;
 
   const audienceLabel =
     audience.kind === 'profile' ? 'Timeline' : `${audience.communityName} · ${audience.channelName}`;
@@ -240,43 +246,67 @@ const Composer: React.FC<Props> = ({ variant = 'inline', onPosted, onCancel }) =
                   shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
                 "
               >
+                <div className="mt-0.5 mb-0.5 px-2 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3">
+                  Timeline
+                </div>
                 <AudienceRow
                   active={audience.kind === 'profile'}
-                  label="Timeline"
+                  label="Your timeline"
                   sub="Posts to your followers' feed"
                   onClick={() => {
                     setAudience({ kind: 'profile' });
                     setAudienceOpen(false);
                   }}
                 />
-                {postLocations.length > 0 && (
-                  <div className="mt-1 mb-0.5 px-2 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3">
-                    Communities
-                  </div>
-                )}
-                {postLocations.map((loc) =>
-                  loc.channels.map((ch) => (
-                    <AudienceRow
-                      key={`${loc.community.id}-${ch.id}`}
-                      active={
-                        audience.kind === 'channel' &&
-                        String(audience.channelId) === String(ch.id)
-                      }
-                      label={`${loc.community.name} · ${ch.name}`}
-                      sub={`Posts to ${ch.name} in ${loc.community.name}`}
-                      onClick={() => {
-                        setAudience({
-                          kind: 'channel',
-                          communityId: loc.community.id,
-                          communityName: loc.community.name,
-                          channelId: ch.id,
-                          channelName: ch.name,
-                          readPermission: ch.readPermission ?? Permissions.EVERYONE,
-                        });
-                        setAudienceOpen(false);
-                      }}
-                    />
-                  )),
+
+                <div className="mt-2 mb-0.5 px-2 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3">
+                  Community
+                </div>
+                {postLocations.length > 0 ? (
+                  postLocations.map((loc) =>
+                    loc.channels.map((ch) => (
+                      <AudienceRow
+                        key={`${loc.community.id}-${ch.id}`}
+                        active={
+                          audience.kind === 'channel' &&
+                          String(audience.channelId) === String(ch.id)
+                        }
+                        label={`${loc.community.name} · ${ch.name}`}
+                        sub={`Posts to ${ch.name} in ${loc.community.name}`}
+                        onClick={() => {
+                          setAudience({
+                            kind: 'channel',
+                            communityId: loc.community.id,
+                            communityName: loc.community.name,
+                            channelId: ch.id,
+                            channelName: ch.name,
+                            readPermission: ch.readPermission ?? Permissions.EVERYONE,
+                          });
+                          setAudienceOpen(false);
+                        }}
+                      />
+                    )),
+                  )
+                ) : (
+                  // No postable channels yet — keep the Community
+                  // option visible so users know it exists, and link to
+                  // the discovery page so they can go join one.
+                  <Link href={APP.COMMUNITY.INDEX}>
+                    <div
+                      onClick={() => setAudienceOpen(false)}
+                      className="
+                        w-full text-left px-2.5 py-2 rounded-[8px]
+                        cursor-pointer hover:bg-hover transition-colors duration-150
+                      "
+                    >
+                      <div className="text-[13px] font-medium text-ink-2">
+                        Join a community to post here
+                      </div>
+                      <div className="text-[11px] text-ink-3 font-mono">
+                        Browse communities →
+                      </div>
+                    </div>
+                  </Link>
                 )}
               </div>
             )}
