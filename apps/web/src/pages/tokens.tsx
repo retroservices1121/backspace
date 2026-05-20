@@ -1,0 +1,261 @@
+// /tokens — standalone token catalog page (the URL the LeftNav
+// 'Tokens' item points at). Mirrors /markets.tsx: a sticky filter
+// bar over the center column + an infinite-feeling list of
+// TokenCatalogCard rows.
+//
+// Sort options are scaffolded so the UI is ready to show trending
+// data the moment the Token volume/price snapshot columns land
+// (task #103). Until then we sort by symbol alphabetically and the
+// "Trending" / "Gainers" / "Losers" options fall back to the same
+// order — same playbook we used for /markets before its volume
+// migration.
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from 'react-query';
+
+import axios from '@src/lib/axios';
+import useAuthentication from '@src/hooks/useAuthenticate';
+import { AuthStatus } from '@src/store/authSlice';
+import { setPageTitle } from '@src/store/appSlice';
+import { useAppDispatch } from '@src/store/store';
+
+import { TokenCatalogCard } from '@src/components/Dflow/TokenCatalogCard';
+import type { TokenLite } from '@src/store/feedSlice';
+import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
+import TopTabs from 'components/Shell/TopTabs';
+
+const SEARCH_MIN = 1;
+
+type SortKey = 'trending' | 'gainers' | 'losers' | 'alphabetical';
+
+const SORTS: Array<{ key: SortKey; label: string; sub: string }> = [
+  { key: 'trending',     label: 'Trending',     sub: 'Highest 24h volume' },
+  { key: 'gainers',      label: 'Top gainers',  sub: 'Up the most over 24h' },
+  { key: 'losers',       label: 'Top losers',   sub: 'Down the most over 24h' },
+  { key: 'alphabetical', label: 'Alphabetical', sub: 'A → Z' },
+];
+
+async function fetchCatalog(): Promise<TokenLite[]> {
+  // Sort param isn't honoured server-side yet — added once the
+  // trending-data migration ships. For now we sort client-side.
+  const { data } = await axios().get<TokenLite[]>('/tokens?limit=200');
+  return Array.isArray(data) ? data : [];
+}
+
+async function fetchSearch(q: string): Promise<TokenLite[]> {
+  const { data } = await axios().get<TokenLite[]>(
+    `/tokens?q=${encodeURIComponent(q)}&limit=50`,
+  );
+  return Array.isArray(data) ? data : [];
+}
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return v;
+}
+
+const Tokens: React.FC = () => {
+  const authState = useAuthentication();
+  const dispatch = useAppDispatch();
+  const [sort, setSort] = useState<SortKey>('trending');
+  const [sortOpen, setSortOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounced(query.trim(), 250);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(setPageTitle('Tokens'));
+  }, []);
+
+  useEffect(() => {
+    if (!sortOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (sortRef.current && !sortRef.current.contains(t)) setSortOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [sortOpen]);
+
+  const catalog = useQuery(
+    ['tokens-catalog'],
+    () => fetchCatalog(),
+    {
+      enabled: authState === AuthStatus.SignedIn,
+      refetchInterval: 60_000,
+      staleTime: 30_000,
+      keepPreviousData: true,
+    },
+  );
+
+  const search = useQuery(
+    ['tokens-search', debouncedQuery],
+    () => fetchSearch(debouncedQuery),
+    {
+      enabled:
+        authState === AuthStatus.SignedIn && debouncedQuery.length >= SEARCH_MIN,
+      keepPreviousData: true,
+    },
+  );
+
+  const isSearching = debouncedQuery.length >= SEARCH_MIN;
+
+  const visible = useMemo(() => {
+    const rows = isSearching ? (search.data ?? []) : (catalog.data ?? []);
+    // Once volume/change columns exist, branch on `sort` to read those
+    // fields. Until then every sort falls back to alphabetical so the
+    // UI doesn't lie about what it's doing.
+    return [...rows].sort((a, b) => a.symbol.localeCompare(b.symbol));
+  }, [isSearching, search.data, catalog.data, sort]);
+
+  const activeSortLabel = SORTS.find((s) => s.key === sort)?.label ?? 'Trending';
+
+  return (
+    <>
+      <div className="hidden sm:block">
+        <TopTabs title="Tokens" tabs={[]} active="" onChange={() => undefined} />
+      </div>
+
+      <div
+        className="
+          sticky top-[64px] z-[5]
+          px-6 py-3 border-b border-line
+          bg-canvas/[0.78] backdrop-blur-[14px] backdrop-saturate-[160%]
+          flex flex-col gap-2.5
+        "
+      >
+        <div className="flex items-center gap-2">
+          <div className="relative" ref={sortRef}>
+            <button
+              type="button"
+              onClick={() => setSortOpen((v) => !v)}
+              className="
+                inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                border border-line bg-surface text-ink text-[13px] font-medium
+                hover:border-brand-2/50 transition-colors duration-150
+              "
+            >
+              <span className="text-ink-3 text-[11px] font-mono">Sort:</span>
+              <span>{activeSortLabel}</span>
+              <svg
+                viewBox="0 0 24 24" width="12" height="12"
+                fill="none" stroke="currentColor" strokeWidth="2.2"
+                strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {sortOpen && (
+              <div
+                className="
+                  absolute z-20 mt-1 w-[260px]
+                  rounded-[12px] border border-line bg-surface
+                  shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
+                "
+              >
+                {SORTS.map((s) => {
+                  const isActive = s.key === sort;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => { setSort(s.key); setSortOpen(false); }}
+                      className={[
+                        'w-full text-left px-2.5 py-2 rounded-[8px]',
+                        'transition-colors duration-150',
+                        isActive ? 'bg-brand-soft' : 'hover:bg-hover',
+                      ].join(' ')}
+                    >
+                      <div
+                        className={[
+                          'text-[13px] font-semibold',
+                          isActive ? 'text-brand-2' : 'text-ink',
+                        ].join(' ')}
+                      >
+                        {s.label}
+                      </div>
+                      <div className="text-[11px] font-mono text-ink-3">
+                        {s.sub}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="relative">
+          <svg
+            viewBox="0 0 24 24"
+            width="16" height="16"
+            fill="none" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search tokens by symbol or name…"
+            style={{ background: 'transparent' }}
+            className="
+              w-full h-10 pl-10 pr-4 rounded-full
+              border border-line text-[14px] text-ink placeholder:text-ink-3
+              outline-none focus:border-brand-2
+              transition-colors duration-150 font-display
+            "
+          />
+        </div>
+      </div>
+
+      <div className="font-display text-ink">
+        {authState !== AuthStatus.SignedIn ? (
+          <EmptyState text="Sign in to browse tokens." />
+        ) : isSearching ? (
+          search.isLoading ? (
+            <SkeletonLoader renderCount={4} />
+          ) : visible.length > 0 ? (
+            visible.map((t) => <TokenCatalogCard key={t.id} token={t} />)
+          ) : (
+            <EmptyState
+              title="No matches"
+              text={`Nothing matched "${debouncedQuery}". Try a different keyword.`}
+            />
+          )
+        ) : catalog.isLoading ? (
+          <SkeletonLoader renderCount={10} />
+        ) : visible.length > 0 ? (
+          visible.map((t) => <TokenCatalogCard key={t.id} token={t} />)
+        ) : (
+          <EmptyState
+            title="No tokens yet"
+            text="The catalog is still loading — check back soon."
+          />
+        )}
+      </div>
+    </>
+  );
+};
+
+function EmptyState({ title, text }: { title?: string; text: string }) {
+  return (
+    <div className="px-6 py-12 max-w-md mx-auto text-center">
+      {title && (
+        <h2 className="m-0 text-[20px] font-bold tracking-[-0.02em] text-ink">
+          {title}
+        </h2>
+      )}
+      <p className="mt-2 text-[14px] text-ink-2 leading-snug">{text}</p>
+    </div>
+  );
+}
+
+export default Tokens;

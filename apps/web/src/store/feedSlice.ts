@@ -30,6 +30,10 @@ export enum FilterOptions {
   // rows directly so users can see what's tradeable without anyone
   // having to author a post around them.
   MARKETS = 'markets',
+  // Same idea for the Dflow spot token catalog. Renders Token rows
+  // instead of Posts; eventually backed by trending/volume sort once
+  // those columns + import job ship.
+  TOKENS = 'tokens',
 }
 
 type FetchPostsPayload = {
@@ -75,6 +79,26 @@ export const fetchMarkets = createAsyncThunk<MarketCardData[]>(
         }),
       ),
     })) as MarketCardData[];
+  },
+);
+
+// Shape returned by /api/tokens — kept small (no price/volume fields
+// yet, those land with the trending-data migration). Once volume
+// columns ship, extend this in lockstep with the API serializer.
+export type TokenLite = {
+  id: string;
+  mint: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoURI: string | null;
+};
+
+export const fetchTokens = createAsyncThunk<TokenLite[]>(
+  `${NAMESPACE}/fetchTokens`,
+  async () => {
+    const { data } = await axios().get('/tokens?limit=100');
+    return (Array.isArray(data) ? data : []) as TokenLite[];
   },
 );
 
@@ -180,6 +204,8 @@ type FeedState = {
   // MARKETS filter renders straight from this array; all the other
   // filters render from posts[filter].
   markets: MarketCardData[];
+  // Same pattern for the Token catalog under the TOKENS filter.
+  tokens: TokenLite[];
 
   discoverModalOpen: boolean;
   // posts: PostUnion[];
@@ -198,6 +224,7 @@ const initialState: FeedState = {
   filter: FilterOptions.ACCURACY,
   posts: <FeedPosts>{},
   markets: [],
+  tokens: [],
 
   discoverModalOpen: false,
 
@@ -264,6 +291,9 @@ const feedSlice = createSlice({
     });
     builder.addCase(fetchMarkets.fulfilled, (state, action) => {
       state.markets = action.payload;
+    });
+    builder.addCase(fetchTokens.fulfilled, (state, action) => {
+      state.tokens = action.payload;
     });
     builder.addCase(setFeaturedPost.fulfilled, (state, action) => {
       state.featuredPost = action.payload;

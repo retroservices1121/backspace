@@ -12,6 +12,7 @@ import { FilterOptions } from '@src/store/feedSlice';
 import { isEmpty } from 'lodash';
 
 import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
+import { TokenCatalogCard } from '@src/components/Dflow/TokenCatalogCard';
 import axios from '@src/lib/axios';
 
 import type { MessageUnion } from 'types/legacy-aliases';
@@ -115,6 +116,7 @@ const Feed: React.FC<Props> = ({}) => {
     { key: FilterOptions.FOLLOWING, label: 'Following' },
     { key: FilterOptions.COMMUNITY, label: 'Communities' },
     { key: FilterOptions.MARKETS, label: 'Markets' },
+    { key: FilterOptions.TOKENS, label: 'Tokens' },
   ];
 
   return (
@@ -144,14 +146,24 @@ const Feed: React.FC<Props> = ({}) => {
         <FeedContainer>
           <Col>
             {/* Inline composer at the top of every post-style filter
-                (X parity). Hidden on the Markets catalog tab. */}
-            {authState === AuthStatus.SignedIn && myFeed.filter !== FilterOptions.MARKETS && (
+                (X parity). Hidden on the Markets + Tokens catalog tabs. */}
+            {authState === AuthStatus.SignedIn
+              && myFeed.filter !== FilterOptions.MARKETS
+              && myFeed.filter !== FilterOptions.TOKENS && (
               <InlineCompose />
             )}
             {myFeed.filter === FilterOptions.MARKETS ? (
               myFeed.markets && myFeed.markets.length > 0 ? (
                 myFeed.markets.map((m) => (
                   <CatalogMarketCard key={`${m.venue}:${m.externalId}`} market={m} />
+                ))
+              ) : (
+                <SkeletonLoader renderCount={10} />
+              )
+            ) : myFeed.filter === FilterOptions.TOKENS ? (
+              myFeed.tokens && myFeed.tokens.length > 0 ? (
+                myFeed.tokens.map((t) => (
+                  <TokenCatalogCard key={t.id} token={t} />
                 ))
               ) : (
                 <SkeletonLoader renderCount={10} />

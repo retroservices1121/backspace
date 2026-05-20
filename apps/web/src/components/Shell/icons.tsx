@@ -60,6 +60,16 @@ export const ShellIcons = {
   bag: (p: IconProps = {}) => (
     <svg {...base(p.className)}><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>
   ),
+  // Solana spot tokens — a coin glyph (two concentric circles + the
+  // ◎ tick) so it visually reads as "fungible token" without
+  // overlapping the markets line-chart icon.
+  tokens: (p: IconProps = {}) => (
+    <svg {...base(p.className)}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <path d="M12 7v10M9 9l6 6M9 15l6-6" />
+    </svg>
+  ),
   conv: (p: IconProps = {}) => (
     <svg viewBox="0 0 24 24" fill="currentColor" className={p.className}>
       <path d="M12 2l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6L4 9l5.5-1.5z"/>

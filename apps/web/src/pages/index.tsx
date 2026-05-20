@@ -34,6 +34,12 @@ export const APP = {
   MARKETS: {
     INDEX: `${baseRoute}/markets`,
   },
+  // Catalog of tradeable spot tokens (Dflow on Solana). Mirrors the
+  // /markets shape and namespace.
+  TOKENS: {
+    INDEX: `${baseRoute}/tokens`,
+    MINT: (mint: string) => `${baseRoute}/tokens/${mint}`,
+  },
   // Back-compat alias — kept so any out-of-tree callers / saved links
   // still resolve to the same route. New code should use APP.MARKETS.
   DISCOVER: {

@@ -25,7 +25,7 @@ import { RootState } from 'store/store';
 import { ShellIcons as I } from './icons';
 
 type NavKey =
-  | 'home' | 'markets' | 'communities' | 'notifications'
+  | 'home' | 'markets' | 'tokens' | 'communities' | 'notifications'
   | 'messages' | 'bookmarks' | 'portfolio';
 
 type Item = {
@@ -39,6 +39,9 @@ type Item = {
 
 function deriveActive(pathname: string): NavKey {
   if (pathname === APP.INDEX) return 'home';
+  // /tokens has to be checked before /markets so the (currently
+  // identical-prefix) check stays correct if we ever rename either.
+  if (pathname.startsWith(APP.TOKENS.INDEX)) return 'tokens';
   if (pathname.startsWith(APP.MARKETS.INDEX)) return 'markets';
   if (pathname.startsWith(APP.COMMUNITY.INDEX)) return 'communities';
   if (pathname.startsWith(APP.MESSAGES.INDEX)) return 'messages';
@@ -63,6 +66,7 @@ const LeftNav: React.FC = () => {
   const items: Item[] = [
     { key: 'home', label: 'Home', icon: I.home, href: APP.INDEX },
     { key: 'markets', label: 'Markets', icon: I.markets, href: APP.MARKETS.INDEX, badge: 'LIVE' },
+    { key: 'tokens', label: 'Tokens', icon: I.tokens, href: APP.TOKENS.INDEX },
     { key: 'communities', label: 'Communities', icon: I.comm, href: APP.COMMUNITY.INDEX },
     { key: 'notifications', label: 'Notifications', icon: I.bell, href: null, disabled: true },
     { key: 'messages', label: 'Messages', icon: I.mail, href: APP.MESSAGES.INDEX },
