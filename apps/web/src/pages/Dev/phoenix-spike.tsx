@@ -22,6 +22,7 @@
 
 import { useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useSolanaWallets } from '@privy-io/react-auth/solana';
 
 type Line = { label: string; value: string; tone?: 'ok' | 'err' | 'info' };
 
@@ -40,6 +41,7 @@ const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? '';
 export default function PhoenixSpike() {
   const { ready, authenticated } = usePrivy();
   const { wallets } = useWallets();
+  const { wallets: solanaWallets, createWallet: createSolanaWallet } = useSolanaWallets();
   const [log, setLog] = useState<Line[]>([]);
   const [running, setRunning] = useState<string | null>(null);
   const [client, setClient] = useState<any>(null);
@@ -49,14 +51,20 @@ export default function PhoenixSpike() {
   const [orderBaseUnits, setOrderBaseUnits] = useState('0.001');
   const [orderSide, setOrderSide] = useState<'BID' | 'ASK'>('BID');
 
+  // Solana wallets come from a dedicated hook (Privy v1.66 does not expose
+  // chain type on the EVM useWallets() entries, and Solana embedded
+  // wallets are provisioned on demand rather than at login).
+  const solanaWallet = solanaWallets?.[0] ?? null;
+  const solanaAddress = solanaWallet?.address ?? null;
+
   const push = (label: string, value: string, tone?: Line['tone']) =>
     setLog((prev) => [...prev, { label, value, tone }]);
 
-  // Solana wallet — Privy provisions embedded Solana wallets via the
-  // useWallets hook. Each wallet has a chain identifier; on the current
-  // privy-io/react-auth this is 'solana'.
-  const solanaWallet = wallets.find((w) => (w as any).chain === 'solana');
-  const solanaAddress = solanaWallet?.address ?? null;
+  // Solana addresses are base58 (~32–44 chars, no 0x). EVM addresses
+  // start with 0x. We use the address shape to label rows in the
+  // wallet probe; the canonical source of truth for Solana is
+  // useSolanaWallets() above.
+  const labelChain = (addr: string) => (addr.startsWith('0x') ? 'EVM' : 'Solana');
 
   // ─── Step 1: bundling probe ──────────────────────────────────────
   async function probeImports() {
@@ -80,11 +88,23 @@ export default function PhoenixSpike() {
     setLog([]);
     push('Privy ready', String(ready), ready ? 'ok' : 'info');
     push('Authenticated', String(authenticated), authenticated ? 'ok' : 'info');
-    push('Wallets count', String(wallets.length), 'info');
+    push('EVM wallets count', String(wallets.length), 'info');
     for (const w of wallets) {
-      push(`  wallet[${(w as any).chain ?? '?'}]`, w.address, 'info');
+      push(`  wallet[${labelChain(w.address)}]`, w.address, 'info');
     }
-    push('Solana wallet found', solanaAddress ? 'yes' : 'NO — no Solana embedded wallet', solanaAddress ? 'ok' : 'err');
+    push('Solana wallets count', String(solanaWallets?.length ?? 0), 'info');
+    for (const w of solanaWallets ?? []) {
+      push('  solana wallet', w.address, 'info');
+    }
+    if (solanaAddress) {
+      push('Solana wallet ready', solanaAddress, 'ok');
+    } else {
+      push(
+        'Solana wallet',
+        'NOT PROVISIONED — click "Provision Solana wallet" below',
+        'err',
+      );
+    }
     if (PHOENIX_BUILDER_AUTHORITY) {
       push('Builder authority (env)', PHOENIX_BUILDER_AUTHORITY, 'ok');
     } else {
@@ -92,7 +112,75 @@ export default function PhoenixSpike() {
     }
     push('Builder PDA index', String(PHOENIX_BUILDER_PDA_INDEX), 'info');
     push('Builder subaccount index', String(PHOENIX_BUILDER_SUBACCOUNT_INDEX), 'info');
-    push('RPC URL', SOLANA_RPC_URL || '(unset — falling back to mainnet-beta)', SOLANA_RPC_URL ? 'ok' : 'info');
+    push(
+      'RPC URL',
+      SOLANA_RPC_URL || '(unset — falling back to mainnet-beta)',
+      SOLANA_RPC_URL ? 'ok' : 'info',
+    );
+  }
+
+  // Quick balance probe — direct RPC fetch, no caching layer between
+  // the spike and Solana. Confirms the wallet has SOL and that the
+  // getBalance response shape ({ context, value }) is what the rest
+  // of the app reads from.
+  async function probeBalance() {
+    setRunning('balance');
+    try {
+      if (!solanaAddress) {
+        push('No Solana wallet', 'Provision it first (step 2b)', 'err');
+        return;
+      }
+      const url = SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getBalance',
+          params: [solanaAddress, { commitment: 'confirmed' }],
+        }),
+      });
+      const json = await res.json();
+      push('RPC HTTP', String(res.status), res.ok ? 'ok' : 'err');
+      if (json.error) {
+        push('RPC error', JSON.stringify(json.error).slice(0, 200), 'err');
+        return;
+      }
+      const lamports = json.result?.value ?? 0;
+      push('lamports (raw)', String(lamports), lamports > 0 ? 'ok' : 'info');
+      push('SOL (uiAmount)', String(lamports / 1e9), lamports > 0 ? 'ok' : 'info');
+    } catch (err) {
+      push(
+        'Balance probe failed',
+        err instanceof Error ? err.message : String(err),
+        'err',
+      );
+    } finally {
+      setRunning(null);
+    }
+  }
+
+  // Provision a Solana embedded wallet on demand. Mirrors what
+  // lib/dflow does the first time a user opens a swap.
+  async function provisionSolana() {
+    setRunning('provision');
+    try {
+      if (!createSolanaWallet) {
+        push('No createWallet', 'Privy Solana hook not available', 'err');
+        return;
+      }
+      const w = await createSolanaWallet();
+      push('Solana wallet created', w?.address ?? '(unknown)', 'ok');
+    } catch (err) {
+      push(
+        'Provision failed',
+        err instanceof Error ? err.message : String(err),
+        'err',
+      );
+    } finally {
+      setRunning(null);
+    }
   }
 
   // ─── Step 3: construct client w/ Flight config ───────────────────
@@ -302,6 +390,20 @@ export default function PhoenixSpike() {
           </Btn>
           <Btn onClick={probeWallet} disabled={running !== null}>
             2. Wallet probe
+          </Btn>
+          <Btn
+            onClick={provisionSolana}
+            disabled={running !== null || !!solanaAddress}
+            active={running === 'provision'}
+          >
+            {solanaAddress ? '2b. Solana ✓' : '2b. Provision Solana wallet'}
+          </Btn>
+          <Btn
+            onClick={probeBalance}
+            disabled={running !== null || !solanaAddress}
+            active={running === 'balance'}
+          >
+            2c. SOL balance
           </Btn>
           <Btn onClick={buildClient} disabled={running !== null} active={running === 'client'}>
             3. Build client
