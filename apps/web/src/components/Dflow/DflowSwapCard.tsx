@@ -172,17 +172,15 @@ export function DflowSwapCard(props: Props | LegacyProps) {
       )}
 
       {/* Buy / Sell pill */}
-      <div className="mb-2 inline-flex rounded-lg bg-black/30 p-0.5">
+      <div className="mb-2 inline-flex rounded-lg bg-canvas/40 border border-line p-0.5">
         {(['BUY', 'SELL'] as const).map((s) => (
           <button
             key={s}
             onClick={() => switchSide(s)}
             className={`rounded px-3 py-1 text-xs font-semibold transition ${
               side === s
-                ? s === 'BUY'
-                  ? 'bg-emerald-500/30 text-emerald-200'
-                  : 'bg-rose-500/30 text-rose-200'
-                : 'text-white/60 hover:text-white'
+                ? 'bg-brand text-ink'
+                : 'text-ink-3 hover:text-ink'
             }`}
           >
             {s}
@@ -288,11 +286,13 @@ export function DflowSwapCard(props: Props | LegacyProps) {
         <button
           onClick={handleSubmit}
           disabled={buttonDisabled}
-          className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-            side === 'BUY'
-              ? 'bg-emerald-500/80 text-ink hover:bg-emerald-400'
-              : 'bg-rose-500/80 text-ink hover:bg-rose-400'
-          }`}
+          className="
+            mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-ink
+            bg-brand hover:bg-brand-2
+            shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+            transition-colors duration-150
+            disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none
+          "
         >
           {succeeded
             ? 'Swap submitted'

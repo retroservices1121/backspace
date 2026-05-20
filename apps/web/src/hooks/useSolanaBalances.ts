@@ -57,8 +57,15 @@ async function rpc<T>(method: string, params: unknown[]): Promise<T> {
 async function fetchBalances(owner: string): Promise<SolanaBalance[]> {
   // Native SOL balance (lamports) + SPL token accounts owned by the
   // user. Two RPC calls in parallel — cheaper than getProgramAccounts.
-  const [lamports, tokenAccounts] = await Promise.all([
-    rpc<number>('getBalance', [owner, { commitment: 'confirmed' }]),
+  // Note: getBalance returns { context, value }, NOT a bare number —
+  // an earlier version of this code treated the whole result as the
+  // lamports count, which made every non-zero SOL balance render as
+  // "0" because comparing the object to 0 is always false.
+  const [balanceResult, tokenAccounts] = await Promise.all([
+    rpc<{ context: { slot: number }; value: number }>(
+      'getBalance',
+      [owner, { commitment: 'confirmed' }],
+    ),
     rpc<{
       value: Array<{
         account: {
@@ -83,6 +90,7 @@ async function fetchBalances(owner: string): Promise<SolanaBalance[]> {
     ]),
   ]);
 
+  const lamports = balanceResult?.value ?? 0;
   const balances: SolanaBalance[] = [];
   if (lamports > 0) {
     balances.push({
