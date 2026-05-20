@@ -2,14 +2,18 @@
 // Author(s): See Git History
 //
 // Migrated from Firebase Auth's onAuthStateChanged to Privy's usePrivy
-// (2026-05-08). Same redux-side surface — sets authId/email/status — so
-// downstream code that reads from authSlice does not need to change.
+// (2026-05-08), then re-abstracted to useWallet() (2026-05-20) so the
+// hook doesn't care which auth provider is mounted. Same redux-side
+// surface — sets authId/email/status — so downstream code that reads
+// from authSlice does not need to change.
 //
-// `authId` is now the Privy DID (`did:privy:...`) instead of the Firebase UID.
-// The User row's authId column was renamed in semantics, not in shape.
+// `authId` is the provider's stable user id (Privy DID 'did:privy:...'
+// today, CDP user id post-migration). The User row's authId column
+// was renamed in semantics across the Firebase → Privy switch; the
+// CDP swap keeps the same shape.
 
 import { useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useWallet } from '@src/lib/wallet';
 import { removeAuthCookie, setAuthCookie } from '@src/lib/cookies';
 import { announcePresence, disconnectPresence } from '@src/lib/presence';
 import { APP } from '@src/pages';
@@ -26,17 +30,17 @@ export default function useAuthentication() {
   const fetchAttempted = useAppSelector((state: RootState) => state.user.fetchAttempted);
   const bootstrapping = useAppSelector((state: RootState) => state.user.bootstrapping);
 
-  const { ready, authenticated, user, getAccessToken } = usePrivy();
+  const { ready, authenticated, user, getAccessToken } = useWallet();
 
-  // Handle redux + cookie sync as Privy state evolves
+  // Handle redux + cookie sync as wallet-provider state evolves
   useEffect(() => {
     if (!ready) {
       dispatch(setStatus(AuthStatus.Unknown));
       return;
     }
     if (authenticated && user) {
-      const did = user.id; // `did:privy:...`
-      const email = user.email?.address ?? user.google?.email ?? null;
+      const did = user.id; // provider-stable user id
+      const email = user.email ?? null;
       dispatch(setStatus(AuthStatus.SignedIn));
       dispatch(setAuthId(did));
       if (email) dispatch(setEmail(email));
