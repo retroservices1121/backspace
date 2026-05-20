@@ -94,6 +94,19 @@ Solana DEX aggregator for spot swaps. See `apps/web/src/lib/dflow/`.
 
 Without `DFLOW_API_KEY` the proxy routes return 503 and the Dflow flow stays disabled. `NEXT_PUBLIC_SOLANA_RPC_URL` is required at runtime to broadcast signed transactions.
 
+## Phoenix perpetuals (Rise SDK)
+
+Solana CLOB perpetuals via `@ellipsis-labs/rise`, routed through the Flight builder layer so every order pays our trader account a configurable bps cut. See `apps/web/src/lib/phoenix/` (Phase 1) and the Phase 0 spike at `apps/web/src/pages/Dev/phoenix-spike.tsx`.
+
+| Var | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_PHOENIX_BUILDER_AUTHORITY` | Base58 pubkey of the builder authority registered with Phoenix. Public by design — every Flight-wrapped order on chain carries this address. |
+| `NEXT_PUBLIC_PHOENIX_BUILDER_PDA_INDEX` | PDA index for the builder trader account. Defaults to `0`. |
+| `NEXT_PUBLIC_PHOENIX_BUILDER_SUBACCOUNT_INDEX` | Subaccount index for the builder trader account. Defaults to `0`. |
+| `NEXT_PUBLIC_PHOENIX_BUILDER_FEE_BPS` | Default fee in basis points to set on builder registration / order routing (e.g. `25`). Phase 1 will read this when constructing the Flight config. |
+
+Builder credentials are issued by Phoenix off-platform — contact them to register the builder authority + receive the fee-collector trader account. The same `NEXT_PUBLIC_SOLANA_RPC_URL` as the Dflow integration is reused; no separate Phoenix RPC required.
+
 ## App origin
 
 | Var | Notes |
