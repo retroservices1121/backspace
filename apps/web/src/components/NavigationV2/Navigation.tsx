@@ -37,10 +37,13 @@ const Navigation: React.FC = ({
   // MemberList for screen real estate and squish the channel feed,
   // so we hide it and let the community page span the full width
   // (no 1320px cap). /messages opts out for the same reason — the
-  // page has its own DM sidebar + conversation pane.
+  // page has its own DM sidebar + conversation pane. /markets opts
+  // out so the discover-style grid has room to breathe — a hero
+  // trending row + market grid wants the full 1320px.
   const onCommunity = router.pathname.startsWith(APP.COMMUNITY.INDEX);
   const onMessages = router.pathname.startsWith(APP.MESSAGES.INDEX);
-  const wideLayout = onCommunity || onMessages;
+  const onMarkets = router.pathname.startsWith(APP.MARKETS.INDEX);
+  const wideLayout = onCommunity || onMessages || onMarkets;
   const dispatch = useDispatch();
 
   const handleOpenPostModal = () => {

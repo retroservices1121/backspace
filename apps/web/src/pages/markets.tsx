@@ -1,16 +1,17 @@
-// /markets — standalone markets catalog page (the URL the LeftNav
-// 'Markets' item points at). Reuses /api/markets and CatalogMarketCard.
+// /markets — Discover-style market catalog page.
 //
-// Sort options: passed through to /api/markets?sort=. 'trending' is
-// volume24hr desc (what's hot now); 'volume' / 'volume_asc' are total
-// volume desc/asc; 'closing' is closesAt asc (the original default).
-// Volume snapshots come from the Polymarket Gamma import.
+// Layout:
+//   1. Sticky TopTabs header (title only)
+//   2. Trending horizontal scroller — top 5–6 markets by 24h volume,
+//      always shown regardless of selected sort or category
+//   3. Sticky filter bar — scrollable category pills + sort dropdown
+//      + search box
+//   4. Single-column list of CatalogMarketCard rows reflecting the
+//      filter + sort selection
 //
-// Filter affordance: category dropdown (derived from categories
-// actually present in the loaded catalog) + a free-text search box.
-// When the search box has ≥2 chars we ignore the category and ask
-// the API for a substring match (/api/markets?q=...), so users can
-// jump to a market that isn't in the loaded window.
+// The page is rendered without the shell's RightRail (see
+// NavigationV2/Navigation.tsx's wideLayout check), so the content
+// can span the full 1320px shell.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from 'react-query';
@@ -22,12 +23,14 @@ import { setPageTitle } from '@src/store/appSlice';
 import { useAppDispatch } from '@src/store/store';
 
 import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
+import { TrendingMarketCard } from '@src/components/Market/TrendingMarketCard';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
 import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
 import TopTabs from 'components/Shell/TopTabs';
 
 const ALL = 'all';
 const SEARCH_MIN = 2;
+const TRENDING_COUNT = 6;
 
 type SortKey = 'trending' | 'volume' | 'volume_asc' | 'closing';
 
@@ -41,6 +44,15 @@ const SORTS: Array<{ key: SortKey; label: string; sub: string }> = [
 async function fetchCatalog(sort: SortKey): Promise<MarketCardData[]> {
   const { data } = await axios().get<MarketCardData[]>(
     `/markets?limit=100&sort=${sort}`,
+  );
+  return data ?? [];
+}
+
+async function fetchTrending(): Promise<MarketCardData[]> {
+  // Independent of the user's selected sort — always shows the hottest
+  // markets so the row reads consistently as "what's hot now."
+  const { data } = await axios().get<MarketCardData[]>(
+    `/markets?limit=${TRENDING_COUNT}&sort=trending`,
   );
   return data ?? [];
 }
@@ -65,34 +77,25 @@ const Markets: React.FC = () => {
   const authState = useAuthentication();
   const dispatch = useAppDispatch();
   const [category, setCategory] = useState<string>(ALL);
-  const [catOpen, setCatOpen] = useState(false);
   const [sort, setSort] = useState<SortKey>('trending');
   const [sortOpen, setSortOpen] = useState(false);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounced(query.trim(), 250);
-  const catRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(setPageTitle('Markets'));
   }, []);
 
-  // Close the dropdowns on outside click. One handler watches both
-  // refs so a click into the other popover doesn't bounce.
   useEffect(() => {
-    if (!catOpen && !sortOpen) return;
+    if (!sortOpen) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (catOpen && catRef.current && !catRef.current.contains(t)) {
-        setCatOpen(false);
-      }
-      if (sortOpen && sortRef.current && !sortRef.current.contains(t)) {
-        setSortOpen(false);
-      }
+      if (sortRef.current && !sortRef.current.contains(t)) setSortOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [catOpen, sortOpen]);
+  }, [sortOpen]);
 
   const catalog = useQuery(
     ['markets-catalog', sort],
@@ -102,6 +105,16 @@ const Markets: React.FC = () => {
       refetchInterval: 60_000,
       staleTime: 30_000,
       keepPreviousData: true,
+    },
+  );
+
+  const trending = useQuery(
+    ['markets-trending'],
+    fetchTrending,
+    {
+      enabled: authState === AuthStatus.SignedIn,
+      refetchInterval: 60_000,
+      staleTime: 30_000,
     },
   );
 
@@ -115,10 +128,11 @@ const Markets: React.FC = () => {
     },
   );
 
-  // Categories derived from the loaded catalog. Lowercase keys so the
-  // compare is stable; original casing kept for display.
+  // Categories derived from the loaded catalog. Order: All first, then
+  // alphabetical so the bar is predictable. Lowercase keys, original
+  // casing for display.
   const categories = useMemo(() => {
-    if (!catalog.data) return [] as Array<{ key: string; label: string }>;
+    if (!catalog.data) return [{ key: ALL, label: 'All' }];
     const seen = new Map<string, string>();
     for (const m of catalog.data) {
       if (m.category) {
@@ -127,7 +141,7 @@ const Markets: React.FC = () => {
       }
     }
     return [
-      { key: ALL, label: 'All categories' },
+      { key: ALL, label: 'All' },
       ...Array.from(seen, ([key, label]) => ({ key, label })).sort((a, b) =>
         a.label.localeCompare(b.label),
       ),
@@ -145,8 +159,6 @@ const Markets: React.FC = () => {
     );
   }, [isSearching, search.data, catalog.data, category]);
 
-  const activeCatLabel =
-    categories.find((c) => c.key === category)?.label ?? 'All categories';
   const activeSortLabel = SORTS.find((s) => s.key === sort)?.label ?? 'Trending';
 
   return (
@@ -155,41 +167,66 @@ const Markets: React.FC = () => {
         <TopTabs title="Markets" tabs={[]} active="" onChange={() => undefined} />
       </div>
 
-      {/* Filter bar — category dropdown + search. Sticky just under
-          the TopTabs header so the controls stay reachable while the
-          catalog scrolls. */}
-      <div
-        className="
-          sticky top-[64px] z-[5]
-          px-6 py-3 border-b border-line
-          bg-canvas/[0.78] backdrop-blur-[14px] backdrop-saturate-[160%]
-          flex flex-col gap-2.5
-        "
-      >
-        <div className="flex items-center gap-2">
-          <div className="relative" ref={catRef}>
-            <button
-              type="button"
-              onClick={() => setCatOpen((v) => !v)}
-              className="
-                inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-                border border-line bg-surface text-ink text-[13px] font-medium
-                hover:border-brand-2/50 transition-colors duration-150
-              "
-            >
-              <span>{activeCatLabel}</span>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-
-            {catOpen && (
+      {authState !== AuthStatus.SignedIn ? (
+        <EmptyState text="Sign in to browse markets." />
+      ) : (
+        <>
+          {/* Trending hero row — only shown when we have data and
+              user isn't searching (search swaps the entire list). */}
+          {!isSearching && (
+            <section className="px-6 pt-5 pb-2">
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="m-0 text-[15px] font-bold tracking-[-0.01em] text-ink">
+                  Trending now
+                </h2>
+                <span className="text-[11px] font-mono uppercase tracking-[0.08em] text-ink-3">
+                  Top by 24h volume
+                </span>
+              </div>
               <div
                 className="
-                  absolute z-20 mt-1 w-[240px] max-h-[320px] overflow-y-auto
-                  rounded-[12px] border border-line bg-surface
-                  shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
+                  flex gap-3 overflow-x-auto pb-2 -mx-6 px-6
+                  snap-x snap-mandatory scroll-px-6
+                  [&::-webkit-scrollbar]:h-1.5
+                  [&::-webkit-scrollbar-thumb]:bg-white/10
+                  [&::-webkit-scrollbar-thumb]:rounded-full
+                  [&::-webkit-scrollbar-track]:bg-transparent
                 "
+              >
+                {trending.isLoading && trending.data == null
+                  ? Array.from({ length: TRENDING_COUNT }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-none w-[260px] h-[160px] rounded-[16px] border border-line bg-surface animate-pulse"
+                    />
+                  ))
+                  : (trending.data ?? []).map((m) => (
+                    <div key={`${m.venue}:${m.externalId}`} className="snap-start">
+                      <TrendingMarketCard market={m} />
+                    </div>
+                  ))}
+              </div>
+            </section>
+          )}
+
+          {/* Filter bar — category pills + sort dropdown + search.
+              Sticky just under TopTabs so it stays reachable while the
+              catalog scrolls. */}
+          <div
+            className="
+              sticky top-[64px] z-[5]
+              border-b border-line
+              bg-canvas/[0.78] backdrop-blur-[14px] backdrop-saturate-[160%]
+            "
+          >
+            <div className="px-6 pt-3 pb-2 flex items-center gap-3 flex-wrap">
+              <div
+                className="
+                  flex-1 min-w-[260px] flex items-center gap-1.5
+                  overflow-x-auto -mx-2 px-2
+                  [&::-webkit-scrollbar]{display:none}
+                "
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {categories.map((c) => {
                   const isActive = c.key === category;
@@ -197,16 +234,14 @@ const Markets: React.FC = () => {
                     <button
                       key={c.key}
                       type="button"
-                      onClick={() => {
-                        setCategory(c.key);
-                        setCatOpen(false);
-                      }}
+                      onClick={() => setCategory(c.key)}
                       className={[
-                        'w-full text-left px-2.5 py-2 rounded-[8px]',
-                        'text-[13px] transition-colors duration-150',
+                        'flex-none px-3 h-8 rounded-full text-[13px] font-medium',
+                        'transition-colors duration-150',
+                        'border whitespace-nowrap',
                         isActive
-                          ? 'bg-brand-soft text-brand-2 font-semibold'
-                          : 'text-ink hover:bg-hover',
+                          ? 'bg-brand text-ink border-brand'
+                          : 'bg-transparent text-ink-2 border-line hover:text-ink hover:border-line-2',
                       ].join(' ')}
                     >
                       {c.label}
@@ -214,135 +249,139 @@ const Markets: React.FC = () => {
                   );
                 })}
               </div>
-            )}
-          </div>
 
-          <div className="relative" ref={sortRef}>
-            <button
-              type="button"
-              onClick={() => setSortOpen((v) => !v)}
-              className="
-                inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-                border border-line bg-surface text-ink text-[13px] font-medium
-                hover:border-brand-2/50 transition-colors duration-150
-              "
-            >
-              <span className="text-ink-3 text-[11px] font-mono">Sort:</span>
-              <span>{activeSortLabel}</span>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-
-            {sortOpen && (
-              <div
-                className="
-                  absolute z-20 mt-1 w-[260px]
-                  rounded-[12px] border border-line bg-surface
-                  shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
-                "
-              >
-                {SORTS.map((s) => {
-                  const isActive = s.key === sort;
-                  return (
-                    <button
-                      key={s.key}
-                      type="button"
-                      onClick={() => {
-                        setSort(s.key);
-                        setSortOpen(false);
-                      }}
-                      className={[
-                        'w-full text-left px-2.5 py-2 rounded-[8px]',
-                        'transition-colors duration-150',
-                        isActive ? 'bg-brand-soft' : 'hover:bg-hover',
-                      ].join(' ')}
-                    >
-                      <div
-                        className={[
-                          'text-[13px] font-semibold',
-                          isActive ? 'text-brand-2' : 'text-ink',
-                        ].join(' ')}
-                      >
-                        {s.label}
-                      </div>
-                      <div className="text-[11px] font-mono text-ink-3">
-                        {s.sub}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="relative flex-none" ref={sortRef}>
+                <button
+                  type="button"
+                  onClick={() => setSortOpen((v) => !v)}
+                  className="
+                    inline-flex items-center gap-2 px-3 h-8 rounded-full
+                    border border-line bg-surface text-ink text-[13px] font-medium
+                    hover:border-brand-2/50 transition-colors duration-150
+                  "
+                >
+                  <span className="text-ink-3 text-[11px] font-mono">Sort</span>
+                  <span>{activeSortLabel}</span>
+                  <svg
+                    viewBox="0 0 24 24" width="12" height="12"
+                    fill="none" stroke="currentColor" strokeWidth="2.2"
+                    strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {sortOpen && (
+                  <div
+                    className="
+                      absolute right-0 z-20 mt-1 w-[260px]
+                      rounded-[12px] border border-line bg-surface
+                      shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
+                    "
+                  >
+                    {SORTS.map((s) => {
+                      const isActive = s.key === sort;
+                      return (
+                        <button
+                          key={s.key}
+                          type="button"
+                          onClick={() => { setSort(s.key); setSortOpen(false); }}
+                          className={[
+                            'w-full text-left px-2.5 py-2 rounded-[8px]',
+                            'transition-colors duration-150',
+                            isActive ? 'bg-brand-soft' : 'hover:bg-hover',
+                          ].join(' ')}
+                        >
+                          <div
+                            className={[
+                              'text-[13px] font-semibold',
+                              isActive ? 'text-brand-2' : 'text-ink',
+                            ].join(' ')}
+                          >
+                            {s.label}
+                          </div>
+                          <div className="text-[11px] font-mono text-ink-3">
+                            {s.sub}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div className="px-6 pb-3">
+              <div className="relative">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16" height="16"
+                  fill="none" stroke="currentColor" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search markets not in this list…"
+                  style={{ background: 'transparent' }}
+                  className="
+                    w-full h-10 pl-10 pr-4 rounded-full
+                    border border-line text-[14px] text-ink placeholder:text-ink-3
+                    outline-none focus:border-brand-2
+                    transition-colors duration-150 font-display
+                  "
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Main list */}
+          <div className="font-display text-ink">
+            {isSearching ? (
+              search.isLoading ? (
+                <SkeletonLoader renderCount={4} />
+              ) : visible.length > 0 ? (
+                visible.map((m) => (
+                  <CatalogMarketCard
+                    key={`${m.venue}:${m.externalId}`}
+                    market={m}
+                  />
+                ))
+              ) : (
+                <EmptyState
+                  title="No matches"
+                  text={`Nothing matched "${debouncedQuery}". Try a different keyword.`}
+                />
+              )
+            ) : catalog.isLoading ? (
+              <SkeletonLoader renderCount={8} />
+            ) : visible.length > 0 ? (
+              visible.map((m) => (
+                <CatalogMarketCard
+                  key={`${m.venue}:${m.externalId}`}
+                  market={m}
+                />
+              ))
+            ) : (
+              <EmptyState
+                title={
+                  category === ALL
+                    ? 'No active markets'
+                    : 'No markets in this category yet'
+                }
+                text={
+                  category === ALL
+                    ? 'Check back soon — the catalog refreshes on a cron.'
+                    : 'Try another category, or search above.'
+                }
+              />
             )}
           </div>
-        </div>
-
-        <div className="relative">
-          <svg
-            viewBox="0 0 24 24"
-            width="16" height="16"
-            fill="none" stroke="currentColor" strokeWidth="1.8"
-            strokeLinecap="round" strokeLinejoin="round"
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.3-4.3" />
-          </svg>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search markets not in this list…"
-            style={{ background: 'transparent' }}
-            className="
-              w-full h-10 pl-10 pr-4 rounded-full
-              border border-line text-[14px] text-ink placeholder:text-ink-3
-              outline-none focus:border-brand-2
-              transition-colors duration-150 font-display
-            "
-          />
-        </div>
-      </div>
-
-      <div className="font-display text-ink">
-        {authState !== AuthStatus.SignedIn ? (
-          <EmptyState text="Sign in to browse markets." />
-        ) : isSearching ? (
-          search.isLoading ? (
-            <SkeletonLoader renderCount={4} />
-          ) : visible.length > 0 ? (
-            visible.map((m) => (
-              <CatalogMarketCard
-                key={`${m.venue}:${m.externalId}`}
-                market={m}
-              />
-            ))
-          ) : (
-            <EmptyState
-              title="No matches"
-              text={`Nothing matched "${debouncedQuery}". Try a different keyword.`}
-            />
-          )
-        ) : catalog.isLoading ? (
-          <SkeletonLoader renderCount={8} />
-        ) : visible.length > 0 ? (
-          visible.map((m) => (
-            <CatalogMarketCard key={`${m.venue}:${m.externalId}`} market={m} />
-          ))
-        ) : (
-          <EmptyState
-            title={
-              category === ALL
-                ? 'No active markets'
-                : 'No markets in this category yet'
-            }
-            text={
-              category === ALL
-                ? 'Check back soon — the catalog refreshes on a cron.'
-                : 'Try another category, or search above.'
-            }
-          />
-        )}
-      </div>
+        </>
+      )}
     </>
   );
 };
