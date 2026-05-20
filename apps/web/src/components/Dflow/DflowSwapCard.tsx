@@ -283,27 +283,29 @@ export function DflowSwapCard(props: Props | LegacyProps) {
           Create Solana wallet to swap
         </button>
       ) : (
-        <button
-          onClick={handleSubmit}
-          disabled={buttonDisabled}
-          className="
-            mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-ink
-            bg-brand hover:bg-brand-2
-            shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
-            transition-colors duration-150
-            disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none
-          "
-        >
-          {succeeded
-            ? 'Swap submitted'
-            : submitting
-              ? 'Submitting…'
-              : quoting
-                ? 'Quoting…'
-                : sellBlocked
-                  ? `No ${token.symbol} to sell`
-                  : `${side === 'BUY' ? 'Buy' : 'Sell'} ${token.symbol}`}
-        </button>
+        <div className="mt-3 flex justify-end">
+          <button
+            onClick={handleSubmit}
+            disabled={buttonDisabled}
+            className="
+              rounded-full px-5 h-9 text-[13px] font-semibold text-ink
+              bg-brand hover:bg-brand-2
+              shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+              transition-colors duration-150
+              disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none
+            "
+          >
+            {succeeded
+              ? 'Swap submitted'
+              : submitting
+                ? 'Submitting…'
+                : quoting
+                  ? 'Quoting…'
+                  : sellBlocked
+                    ? `No ${token.symbol} to sell`
+                    : `${side === 'BUY' ? 'Buy' : 'Sell'} ${token.symbol}`}
+          </button>
+        </div>
       )}
 
       {error && phase === 'error' && (
