@@ -26,7 +26,7 @@
 //   linking    — have signature, calling Privy + our sync endpoint
 //   linked     — done
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useConnectWallet,
   useLinkWithSiwe,
@@ -119,39 +119,47 @@ export function useLinkedWallets() {
     }
   }, [candidate, phase]);
 
-  // Auto-recovery for the "Privy auto-linked but no candidate
-  // surfaces" case. Coinbase Wallet in particular sometimes
-  // returns from connectWallet() with the address already in
-  // user.linkedAccounts (so candidate filter excludes it) before
-  // our server has persisted it. Detect that mismatch and trigger
-  // the sync — otherwise phase stays on 'connecting' forever and
-  // the button reads "Opening wallet…" with nothing to click.
+  // Auto-recovery for the "Privy auto-linked but our DB hasn't
+  // synced" case. Coinbase Wallet in particular sometimes returns
+  // from connectWallet() with the address already in
+  // user.linkedAccounts (so candidate filter excludes it) — and
+  // Privy's user-state propagation can be slow, arriving after the
+  // initial connecting phase has timed out. Runs whenever
+  // linkedAddresses changes, regardless of phase, so the sync
+  // happens even after the user has clicked away or seen the
+  // watchdog reset.
+  const syncedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (phase !== 'connecting') return;
     const dbAddresses = new Set(
       (list.data ?? []).map((w) => w.address.toLowerCase()),
     );
     const newlyLinked = Array.from(linkedAddresses).find(
-      (a) => !dbAddresses.has(a),
+      (a) => !dbAddresses.has(a) && !syncedRef.current.has(a),
     );
-    if (newlyLinked) {
-      setPhase('linking');
-      syncLinkedWallets(newlyLinked)
-        .then(() => {
-          queryClient.invalidateQueries(['linked-wallets']);
-          queryClient.invalidateQueries(['polymarket-positions']);
-          setPhase('linked');
-        })
-        .catch((e) => {
-          setError(e as Error);
-          setPhase('idle');
-        });
-    }
-  }, [phase, linkedAddresses, list.data, queryClient]);
+    if (!newlyLinked) return;
+    // Dedupe: don't re-sync the same address in a tight loop while
+    // the DB query is invalidating + refetching.
+    syncedRef.current.add(newlyLinked);
+    setPhase('linking');
+    syncLinkedWallets(newlyLinked)
+      .then(() => {
+        queryClient.invalidateQueries(['linked-wallets']);
+        queryClient.invalidateQueries(['polymarket-positions']);
+        setPhase('linked');
+      })
+      .catch((e) => {
+        setError(e as Error);
+        setPhase('idle');
+        // Allow retry of this specific address on a future attempt.
+        syncedRef.current.delete(newlyLinked);
+      });
+  }, [linkedAddresses, list.data, queryClient]);
 
-  // Watchdog: if 'connecting' lingers past 20 seconds without
-  // either a candidate appearing or the auto-link recovery firing,
-  // reset to idle so the user can retry without a page reload.
+  // Watchdog: if 'connecting' lingers past 60 seconds, reset to
+  // idle so the user can retry without a page reload. Generous
+  // because mobile wallet-app round-trips can legitimately take
+  // 30–45s, and the auto-recovery above still fires regardless of
+  // phase if Privy eventually reports the link.
   useEffect(() => {
     if (phase !== 'connecting') return;
     const timer = setTimeout(() => {
@@ -161,7 +169,7 @@ export function useLinkedWallets() {
         ),
       );
       setPhase('idle');
-    }, 20_000);
+    }, 60_000);
     return () => clearTimeout(timer);
   }, [phase]);
 
