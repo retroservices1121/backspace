@@ -58,6 +58,8 @@ export function usePrivyWalletProvider(): WalletProvider {
       clientType: w.walletClientType,
       chainId: parseChainId(w.chainId),
       getEthersSigner: () => (w as any).getEthersSigner(),
+      getEthereumProvider: () => (w as any).getEthereumProvider(),
+      switchChain: (chainId: number) => (w as any).switchChain(chainId),
     }));
   }, [evmRaw]);
 

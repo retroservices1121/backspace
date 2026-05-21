@@ -55,6 +55,12 @@ export type EvmWallet = {
    *  connected). The abstraction commits to ethers v5 specifically —
    *  Polymarket's clob-client-v2 still requires it as of 2026-05. */
   getEthersSigner: () => Promise<unknown>;
+  /** EIP-1193 provider for raw RPC calls (e.g. personal_sign for SIWE).
+   *  Returned as unknown so callers cast to whatever shape they need —
+   *  the surface is too provider-fluid to lock down. */
+  getEthereumProvider: () => Promise<unknown>;
+  /** Switch the wallet to the named chain. No-op when already there. */
+  switchChain: (chainId: number) => Promise<void>;
 };
 
 export type SolanaWallet = {

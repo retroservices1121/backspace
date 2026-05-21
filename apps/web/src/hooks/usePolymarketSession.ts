@@ -1,11 +1,12 @@
-// React wrapper over lib/polymarket/session. Finds the user's Privy
-// embedded wallet, exposes the deterministic Safe address + live pUSD
-// balance immediately, and drives the one-time trading-session setup.
+// React wrapper over lib/polymarket/session. Finds the user's embedded
+// EOA via useWallet(), exposes the deterministic Safe address + live
+// pUSD balance immediately, and drives the one-time trading-session
+// setup.
 //
 // Backs both the funding UI (settings/wallet) and the trade-gating in
 // the market cards.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useWallets } from '@privy-io/react-auth';
+import { useWallet } from '@src/lib/wallet';
 import {
   clearStoredSession,
   deriveSafeAddress,
@@ -18,16 +19,9 @@ import {
 } from '@src/lib/polymarket';
 import { useQuery } from 'react-query';
 
-// The non-custodial EOA Privy provisions. useWallets() returns only
-// EVM wallets in this Privy version; the embedded one is the 'privy'
-// wallet client type. External connected wallets aren't used here.
-function useEmbeddedWallet() {
-  const { wallets } = useWallets();
-  return wallets.find((w) => w.walletClientType === 'privy');
-}
-
 export function usePolymarketSession() {
-  const wallet = useEmbeddedWallet();
+  const { embeddedEvmWallet } = useWallet();
+  const wallet = embeddedEvmWallet;
   const eoaAddress = wallet?.address;
 
   const [session, setSession] = useState<PolymarketSession | null>(null);
