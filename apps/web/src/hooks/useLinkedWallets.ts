@@ -119,6 +119,52 @@ export function useLinkedWallets() {
     }
   }, [candidate, phase]);
 
+  // Auto-recovery for the "Privy auto-linked but no candidate
+  // surfaces" case. Coinbase Wallet in particular sometimes
+  // returns from connectWallet() with the address already in
+  // user.linkedAccounts (so candidate filter excludes it) before
+  // our server has persisted it. Detect that mismatch and trigger
+  // the sync — otherwise phase stays on 'connecting' forever and
+  // the button reads "Opening wallet…" with nothing to click.
+  useEffect(() => {
+    if (phase !== 'connecting') return;
+    const dbAddresses = new Set(
+      (list.data ?? []).map((w) => w.address.toLowerCase()),
+    );
+    const newlyLinked = Array.from(linkedAddresses).find(
+      (a) => !dbAddresses.has(a),
+    );
+    if (newlyLinked) {
+      setPhase('linking');
+      syncLinkedWallets(newlyLinked)
+        .then(() => {
+          queryClient.invalidateQueries(['linked-wallets']);
+          queryClient.invalidateQueries(['polymarket-positions']);
+          setPhase('linked');
+        })
+        .catch((e) => {
+          setError(e as Error);
+          setPhase('idle');
+        });
+    }
+  }, [phase, linkedAddresses, list.data, queryClient]);
+
+  // Watchdog: if 'connecting' lingers past 20 seconds without
+  // either a candidate appearing or the auto-link recovery firing,
+  // reset to idle so the user can retry without a page reload.
+  useEffect(() => {
+    if (phase !== 'connecting') return;
+    const timer = setTimeout(() => {
+      setError(
+        new Error(
+          "We didn't hear back from your wallet. Try again — or refresh if it sticks.",
+        ),
+      );
+      setPhase('idle');
+    }, 20_000);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
   const { connectWallet } = useConnectWallet({
     onError: (err) => {
       setError(err instanceof Error ? err : new Error(String(err)));
