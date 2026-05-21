@@ -65,6 +65,7 @@ export const APP = {
     APPEARANCE: `${settingsRoute}/appearance`,
     BILLING: `${settingsRoute}/billing`,
     CREATOR: `${settingsRoute}/creator`,
+    WALLET: `${settingsRoute}/wallet`,
   },
   ERRORS: {
     DEFAULT: `${baseRoute}/error`,

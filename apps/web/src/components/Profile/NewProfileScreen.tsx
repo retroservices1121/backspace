@@ -409,11 +409,20 @@ function ProfileStatsRow({ username, isSelf }: { username: string; isSelf: boole
     if (!isSelf) return null;
     return (
       <div className="px-5 mb-4">
-        <div className="rounded-[14px] border border-line bg-surface px-4 py-3 text-[13px] text-ink-3">
-          No resolved positions yet. Link a Polymarket wallet in
-          <span className="text-brand-2"> Settings → Wallet </span>
-          to build your stats.
-        </div>
+        <Link href={APP.SETTINGS.WALLET}>
+          <a
+            className="
+              block rounded-[14px] border border-line bg-surface
+              px-4 py-3 text-[13px] text-ink-3
+              hover:border-brand-2/50 hover:bg-hover
+              transition-colors duration-150
+            "
+          >
+            No resolved positions yet. Link a Polymarket wallet in
+            <span className="text-brand-2"> Settings → Wallet </span>
+            to build your stats.
+          </a>
+        </Link>
       </div>
     );
   }
