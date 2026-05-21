@@ -33,16 +33,20 @@ type DataApiPosition = {
   avgPrice: number;
   realizedPnl: number;
   redeemable: boolean;
-  // The Data API exposes resolved positions with a settledAt /
-  // closedAt timestamp + a payout once the market resolves. The
-  // exact field name is historically `payout`; on some recent
-  // schema versions it's reported as `redemption` or appears on a
-  // sibling endpoint. Capture both so the worker tolerates either.
-  payout?: number;
-  redemption?: number;
+  // Binary outcome prices settle to 0 (lost) or 1 (won) at resolution.
+  // While the market is open this is the live mid-market price.
+  curPrice?: number;
+  currentValue?: number;
+  // Polymarket's `/positions` endpoint does not expose settledAt /
+  // closedAt at all in practice — the resolution signal is
+  // `redeemable: true` combined with `endDate` in the past (and the
+  // settlement value lives in `curPrice`, which collapses to 0 or 1).
+  // We keep the optional settledAt/closedAt for forward-compat in
+  // case a future schema version surfaces them.
+  endDate?: string;
   settledAt?: string;
   closedAt?: string;
-};
+}
 
 async function fetchResolvedPositions(safeAddress: string): Promise<DataApiPosition[]> {
   // Data API: filter to resolved positions to keep the payload small.
@@ -55,10 +59,19 @@ async function fetchResolvedPositions(safeAddress: string): Promise<DataApiPosit
     throw new Error(`Polymarket Data API HTTP ${res.status} for ${safeAddress}`);
   }
   const all = (await res.json()) as DataApiPosition[];
-  // Only resolved rows belong in the snapshot. A position with no
-  // settledAt/closedAt is still open and shouldn't count toward
-  // accuracy yet.
-  return all.filter((p) => Boolean(p.settledAt ?? p.closedAt));
+  // A position is "resolved" when the underlying market has ended.
+  // The Data API surfaces this as `endDate` in the past + the
+  // position being `redeemable` (winners awaiting claim, or losers
+  // permanently stuck at curPrice=0). settledAt/closedAt are kept
+  // as forward-compat — current schema doesn't populate them.
+  const now = Date.now();
+  return all.filter((p) => {
+    if (p.settledAt || p.closedAt) return true;
+    if (!p.endDate) return false;
+    const ended = new Date(p.endDate).getTime();
+    if (Number.isNaN(ended) || ended >= now) return false;
+    return p.redeemable === true;
+  });
 }
 
 export async function snapshotPolymarketPositions(): Promise<SnapshotSummary> {
@@ -89,14 +102,19 @@ export async function snapshotPolymarketPositions(): Promise<SnapshotSummary> {
     }
 
     for (const p of positions) {
-      const settledAt = p.settledAt ?? p.closedAt;
-      if (!settledAt) continue;
-      const payout = p.payout ?? p.redemption ?? 0;
-      // Won if the position paid out. A redeemable=true with payout=0
-      // means the position lost (it's "redeemable" in the sense the
-      // user can claim zero). avgPrice < curPrice doesn't matter
-      // here — we want the binary settlement outcome.
-      const won = payout > 0;
+      const settledAtIso = p.settledAt ?? p.closedAt ?? p.endDate;
+      if (!settledAtIso) continue;
+      // Binary outcomes settle to 0 or 1 in `curPrice`. >= 0.5 covers
+      // any future fractional settlement (multi-outcome markets) and
+      // is robust against tiny float drift.
+      const curPrice = p.curPrice ?? 0;
+      const won = curPrice >= 0.5;
+      // Expected payout: shares × settled price. Equals size for a
+      // winner, 0 for a loser. We don't have an authoritative
+      // realized-payout field on /positions — that lives in the
+      // activity endpoint — but the expected payout from the binary
+      // settlement is the accuracy-relevant quantity.
+      const payout = p.size * curPrice;
 
       try {
         await prisma.polymarketPositionSnapshot.upsert({
@@ -118,7 +136,7 @@ export async function snapshotPolymarketPositions(): Promise<SnapshotSummary> {
             payoutUsd: new Prisma.Decimal(payout),
             realizedPnlUsd: new Prisma.Decimal(p.realizedPnl ?? 0),
             won,
-            settledAt: new Date(settledAt),
+            settledAt: new Date(settledAtIso),
           },
           update: {
             outcomeLabel: p.outcome,
@@ -127,7 +145,7 @@ export async function snapshotPolymarketPositions(): Promise<SnapshotSummary> {
             payoutUsd: new Prisma.Decimal(payout),
             realizedPnlUsd: new Prisma.Decimal(p.realizedPnl ?? 0),
             won,
-            settledAt: new Date(settledAt),
+            settledAt: new Date(settledAtIso),
           },
         });
         summary.rowsUpserted += 1;
