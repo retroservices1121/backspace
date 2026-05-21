@@ -65,7 +65,7 @@ Required only if `Media` rows with `host=FIREBASE` or `host=SUPABASE` still exis
 | Var | Notes |
 | --- | --- |
 | `CRON_SECRET` | **Server-only.** Bearer token the Railway cron service sends to `/api/cron/import-polymarket`. The cron service config is `curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/import-polymarket` on schedule `*/15 * * * *`. Generate with `openssl rand -hex 32`. |
-| `ADMIN_BOOTSTRAP_SECRET` | **Server-only.** One-shot bearer token for `POST /api/admin/bootstrap` (promotes the first signed-in caller to ADMIN). The route refuses 409 once any admin exists; **unset this var after first admin is set** so the endpoint hard-disables. Generate with `openssl rand -hex 32`. |
+| `ADMIN_BOOTSTRAP_SECRET` | **Server-only.** One-shot token for `POST /api/admin/bootstrap` (promotes the first signed-in caller to ADMIN), sent in the `X-Bootstrap-Secret` header (the Authorization slot already carries the Privy session token). The route refuses 409 once any admin exists; **unset this var after first admin is set** so the endpoint hard-disables. Generate with `openssl rand -hex 32`. |
 
 ## Polymarket trading
 
@@ -126,11 +126,21 @@ openssl rand -hex 32   # CRON_SECRET
 
 1. Register the Stripe webhook → set `STRIPE_WEBHOOK_SECRET`, redeploy.
 2. Configure the cron service in Railway → it shares `CRON_SECRET` with the web service.
-3. Sign up the first user via the app, then run:
-   ```bash
-   curl -X POST https://<app>/api/admin/bootstrap \
-     -H "Authorization: Bearer $ADMIN_BOOTSTRAP_SECRET" \
-     -H "Cookie: <your-privy-session-cookie>"
+3. Sign up the first user via the app, then promote them. The route
+   needs **both** the Privy session token (so it knows _which_ user
+   to promote) and the bootstrap secret (proving the operator
+   authorized it). Easiest is from the signed-in browser's DevTools
+   Console:
+   ```js
+   const token = document.cookie.split('; ')
+     .find(r => r.startsWith('firebaseToken='))?.split('=')[1];
+   fetch('/api/admin/bootstrap', {
+     method: 'POST',
+     headers: {
+       Authorization: `Bearer ${token}`,
+       'X-Bootstrap-Secret': '<ADMIN_BOOTSTRAP_SECRET>',
+     },
+   }).then(async r => console.log(r.status, await r.text()));
    ```
 4. **Unset `ADMIN_BOOTSTRAP_SECRET`** in Railway once the first admin is set.
 

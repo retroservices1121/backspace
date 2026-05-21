@@ -7,8 +7,13 @@
 //
 // Two layers of safety so a leaked secret doesn't let an attacker
 // promote themselves on a live system:
-//   1. Header gate: `Authorization: Bearer ${ADMIN_BOOTSTRAP_SECRET}`.
-//      The env var is set per environment; rotate on use.
+//   1. Two-header gate:
+//        Authorization:    Bearer <Privy session token>  (identifies the user to promote)
+//        X-Bootstrap-Secret: <ADMIN_BOOTSTRAP_SECRET>     (proves the operator authorized it)
+//      The bootstrap secret lives in a dedicated header because the
+//      Authorization slot is already owned by requireAuthMiddleware
+//      for the Privy token — sharing it made the endpoint unreachable.
+//      Rotate ADMIN_BOOTSTRAP_SECRET per environment, ideally on use.
 //   2. One-shot: refuses if any User.platformPermission='ADMIN'
 //      already exists. After that the proper escalation path is
 //      another admin promoting via the admin app (or a manual
@@ -19,10 +24,11 @@
 // caller's). Identity from req.authId.
 
 import { PlatformUserType } from '@prisma/client';
+import HttpStatus from 'http-status-codes';
+
 import prisma from '@src/api2/prisma';
 import { getUserByAuthId } from '@src/api2/user';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
-import HttpStatus from 'http-status-codes';
 
 const handler = createHandler();
 
@@ -34,9 +40,11 @@ handler
       res.status(HttpStatus.SERVICE_UNAVAILABLE).end('ADMIN_BOOTSTRAP_SECRET not configured');
       return;
     }
-    const auth = req.headers.authorization;
-    const provided = auth?.startsWith('Bearer ') ? auth.slice('Bearer '.length) : null;
-    if (provided !== secret) {
+    // Header name is case-insensitive on the wire but Node normalizes
+    // to lowercase when populating req.headers.
+    const raw = req.headers['x-bootstrap-secret'];
+    const provided = Array.isArray(raw) ? raw[0] : raw;
+    if (!provided || provided !== secret) {
       res.status(HttpStatus.UNAUTHORIZED).end('Unauthorized');
       return;
     }
