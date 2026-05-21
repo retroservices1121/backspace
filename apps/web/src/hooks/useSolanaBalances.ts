@@ -100,7 +100,9 @@ async function fetchBalances(owner: string): Promise<SolanaBalance[]> {
       decimals: 9,
       symbol: 'SOL',
       name: 'Solana',
-      logoURI: null,
+      // Canonical Solana mint logo from the official token list.
+      logoURI:
+        'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
     });
   }
   for (const acc of tokenAccounts.value ?? []) {
@@ -118,10 +120,14 @@ async function fetchBalances(owner: string): Promise<SolanaBalance[]> {
     });
   }
 
-  // Join with our Token catalog to fill in symbol/name/logo for the
-  // SPL rows. /api/tokens is paginated (max 200) so for users with
-  // wallets full of obscure tokens we'd need a bulk-by-mint endpoint;
-  // for now everything within the curated catalog is well under that.
+  // Two-step metadata enrichment:
+  //  (1) Our Token catalog — covers Jupiter-verified mints we've
+  //      imported. Cheapest path; one network call.
+  //  (2) Jupiter's per-mint endpoint as a fallback for anything we
+  //      don't have. The catalog is intentionally narrow (anti-spam
+  //      for the token picker) but portfolio should show whatever
+  //      the user actually holds, even off-catalog tokens.
+  //      Lite host is public + CORS-friendly; no API key needed.
   try {
     const { data } = await axios().get<CatalogToken[]>('/tokens?limit=200');
     const byMint = new Map(data.map((t) => [t.mint, t]));
@@ -134,8 +140,49 @@ async function fetchBalances(owner: string): Promise<SolanaBalance[]> {
       }
     }
   } catch {
-    // Metadata enrichment is best-effort; raw mints + amounts are
+    // Catalog enrichment is best-effort; raw mints + amounts are
     // still useful on their own.
+  }
+
+  // Step 2: Jupiter fallback for anything still unresolved (excluding
+  // native SOL, which never has a mint to look up). Parallel fetches
+  // with short timeouts so the portfolio doesn't hang on Jupiter
+  // hiccups.
+  const unresolved = balances.filter(
+    (b) => b.mint !== 'SOL' && !b.symbol,
+  );
+  if (unresolved.length > 0) {
+    await Promise.all(
+      unresolved.map(async (b) => {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 3000);
+          const res = await fetch(
+            `https://lite-api.jup.ag/tokens/v2/search?query=${b.mint}`,
+            { signal: ctrl.signal },
+          );
+          clearTimeout(timer);
+          if (!res.ok) return;
+          const arr = (await res.json()) as Array<{
+            id?: string;
+            symbol?: string;
+            name?: string;
+            icon?: string;
+            logoURI?: string;
+          }>;
+          const hit = Array.isArray(arr)
+            ? arr.find((t) => t.id === b.mint) ?? arr[0]
+            : null;
+          if (hit) {
+            b.symbol = hit.symbol ?? b.symbol;
+            b.name = hit.name ?? b.name;
+            b.logoURI = hit.icon ?? hit.logoURI ?? b.logoURI;
+          }
+        } catch {
+          // Jupiter fallback is also best-effort — leave the mint as-is.
+        }
+      }),
+    );
   }
 
   // Sort: SOL first, then by uiAmount desc.
