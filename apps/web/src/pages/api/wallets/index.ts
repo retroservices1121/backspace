@@ -65,6 +65,19 @@ handler.post(async (req, res) => {
   const incoming: WalletInput[] = Array.isArray(req.body?.wallets) ? req.body.wallets : [];
   const normalized = incoming.map(normalize).filter((w): w is WalletInput => w !== null);
 
+  // Guard: empty bodies are almost always a not-yet-loaded client
+  // state, not a real "delete all my wallets" instruction. Treat as
+  // no-op and return the current wallet set unchanged. Without this
+  // guard, a stray useWalletSync render before the wallet hooks
+  // populate would wipe the user's wallet rows from the DB.
+  if (normalized.length === 0) {
+    const wallets = await prisma.wallet.findMany({
+      where: { userId: user.id },
+      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+    });
+    return res.json(wallets);
+  }
+
   // Ensure exactly one primary if any wallet is marked primary; otherwise
   // promote the first one. If user has no wallets and isn't sending any,
   // skip — nothing to do.
