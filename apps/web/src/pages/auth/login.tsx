@@ -4,17 +4,16 @@
 // Google, Apple, and Connect wallet entry points. Mobile stacks
 // the same auth card under a centered brand block.
 //
-// Every button calls usePrivy().login() — Privy v1.99 doesn't
-// expose scoped login-method helpers on the public hook, so the
-// branded card hands off to Privy's themed modal once tapped.
-// The win is the landing experience: users land on a branded page
-// instead of an unstyled "Continue" stub.
+// Every button calls useWallet().login() — the provider (Privy
+// today, CDP later) opens its themed modal once tapped. The win is
+// the landing experience: users land on a branded page instead of
+// an unstyled "Continue" stub.
 
 import React, { useEffect, useState } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import useAuthentication from '@src/hooks/useAuthenticate';
 import { AuthStatus } from '@src/store/authSlice';
-import { usePrivy } from '@privy-io/react-auth';
+import { useWallet } from '@src/lib/wallet';
 import AuthLayout from 'layouts/authLayout';
 import { useRouter } from 'next/router';
 
@@ -28,7 +27,7 @@ const Login: ReactLayoutComponentType = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const authStatus = useAuthentication();
-  const { ready, authenticated, login } = usePrivy();
+  const { ready, authenticated, login } = useWallet();
   const [email, setEmail] = useState('');
 
   useEffect(() => { dispatch(setPageTitle(pageTitle)); }, []);

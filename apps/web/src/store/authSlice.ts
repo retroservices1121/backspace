@@ -1,7 +1,8 @@
 // Auth slice. Migrated off the Firebase `User` shape (2026-05-08); the slice
-// only tracks the Privy DID, the email lifted off the Privy claims, and the
-// current sign-in status. Components that need the full Privy user object
-// should call `usePrivy()` directly.
+// only tracks the wallet-provider user id (Privy DID today, CDP user id post-
+// migration), the email lifted off the provider's claims, and the current
+// sign-in status. Components that need richer wallet data should call
+// useWallet() directly — see @src/lib/wallet.
 import { createSlice } from '@reduxjs/toolkit';
 
 const NAMESPACE = 'auth';

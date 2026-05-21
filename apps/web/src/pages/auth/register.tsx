@@ -1,12 +1,12 @@
-// Privy doesn't distinguish login from register — same modal, same
-// flow. We keep /auth/register as a separate URL so existing
-// inbound links resolve; it opens Privy's modal then routes to
-// onboarding on first sign-in.
+// The wallet provider doesn't distinguish login from register —
+// same modal, same flow. We keep /auth/register as a separate URL
+// so existing inbound links resolve; it opens the provider's modal
+// then routes to onboarding on first sign-in.
 
 import React, { useEffect } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { useRouter } from 'next/router';
-import { usePrivy } from '@privy-io/react-auth';
+import { useWallet } from '@src/lib/wallet';
 import useAuthentication from '@src/hooks/useAuthenticate';
 import { AuthStatus } from '@src/store/authSlice';
 import AuthLayout from 'layouts/authLayout';
@@ -21,7 +21,7 @@ const Register: ReactLayoutComponentType = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const authStatus = useAuthentication();
-  const { ready, authenticated, login } = usePrivy();
+  const { ready, authenticated, login } = useWallet();
 
   useEffect(() => { dispatch(setPageTitle(pageTitle)); }, []);
 

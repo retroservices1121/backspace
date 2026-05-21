@@ -103,8 +103,9 @@ function populateStateFromObject(object: any, state: UserSliceType) {
 export const logout = createAsyncThunk(
   `${NAMESPACE}/logout`,
   // The required message is to help debug tracking down what caused a forced
-  // logout. The actual Privy session teardown happens in the component that
-  // dispatches this — `usePrivy().logout()` is a hook, not a thunk-callable.
+  // logout. The actual wallet-provider session teardown happens in the
+  // component that dispatches this — see useLogout, which calls the
+  // provider's logout via useWallet() (a React hook, not a thunk-callable).
   async (message: string) => {
     console.log(message);
   },
