@@ -7,14 +7,14 @@
 // expires within seconds — so for the cleanest UX the UI grabs a
 // fresh quote right before submitting.
 
-import type { ConnectedSolanaWallet } from '@privy-io/react-auth';
+import type { SolanaWallet } from '@src/lib/wallet';
 
 import { getDflowQuote, type DflowQuote, type GetQuoteArgs } from './quote';
 import { signAndSendDflowSwap } from './signer';
 import { getDflowSwapTransaction } from './swap';
 
 export type ExecuteSwapArgs = {
-  wallet: ConnectedSolanaWallet;
+  wallet: SolanaWallet;
   quote: DflowQuote;
 };
 

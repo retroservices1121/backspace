@@ -5,18 +5,20 @@
 // Pricing in the Dflow quote response is short-lived; the hook keeps
 // a `quote` slot and a `refresh()` so the card can re-quote between
 // keystrokes without re-deriving the wallet on every change.
+//
+// Pulls the Solana wallet through the provider-agnostic useWallet()
+// — see lib/wallet/.
 
-import { useCallback, useMemo, useState } from 'react';
-import { useSolanaWallets } from '@privy-io/react-auth';
+import { useCallback, useState } from 'react';
 import { useQueryClient } from 'react-query';
 
 import {
   type DflowQuote,
   executeSwap,
   type GetQuoteArgs,
-  pickEmbeddedSolanaWallet,
   previewSwap,
 } from '@src/lib/dflow';
+import { useWallet } from '@src/lib/wallet';
 import axios from '@src/lib/axios';
 
 export type SwapPhase =
@@ -28,8 +30,8 @@ export type SwapPhase =
   | 'error';
 
 export function useDflowSwap() {
-  const { wallets, ready, createWallet } = useSolanaWallets();
-  const wallet = useMemo(() => pickEmbeddedSolanaWallet(wallets), [wallets]);
+  const { ready, embeddedSolanaWallet, provisionSolana } = useWallet();
+  const wallet = embeddedSolanaWallet;
   const queryClient = useQueryClient();
 
   const [quote, setQuote] = useState<DflowQuote | null>(null);
@@ -107,20 +109,21 @@ export function useDflowSwap() {
   // Privy's `createOnLogin` only provisions one wallet type. Backspace
   // auto-creates the Ethereum embedded wallet (Polymarket needs it), so
   // we provision Solana lazily — the first time the user opens a swap.
+  // CDP's provider auto-creates both via createOnLogin:true; this call
+  // is a no-op for already-provisioned wallets in either provider.
   const provisionWallet = useCallback(async () => {
     setError(null);
     try {
-      await createWallet();
+      await provisionSolana();
     } catch (e) {
-      // Already-exists isn't really an error from the caller's POV —
-      // the wallets array refresh will catch up shortly.
+      // Already-exists isn't really an error from the caller's POV.
       const message = (e as Error).message ?? '';
       if (!/already/i.test(message)) {
         setError(e as Error);
         throw e;
       }
     }
-  }, [createWallet]);
+  }, [provisionSolana]);
 
   return {
     wallet,

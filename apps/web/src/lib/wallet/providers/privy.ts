@@ -18,7 +18,6 @@ import { useSolanaWallets } from '@privy-io/react-auth/solana';
 
 import type {
   EvmWallet,
-  SolanaSignable,
   SolanaWallet,
   WalletProvider,
   WalletUser,
@@ -76,10 +75,10 @@ export function usePrivyWalletProvider(): WalletProvider {
       // come through a different hook we don't use yet.
       source: 'embedded' as const,
       clientType: 'privy',
-      signTransaction: async ({ transaction }: SolanaSignable) => {
-        return (w as any).signTransaction(transaction);
+      signTransaction: async <T>(transaction: T): Promise<T> => {
+        return (w as any).signTransaction(transaction) as Promise<T>;
       },
-      signAndSendTransaction: async ({ transaction }: SolanaSignable) => {
+      signAndSendTransaction: async <T>(transaction: T): Promise<string> => {
         const sig = await (w as any).sendTransaction(transaction);
         return typeof sig === 'string' ? sig : (sig?.signature ?? '');
       },

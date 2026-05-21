@@ -13,10 +13,9 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useSolanaWallets } from '@privy-io/react-auth';
+import { useWallet } from '@src/lib/wallet';
 
 import { useDflowTrades, DflowTrade } from '@src/hooks/useDflowTrades';
-import { pickEmbeddedSolanaWallet } from '@src/lib/dflow';
 import { useSolanaBalances, SolanaBalance } from '@src/hooks/useSolanaBalances';
 import { useAllPositions, SourcedPosition } from '@src/hooks/usePositions';
 
@@ -260,9 +259,8 @@ function MarketsTab() {
 }
 
 function TokensTab() {
-  const { wallets } = useSolanaWallets();
-  const wallet = pickEmbeddedSolanaWallet(wallets);
-  const address = wallet?.address ?? null;
+  const { embeddedSolanaWallet } = useWallet();
+  const address = embeddedSolanaWallet?.address ?? null;
   const balances = useSolanaBalances(address);
   const trades = useDflowTrades(true);
 

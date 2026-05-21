@@ -57,22 +57,19 @@ export type EvmWallet = {
   getEthersSigner: () => Promise<unknown>;
 };
 
-export type SolanaSignable = {
-  /** Either a Solana Transaction or VersionedTransaction (web3.js). */
-  transaction: unknown;
-};
-
 export type SolanaWallet = {
   /** Base58 pubkey. */
   address: string;
   source: 'embedded' | 'external';
   clientType?: string;
-  /** Sign a Solana (Versioned)Transaction. Returns the signed tx in
-   *  whatever shape the input was — components serialize themselves. */
-  signTransaction: (input: SolanaSignable) => Promise<unknown>;
+  /** Sign a Solana Transaction or VersionedTransaction. Returns the
+   *  signed tx in whatever shape the input was — components serialize
+   *  themselves. Matches the @solana/web3.js wallet-adapter convention. */
+  signTransaction: <T = unknown>(transaction: T) => Promise<T>;
   /** Sign + broadcast. Returns the txid (base58 signature). Used by
-   *  Dflow / Phoenix where the SDK hands us a fully-built tx. */
-  signAndSendTransaction?: (input: SolanaSignable) => Promise<string>;
+   *  Dflow / Phoenix where the SDK hands us a fully-built tx and we
+   *  want to delegate broadcast to the provider's RPC. */
+  signAndSendTransaction?: <T = unknown>(transaction: T) => Promise<string>;
   /** Sign a UTF-8 message. Used for SIWS-style auth. */
   signMessage?: (message: Uint8Array) => Promise<Uint8Array>;
 };

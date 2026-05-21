@@ -4,7 +4,6 @@ export { useWallet } from './useWallet';
 export type {
   AuthSurface,
   EvmWallet,
-  SolanaSignable,
   SolanaWallet,
   WalletProvider,
   WalletUser,
