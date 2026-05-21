@@ -224,13 +224,13 @@ const Tokens: React.FC = () => {
             <SkeletonLoader renderCount={4} />
           ) : visible.length > 0 ? (
             visible.map((t) => (
-            <TokenCatalogCard
-              key={t.id}
-              token={t}
-              priceUsd={t.priceUsd ? Number(t.priceUsd) : null}
-              change24hPct={t.priceChange24h}
-            />
-          ))
+              <TokenCatalogCard
+                key={t.id}
+                token={t}
+                priceUsd={t.priceUsd ? Number(t.priceUsd) : null}
+                change24hPct={t.priceChange24h}
+              />
+            ))
           ) : (
             <EmptyState
               title="No matches"
