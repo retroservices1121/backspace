@@ -46,7 +46,7 @@ type DataApiPosition = {
   endDate?: string;
   settledAt?: string;
   closedAt?: string;
-}
+};
 
 async function fetchResolvedPositions(safeAddress: string): Promise<DataApiPosition[]> {
   // Data API: filter to resolved positions to keep the payload small.
