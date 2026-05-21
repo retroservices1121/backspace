@@ -770,11 +770,25 @@ model Token {
   logoURI   String?
   // Soft-flag for admin moderation — hides without deleting.
   isActive  Boolean  @default(true)
+  // Market data snapshot, refreshed by lib/dflow/snapshot-stats from
+  // Jupiter's tokens/v2/search. Nullable while a token is freshly
+  // imported and the next snapshot tick hasn't priced it yet, or
+  // when Jupiter has no liquidity data to return.
+  priceUsd       Decimal?  @db.Decimal(20, 10)
+  // 24h change as a fraction — Jupiter reports it as a percentage
+  // already (e.g. 1.49 for +1.49%); the column stores that value.
+  priceChange24h Decimal?  @db.Decimal(10, 6)
+  volumeUsd24h   Decimal?  @db.Decimal(20, 4)
+  liquidityUsd   Decimal?  @db.Decimal(20, 4)
+  // When the stats above were last written. NULL = never priced.
+  statsAt        DateTime?
   posts     Post[]
   inTrades  TokenTrade[] @relation(name: "tokenTradeIn")
   outTrades TokenTrade[] @relation(name: "tokenTradeOut")
   @@index([symbol])
   @@index([isActive])
+  @@index([isActive, volumeUsd24h])
+  @@index([isActive, priceChange24h])
 }
 
 model Outcome {

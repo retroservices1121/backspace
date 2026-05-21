@@ -163,7 +163,12 @@ const Feed: React.FC<Props> = ({}) => {
             ) : myFeed.filter === FilterOptions.TOKENS ? (
               myFeed.tokens && myFeed.tokens.length > 0 ? (
                 myFeed.tokens.map((t) => (
-                  <TokenCatalogCard key={t.id} token={t} />
+                  <TokenCatalogCard
+                    key={t.id}
+                    token={t}
+                    priceUsd={t.priceUsd ? Number(t.priceUsd) : null}
+                    change24hPct={t.priceChange24h}
+                  />
                 ))
               ) : (
                 <SkeletonLoader renderCount={10} />

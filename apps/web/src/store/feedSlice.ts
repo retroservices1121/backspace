@@ -82,9 +82,9 @@ export const fetchMarkets = createAsyncThunk<MarketCardData[]>(
   },
 );
 
-// Shape returned by /api/tokens — kept small (no price/volume fields
-// yet, those land with the trending-data migration). Once volume
-// columns ship, extend this in lockstep with the API serializer.
+// Shape returned by /api/tokens. The market-data fields are null
+// when the snapshot-stats worker hasn't priced the row yet (fresh
+// import) or Jupiter has no data to return (no pool / dead token).
 export type TokenLite = {
   id: string;
   mint: string;
@@ -92,6 +92,13 @@ export type TokenLite = {
   name: string;
   decimals: number;
   logoURI: string | null;
+  /** USD spot price; string-encoded Decimal so we don't lose precision. */
+  priceUsd: string | null;
+  /** 24h price change as a percentage (1.49 = +1.49%). */
+  priceChange24h: number | null;
+  volumeUsd24h: string | null;
+  liquidityUsd: string | null;
+  statsAt: string | null;
 };
 
 export const fetchTokens = createAsyncThunk<TokenLite[]>(

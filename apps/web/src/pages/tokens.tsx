@@ -35,10 +35,10 @@ const SORTS: Array<{ key: SortKey; label: string; sub: string }> = [
   { key: 'alphabetical', label: 'Alphabetical', sub: 'A → Z' },
 ];
 
-async function fetchCatalog(): Promise<TokenLite[]> {
-  // Sort param isn't honoured server-side yet — added once the
-  // trending-data migration ships. For now we sort client-side.
-  const { data } = await axios().get<TokenLite[]>('/tokens?limit=200');
+async function fetchCatalog(sort: SortKey): Promise<TokenLite[]> {
+  const { data } = await axios().get<TokenLite[]>(
+    `/tokens?limit=200&sort=${sort}`,
+  );
   return Array.isArray(data) ? data : [];
 }
 
@@ -82,8 +82,8 @@ const Tokens: React.FC = () => {
   }, [sortOpen]);
 
   const catalog = useQuery(
-    ['tokens-catalog'],
-    () => fetchCatalog(),
+    ['tokens-catalog', sort],
+    () => fetchCatalog(sort),
     {
       enabled: authState === AuthStatus.SignedIn,
       refetchInterval: 60_000,
@@ -105,12 +105,12 @@ const Tokens: React.FC = () => {
   const isSearching = debouncedQuery.length >= SEARCH_MIN;
 
   const visible = useMemo(() => {
-    const rows = isSearching ? (search.data ?? []) : (catalog.data ?? []);
-    // Once volume/change columns exist, branch on `sort` to read those
-    // fields. Until then every sort falls back to alphabetical so the
-    // UI doesn't lie about what it's doing.
-    return [...rows].sort((a, b) => a.symbol.localeCompare(b.symbol));
-  }, [isSearching, search.data, catalog.data, sort]);
+    // Catalog rows are already ordered server-side by the sort param.
+    // Search ignores sort entirely (substring match takes precedence)
+    // and falls back to alphabetical, which is what the API returns
+    // when no sort is passed.
+    return isSearching ? (search.data ?? []) : (catalog.data ?? []);
+  }, [isSearching, search.data, catalog.data]);
 
   const activeSortLabel = SORTS.find((s) => s.key === sort)?.label ?? 'Trending';
 
@@ -223,7 +223,14 @@ const Tokens: React.FC = () => {
           search.isLoading ? (
             <SkeletonLoader renderCount={4} />
           ) : visible.length > 0 ? (
-            visible.map((t) => <TokenCatalogCard key={t.id} token={t} />)
+            visible.map((t) => (
+            <TokenCatalogCard
+              key={t.id}
+              token={t}
+              priceUsd={t.priceUsd ? Number(t.priceUsd) : null}
+              change24hPct={t.priceChange24h}
+            />
+          ))
           ) : (
             <EmptyState
               title="No matches"
@@ -233,7 +240,14 @@ const Tokens: React.FC = () => {
         ) : catalog.isLoading ? (
           <SkeletonLoader renderCount={10} />
         ) : visible.length > 0 ? (
-          visible.map((t) => <TokenCatalogCard key={t.id} token={t} />)
+          visible.map((t) => (
+            <TokenCatalogCard
+              key={t.id}
+              token={t}
+              priceUsd={t.priceUsd ? Number(t.priceUsd) : null}
+              change24hPct={t.priceChange24h}
+            />
+          ))
         ) : (
           <EmptyState
             title="No tokens yet"
