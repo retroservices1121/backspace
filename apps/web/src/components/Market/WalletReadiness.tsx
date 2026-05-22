@@ -43,11 +43,20 @@ export function WalletReadiness({ signerWallet }: Props = {}) {
     );
   }
 
+  // Linked external wallets typically already have a deployed Safe +
+  // token approvals from polymarket.com — the only setup step left is
+  // deriving backspace.to-scoped Polymarket L2 API creds (one
+  // signature). Embedded wallets need the full path. Copy reads the
+  // same in both cases because the user-visible step is identical:
+  // approve in your wallet.
+  const isExternal = signerWallet?.source === 'external';
+  const body = isExternal
+    ? 'Sign once in your wallet to enable trading on Backspace — gasless.'
+    : 'Set up your trading wallet to place orders — one-time, gasless.';
+
   return (
     <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
-      <p className="mb-2">
-        Set up your trading wallet to place orders — one-time, gasless.
-      </p>
+      <p className="mb-2">{body}</p>
       <div className="flex items-center gap-3">
         <button
           onClick={initialize}

@@ -238,7 +238,7 @@ export function MarketCard({
           <span>
             {walletConnected
               ? `wallet: $${walletBalanceUsd ?? '0.00'}`
-              : 'wallet not connected'}
+              : 'trading not enabled'}
           </span>
           <span>max payout: ${maxPayout}</span>
         </div>
@@ -257,7 +257,7 @@ export function MarketCard({
           } disabled:cursor-not-allowed disabled:opacity-60`}
         >
           {!walletConnected
-            ? 'Connect wallet to trade'
+            ? 'Enable trading to place orders'
             : submitting
               ? 'Submitting…'
               : `${side} ${numericShares || 0} shares of ${outcome?.label ?? '—'}`}
