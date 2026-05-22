@@ -24,7 +24,7 @@ import Loading from 'react-loading';
 import { useMarket } from '@src/hooks/useMarket';
 import { useTrade } from '@src/hooks/useTrade';
 import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
-import { SignerPicker } from 'components/Market/SignerPicker';
+import { SignerHint } from 'components/Market/SignerHint';
 import { WalletReadiness } from 'components/Market/WalletReadiness';
 import { ShellIcons as I } from 'components/Shell/icons';
 
@@ -139,8 +139,8 @@ function BigBlocks({
   yesPct: number;
   noPct: number;
 }) {
-  const signer = useEvmTradeSigner();
-  const trade = useTrade({ id: market.id, negRisk: market.negRisk }, signer.selected);
+  const { wallet: signerWallet } = useEvmTradeSigner();
+  const trade = useTrade({ id: market.id, negRisk: market.negRisk }, signerWallet);
   const [side, setSide] = useState<'YES' | 'NO' | null>(null);
   const [shares, setShares] = useState('10');
 
@@ -218,17 +218,13 @@ function BigBlocks({
         </div>
       )}
 
-      {/* Signer picker + gating. Picker renders nothing when the user
-          only has the embedded wallet; readiness disappears once the
-          trading session is established. */}
-      <SignerPicker
-        candidates={signer.candidates}
-        selected={signer.selected}
-        onSelect={signer.setSelected}
-      />
+      {/* Readiness gate disappears once the trading session is
+          established. SignerHint surfaces the auto-picked wallet so
+          the popup origin isn't a surprise. */}
       {!trade.walletConnected && (
-        <WalletReadiness signerWallet={signer.selected} />
+        <WalletReadiness signerWallet={signerWallet} />
       )}
+      <SignerHint wallet={signerWallet} />
     </div>
   );
 }

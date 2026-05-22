@@ -9,7 +9,7 @@ import { useTrade } from '@src/hooks/useTrade';
 import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
 
 import { MarketCard } from './MarketCard';
-import { SignerPicker } from './SignerPicker';
+import { SignerHint } from './SignerHint';
 import { WalletReadiness } from './WalletReadiness';
 
 type Props = {
@@ -41,11 +41,11 @@ function TradeableMarketCard({
 }: {
   market: NonNullable<ReturnType<typeof useMarket>['data']>;
 }) {
-  // Lifted signer state — both the readiness gate and the trade hook
-  // key off the same selection. Embedded wallet by default; the picker
-  // only renders when there's a linked wallet to choose from.
-  const { candidates, selected, setSelected } = useEvmTradeSigner();
-  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market, selected);
+  // Auto-pick signer: linked wallet (if any) > embedded. No UI choice —
+  // the user already declared intent when they linked the wallet to
+  // their profile. SignerHint discloses the popup target.
+  const { wallet } = useEvmTradeSigner();
+  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market, wallet);
   const livePrices = useLivePrices(market.outcomes.map((o) => o.externalId));
 
   return (
@@ -56,12 +56,8 @@ function TradeableMarketCard({
       onTrade={handleTrade}
       readinessSlot={
         <>
-          <SignerPicker
-            candidates={candidates}
-            selected={selected}
-            onSelect={setSelected}
-          />
-          <WalletReadiness signerWallet={selected} />
+          <WalletReadiness signerWallet={wallet} />
+          <SignerHint wallet={wallet} />
         </>
       }
       livePrices={livePrices}

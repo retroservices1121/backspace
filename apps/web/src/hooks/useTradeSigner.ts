@@ -1,81 +1,54 @@
-// Signer selection for EVM trading flows (Polymarket today, AGG +
-// other EVM venues later). The user picks which wallet signs orders —
-// the embedded Backspace wallet, or any external wallet they've
-// linked via Privy's connector layer.
+// Auto-resolve which EVM wallet signs trades.
 //
-// Why this hook exists: an existing Polymarket trader who linked their
-// wallet already has a deployed Safe + token approvals + on-chain
-// position history. Forcing them to trade from a fresh embedded wallet
-// would fragment that history and require a funding bridge. Letting
-// them pick the linked wallet skips all of that — the only "setup"
-// step they hit is one API-creds signature (Polymarket's L2 auth is
-// per-origin).
+// Rule: if the user has linked an external wallet via Privy, that wallet
+// IS their trading wallet — same Safe, same approvals, same position
+// history. The embedded Backspace wallet is only the signer for users
+// who haven't linked anything. We don't ask the user to pick: they
+// already declared their intent when they linked the wallet to their
+// profile. See [[project_signer_no_picker]] for the product reasoning.
 //
-// Persistence: last choice survives via localStorage so a returning
-// user doesn't have to re-pick on every market they open. A more
-// durable upgrade (User.primaryTradingWallet column) belongs in a
-// later phase; localStorage is enough for v1 and avoids a migration.
+// When the user has multiple linked wallets (rare), the most recently
+// added one wins — typically what they want, since the latest link is
+// the most fresh declaration of intent.
 //
-// Stale-selection handling: if the stored address is no longer in the
-// wallet list (user unlinked, switched Privy accounts, etc.), we fall
-// back to the embedded wallet silently rather than erroring. The
-// stored choice gets overwritten the next time the user picks.
+// Edge cases:
+//   - No linked wallets → falls back to embedded.
+//   - User unlinks the wallet they were trading from mid-session →
+//     hook re-evaluates and falls back to embedded silently. SessionStorage
+//     for that EOA stays around in case they re-link.
+//   - Multiple wallets, want to override → power-user override belongs
+//     in /settings/wallet (not built yet — only build when someone asks).
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { useWallet } from '@src/lib/wallet';
 import type { EvmWallet } from '@src/lib/wallet/types';
 
-const STORAGE_KEY_EVM = 'backspace.trade.signer.evm';
-
-export type EvmTradeSigner = {
-  /** Every EVM wallet attached to the caller, embedded first. */
-  candidates: EvmWallet[];
-  /** Currently selected signer. Null until `ready` is true (avoids
-   *  the SSR + hydration flicker of "wrong wallet" on first paint). */
-  selected: EvmWallet | null;
-  /** False until the hook has read localStorage + resolved the
-   *  selection. UIs should treat this as the loading state. */
-  ready: boolean;
-  /** Pick a wallet. Persists the choice in localStorage. */
-  setSelected: (w: EvmWallet | null) => void;
+export type TradeSigner = {
+  /** The wallet that will sign trades. Null when the user is signed out
+   *  or the embedded wallet hasn't provisioned yet. */
+  wallet: EvmWallet | null;
+  /** Convenience: true when `wallet` is a linked external wallet. UIs
+   *  use this to decide whether to show the "Signing from MetaMask"
+   *  caption — embedded-only users don't need disclosure. */
+  isExternal: boolean;
 };
 
-export function useEvmTradeSigner(): EvmTradeSigner {
+export function useEvmTradeSigner(): TradeSigner {
   const { evmWallets, embeddedEvmWallet } = useWallet();
 
-  // Mount-time read from localStorage. Initialised to null so SSR /
-  // pre-hydration renders agree on "no choice yet" rather than
-  // flashing the embedded wallet then switching.
-  const [storedAddress, setStoredAddress] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    setStoredAddress(window.localStorage.getItem(STORAGE_KEY_EVM));
-    setReady(true);
-  }, []);
-
-  // Resolve the stored address against the live wallet list. If the
-  // user has unlinked the wallet since their last visit, the stored
-  // value silently falls back to embedded.
-  const selected = useMemo<EvmWallet | null>(() => {
-    if (!ready) return null;
-    if (storedAddress) {
-      const hit = evmWallets.find(
-        (w) => w.address.toLowerCase() === storedAddress.toLowerCase(),
-      );
-      if (hit) return hit;
-    }
+  const wallet = useMemo<EvmWallet | null>(() => {
+    // Prefer the most recently added external wallet. evmWallets order
+    // from Privy puts embedded first then externals in attach order, so
+    // we pick the last external; if none exists, we fall back to
+    // embedded.
+    const externals = evmWallets.filter((w) => w.source === 'external');
+    if (externals.length > 0) return externals[externals.length - 1];
     return embeddedEvmWallet;
-  }, [ready, storedAddress, evmWallets, embeddedEvmWallet]);
+  }, [evmWallets, embeddedEvmWallet]);
 
-  const setSelected = useCallback((w: EvmWallet | null) => {
-    const next = w?.address ?? null;
-    setStoredAddress(next);
-    if (typeof window === 'undefined') return;
-    if (next) window.localStorage.setItem(STORAGE_KEY_EVM, next);
-    else window.localStorage.removeItem(STORAGE_KEY_EVM);
-  }, []);
-
-  return { candidates: evmWallets, selected, ready, setSelected };
+  return {
+    wallet,
+    isExternal: wallet?.source === 'external',
+  };
 }
