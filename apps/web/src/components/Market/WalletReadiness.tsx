@@ -4,9 +4,16 @@
 //
 // Renders nothing once the user's trading session is ready; otherwise
 // it surfaces what's missing — log in, or run the one-time setup.
+//
+// Reads the session for whichever signer the connector currently has
+// selected. For an existing Polymarket user who picked their linked
+// wallet, the on-chain Safe is already deployed + approved, so the
+// "Enable trading" path collapses to a single API-creds signature.
 import React from 'react';
-import { usePolymarketSession } from '@src/hooks/usePolymarketSession';
 import Link from 'next/link';
+
+import { usePolymarketSession } from '@src/hooks/usePolymarketSession';
+import type { EvmWallet } from '@src/lib/wallet/types';
 
 const STEP_LABEL: Record<string, string> = {
   checking: 'Checking…',
@@ -15,9 +22,13 @@ const STEP_LABEL: Record<string, string> = {
   approvals: 'Approving tokens…',
 };
 
-export function WalletReadiness() {
+type Props = {
+  signerWallet?: EvmWallet | null;
+};
+
+export function WalletReadiness({ signerWallet }: Props = {}) {
   const { eoaAddress, isReady, step, error, initialize } =
-    usePolymarketSession();
+    usePolymarketSession(signerWallet);
 
   // Ready to trade — MarketCard's own controls take over.
   if (isReady) return null;

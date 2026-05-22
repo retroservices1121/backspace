@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { usePolymarketSession } from '@src/hooks/usePolymarketSession';
 import axios from '@src/lib/axios';
 import { placeOrder } from '@src/lib/polymarket';
+import type { EvmWallet } from '@src/lib/wallet/types';
 
 export type TradeIntent = {
   outcomeExternalId: string;
@@ -27,8 +28,10 @@ type TradeMarket = {
   negRisk: boolean;
 };
 
-export function useTrade(market: TradeMarket) {
-  const session = usePolymarketSession();
+export function useTrade(market: TradeMarket, signerWallet?: EvmWallet | null) {
+  // Caller picks the signer (embedded or any linked EVM wallet). Default
+  // (no arg) keeps the historical behavior: embedded wallet only.
+  const session = usePolymarketSession(signerWallet);
   const queryClient = useQueryClient();
 
   const handleTrade = useCallback(

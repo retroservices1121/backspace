@@ -6,8 +6,10 @@
 import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
 import { useTrade } from '@src/hooks/useTrade';
+import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
 
 import { MarketCard } from './MarketCard';
+import { SignerPicker } from './SignerPicker';
 import { WalletReadiness } from './WalletReadiness';
 
 type Props = {
@@ -39,7 +41,11 @@ function TradeableMarketCard({
 }: {
   market: NonNullable<ReturnType<typeof useMarket>['data']>;
 }) {
-  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
+  // Lifted signer state — both the readiness gate and the trade hook
+  // key off the same selection. Embedded wallet by default; the picker
+  // only renders when there's a linked wallet to choose from.
+  const { candidates, selected, setSelected } = useEvmTradeSigner();
+  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market, selected);
   const livePrices = useLivePrices(market.outcomes.map((o) => o.externalId));
 
   return (
@@ -48,7 +54,16 @@ function TradeableMarketCard({
       walletConnected={walletConnected}
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
-      readinessSlot={<WalletReadiness />}
+      readinessSlot={
+        <>
+          <SignerPicker
+            candidates={candidates}
+            selected={selected}
+            onSelect={setSelected}
+          />
+          <WalletReadiness signerWallet={selected} />
+        </>
+      }
       livePrices={livePrices}
     />
   );
