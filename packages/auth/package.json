@@ -5,6 +5,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.50.0",
     "@privy-io/server-auth": "^1.16.0"
   },
   "devDependencies": {

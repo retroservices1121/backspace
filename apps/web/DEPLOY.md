@@ -10,7 +10,30 @@ Single source of truth for env vars `apps/web` needs to run end-to-end on Railwa
 | --- | --- |
 | `DATABASE_URL` | Postgres connection string. Railway-managed; same value lives in `packages/db/.env` for local migrations. |
 
-## Auth (Privy)
+## Auth — provider selection
+
+Both providers can be configured simultaneously; the runtime selection is keyed on `NEXT_PUBLIC_CDP_PROJECT_ID`:
+
+- **CDP** when `NEXT_PUBLIC_CDP_PROJECT_ID` is set (preferred; post-migration default).
+- **Privy** when `NEXT_PUBLIC_CDP_PROJECT_ID` is unset and `NEXT_PUBLIC_PRIVY_APP_ID` is set (legacy fallback).
+
+Flipping the provider is a Railway env-var edit + redeploy — no code change.
+
+### Auth (CDP) — preferred
+
+Coinbase Developer Platform: portal.cdp.coinbase.com. Create a project, generate an API key (download the JSON), generate a wallet secret. See [[project_cdp_phase0_findings]] for SDK + CLI details.
+
+| Var | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_CDP_PROJECT_ID` | Client CDP project id, embedded in browser bundle. Mounting this enables the CDP+wagmi provider path in `pages/_app.tsx`. |
+| `CDP_API_KEY_ID` | **Server-only.** Used by `@backspace/auth`'s `verifyCdpToken` (via `lib/nextconnect.ts`). UUID or `organizations/<org>/apiKeys/<key>` format. |
+| `CDP_API_KEY_SECRET` | **Server-only.** Either an Ed25519 base64 secret or an EC PEM. |
+| `CDP_WALLET_SECRET` | **Server-only.** Required only for server-wallet write endpoints — end-user token verification doesn't need it. Set when we wire any server-side CDP wallet writes. |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Optional. WalletConnect project id for the external-wallet WC connector. Without it, WC is skipped and the user can still link Coinbase Wallet + MetaMask via their native connectors. |
+
+### Auth (Privy) — legacy
+
+Kept while CDP is being validated. Once `NEXT_PUBLIC_CDP_PROJECT_ID` is set on Railway and a smoke-test sign-in succeeds, the Privy vars can be removed and Phase 1b will delete the SDK from `apps/web` and `packages/auth`.
 
 | Var | Notes |
 | --- | --- |
