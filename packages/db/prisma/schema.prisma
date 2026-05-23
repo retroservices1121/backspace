@@ -40,6 +40,11 @@ model User {
   // pull trade history from a venue the user may or may not want
   // tied to their public handle.
   publicAccuracy       Boolean         @default(false)
+  // First-run onboarding tour completion flag. Flips true the first
+  // time the user finishes or dismisses the react-joyride walkthrough
+  // mounted on the home feed. /settings/account exposes a "Replay
+  // welcome tour" action that resets it.
+  hasCompletedTour     Boolean         @default(false)
   // PERSON vs ORG. ORG accounts render a gold badge + square avatar.
   // Affiliation linking (X-style "affiliated to") is intentionally not
   // modelled yet — add a self-relation here when orgs actually need it.

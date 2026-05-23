@@ -76,6 +76,7 @@ const LeftNav: React.FC = () => {
 
   return (
     <aside
+      data-tour="left-nav"
       className="
         sticky top-0 h-screen overflow-y-auto
         border-r border-line bg-canvas
@@ -145,10 +146,12 @@ const LeftNav: React.FC = () => {
           badge={it.badge}
           active={active === it.key}
           disabled={it.disabled}
+          tourId={it.key === 'markets' ? 'nav-markets' : it.key === 'tokens' ? 'nav-tokens' : undefined}
         />
       ))}
 
       <button
+        data-tour="post-button"
         type="button"
         onClick={() => dispatch(togglePostModal(true))}
         className="
@@ -176,6 +179,7 @@ function NavItem({
   badge,
   active,
   disabled,
+  tourId,
 }: {
   icon: (p: { className?: string }) => JSX.Element;
   label: string;
@@ -183,9 +187,11 @@ function NavItem({
   badge?: string;
   active?: boolean;
   disabled?: boolean;
+  tourId?: string;
 }) {
   const body = (
     <div
+      {...(tourId ? { 'data-tour': tourId } : {})}
       className={[
         'flex items-center gap-3.5 px-3 py-2.5 rounded-[10px]',
         'text-[14.5px] font-medium tracking-[-0.005em]',

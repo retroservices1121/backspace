@@ -5,16 +5,19 @@
 // of accumulating dead records.
 import React from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
+import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { MediaUse } from '@prisma/client';
 import settingsLayout from '@src/layouts/settingsLayout';
 import axios from '@src/lib/axios';
 import { mediaStorage } from '@src/lib/media';
+import { resetOnboardingTour } from '@src/components/Onboarding/Tour';
 import { CreateMediaBody } from '@src/types/requests/media';
 import { getFileExtension } from '@src/utils/common_utils';
 
 import AccountForm from 'components/Settings/AccountForm';
+import { APP } from 'pages';
 import { RootState } from 'store/store';
 import { AccountFields, AccountFormState } from 'types/settings';
 
@@ -24,6 +27,18 @@ import type { UpdatePrivateBody } from '../api/private';
 const Account: ReactLayoutComponentType = () => {
   const uid = useSelector((state: RootState) => state.user.id);
   const authId = useSelector((state: RootState) => state.user.authId);
+  const router = useRouter();
+
+  const handleReplayTour = async () => {
+    try {
+      await resetOnboardingTour();
+      toast.info('Tour reset — taking you to home.');
+      router.push(APP.INDEX);
+    } catch (error) {
+      console.error(error);
+      toast.error('Could not reset the tour.');
+    }
+  };
 
   const handleSubmit = async (form: AccountFormState) => {
     if (!uid || !authId) {
@@ -87,6 +102,31 @@ const Account: ReactLayoutComponentType = () => {
   return (
     <div className="font-display text-ink">
       <AccountForm onSubmit={handleSubmit} />
+
+      {/* Replay welcome tour. Resets the server flag + local gate so
+          the next home-feed mount picks the react-joyride walkthrough
+          back up. Kept terse — this is a one-off action, not a
+          settings field. */}
+      <div className="mt-10 pt-6 border-t border-line">
+        <div className="text-[14px] font-semibold text-ink mb-1">
+          Welcome tour
+        </div>
+        <div className="text-[13px] text-ink-3 mb-3">
+          Replay the guided walkthrough of Backspace from the top.
+        </div>
+        <button
+          type="button"
+          onClick={handleReplayTour}
+          className="
+            h-9 px-4 rounded-full
+            border border-line bg-surface/60 hover:bg-hover-2
+            text-[13px] font-medium text-ink
+            transition-colors duration-150
+          "
+        >
+          Replay welcome tour
+        </button>
+      </div>
     </div>
   );
 };
