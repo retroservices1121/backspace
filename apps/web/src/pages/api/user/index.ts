@@ -3,7 +3,7 @@
 // Proprietary and confidential
 // Author(s): See Git History
 
-import { Permissions, Prisma, User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { getPrivyUserEmailById } from '@backspace/auth';
 import { normalizeUsername } from '@backspace/usernames';
 import prisma from '@src/api2/prisma';
@@ -162,34 +162,6 @@ handler
         console.error(error);
       }
 
-      //Create Community
-      try {
-        const newCommunity : Prisma.CommunityCreateInput = {
-          name: `${user.name}'s Space`,
-          description: '',
-          owner: {
-            connect: {
-              id: user.id,
-            },
-          },
-          members: {
-            create: {
-              role: Permissions.OWNER, 
-              user: {
-                connect: {
-                  id: user.id,
-                },
-              },
-            },
-          },
-        };
-        await prisma.community.create({
-          data: newCommunity,
-        });
-      } catch (e) {
-        console.error(`Failed to create community. ${e}`);
-      }
-      
     } else {
       throw new Error('User Not Created');
       
