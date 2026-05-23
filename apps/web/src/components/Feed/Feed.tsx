@@ -13,7 +13,6 @@ import { isEmpty } from 'lodash';
 
 import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
 import { TokenCatalogCard } from '@src/components/Dflow/TokenCatalogCard';
-import OnboardingTour, { tourAlreadyDismissedLocally } from '@src/components/Onboarding/Tour';
 import axios from '@src/lib/axios';
 
 import type { MessageUnion } from 'types/legacy-aliases';
@@ -76,18 +75,6 @@ const Feed: React.FC<Props> = ({}) => {
   const dispatch = useAppDispatch();
   const query = useQuery();
 
-  // Onboarding tour gate. Run only for signed-in users who haven't
-  // completed it server-side and haven't dismissed locally on this
-  // device. `tourDone` flips immediately on finish/skip so the
-  // component unmounts cleanly without waiting for the API roundtrip.
-  const [tourDone, setTourDone] = useState(false);
-  const shouldRunTour =
-    authState === AuthStatus.SignedIn
-    && user
-    && (user as any).hasCompletedTour === false
-    && !tourDone
-    && !tourAlreadyDismissedLocally();
-
   // const loadMore = async () => {
   //   const increment: number = 10;
   //   return dispatch(fetchMorePosts({ sorting, count: increment }));
@@ -135,7 +122,6 @@ const Feed: React.FC<Props> = ({}) => {
   return (
     <>
       <DiscoverModal />
-      <OnboardingTour shouldRun={!!shouldRunTour} onClose={() => setTourDone(true)} />
 
       {/* Desktop: TopTabs at the top of the center column, sticky.
           Replaces the legacy DesktopFeedDrawer (the side strip with

@@ -6,10 +6,6 @@ import React from 'react';
 
 import Composer from 'components/CreatePost/Composer';
 
-const InlineCompose: React.FC = () => (
-  <div data-tour="composer">
-    <Composer variant="inline" />
-  </div>
-);
+const InlineCompose: React.FC = () => <Composer variant="inline" />;
 
 export default InlineCompose;
