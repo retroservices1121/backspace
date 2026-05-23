@@ -66,6 +66,22 @@ module.exports = withTM({
     if (!options.isServer) {
       config.resolve.fallback.fs = false;
     }
+    // wagmi/connectors v2 barrels the baseAccount connector, which
+    // imports @base-org/account v2.x. That package ships ES2025
+    // import-attribute syntax (`import x from '...' with { type: 'json' }`)
+    // that Next 12's webpack 5 can't parse and that next-transpile-
+    // modules can't intercept (wagmi resolves a peer-deps-specific
+    // pnpm copy distinct from our direct dep). We don't use Base
+    // Account — only Coinbase Wallet / MetaMask / WalletConnect —
+    // so aliasing @base-org/account to false makes webpack stub it
+    // to an empty module. wagmi's barrel re-exports the now-broken
+    // baseAccount connector but tree-shaking drops it as long as
+    // no call site imports it.
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@base-org/account': false,
+      '@base-org/account/dist/index.js': false,
+    };
     return config;
   },
 });
