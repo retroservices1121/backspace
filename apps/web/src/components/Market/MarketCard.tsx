@@ -50,7 +50,9 @@ type Props = {
   onTrade?: (intent: {
     outcomeExternalId: string;
     side: Side;
-    shares: string;
+    /** USD amount the user wants to spend (BUY) or cash out (SELL).
+     *  String to preserve user-typed precision before validation. */
+    usdAmount: string;
   }) => Promise<void> | void;
   // Trade-gating UI injected by the connector (PostMarketCard /
   // CatalogMarketCard) — keeps MarketCard presentational and Privy-free.
@@ -100,7 +102,11 @@ export function MarketCard({
 }: Props) {
   const [selectedOutcome, setSelectedOutcome] = useState(market.outcomes[0]?.externalId);
   const [side, setSide] = useState<Side>('BUY');
-  const [shares, setShares] = useState('10');
+  // The user enters a USD amount, Polymarket-style. Shares received +
+  // max payout are derived from amount / price. Default $10 because
+  // it's the rough minimum that produces a meaningful fill on most
+  // markets without committing real capital on a first try.
+  const [amount, setAmount] = useState('10');
   const [submitting, setSubmitting] = useState(false);
   const [showAllOutcomes, setShowAllOutcomes] = useState(false);
 
@@ -122,11 +128,16 @@ export function MarketCard({
   // Prefer the live websocket midpoint; fall back to the cached price.
   const livePrice = outcome ? livePrices?.[outcome.externalId] ?? null : null;
   const price = livePrice ?? outcome?.lastPrice ?? null;
-  const numericShares = Number(shares) || 0;
+  const numericAmount = Number(amount) || 0;
   const numericPrice = price === null ? null : Number(price);
-  const totalCost =
-    numericPrice === null ? null : (numericShares * numericPrice).toFixed(2);
-  const maxPayout = numericShares ? numericShares.toFixed(2) : '0.00';
+  // Shares this amount would buy at the displayed price. Each winning
+  // share pays $1.00, so max payout in USD equals shares received.
+  // Profit if right = maxPayout − amount.
+  const estimatedShares =
+    numericPrice && numericPrice > 0 ? numericAmount / numericPrice : null;
+  const maxPayout = estimatedShares != null ? estimatedShares.toFixed(2) : '—';
+  const profitToWin =
+    estimatedShares != null ? (estimatedShares - numericAmount).toFixed(2) : '—';
 
   async function handleSubmit() {
     if (!outcome || !walletConnected || submitting) return;
@@ -135,7 +146,7 @@ export function MarketCard({
       await onTrade?.({
         outcomeExternalId: outcome.externalId,
         side,
-        shares,
+        usdAmount: amount,
       });
     } finally {
       setSubmitting(false);
@@ -222,20 +233,29 @@ export function MarketCard({
             ))}
           </div>
 
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={shares}
-            onChange={(e) => setShares(e.target.value)}
-            className="w-24 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm font-mono tabular-nums text-white placeholder-white/30 focus:border-white/30 focus:outline-none"
-            placeholder="shares"
-          />
+          {/* USD amount input — Polymarket-style. Dollar prefix is a
+              visual nudge so users don't accidentally read it as
+              "shares". */}
+          <div className="relative w-28">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-mono text-white/40">
+              $
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full pl-6 pr-3 py-1.5 rounded-lg border border-white/10 bg-black/30 text-sm font-mono tabular-nums text-white placeholder-white/30 focus:border-white/30 focus:outline-none"
+              placeholder="0"
+            />
+          </div>
 
           <div className="ml-auto text-right text-xs">
-            <div className="text-white/50">cost</div>
+            <div className="text-white/50">to win</div>
             <div className="font-mono tabular-nums text-white">
-              ${totalCost ?? '—'}
+              ${maxPayout}
             </div>
           </div>
         </div>
@@ -246,7 +266,11 @@ export function MarketCard({
               ? `wallet: $${walletBalanceUsd ?? '0.00'}`
               : 'trading not enabled'}
           </span>
-          <span>max payout: ${maxPayout}</span>
+          <span>
+            {estimatedShares != null
+              ? `≈ ${estimatedShares.toFixed(0)} shares · profit $${profitToWin}`
+              : '—'}
+          </span>
         </div>
 
         {readinessSlot}
@@ -254,7 +278,7 @@ export function MarketCard({
         <div className="mt-3 flex justify-end">
           <button
             onClick={handleSubmit}
-            disabled={!walletConnected || submitting || !outcome || numericShares <= 0}
+            disabled={!walletConnected || submitting || !outcome || numericAmount <= 0}
             className={`rounded-full px-5 h-9 text-[13px] font-semibold transition ${
               !walletConnected
                 ? 'bg-white/5 text-white/40'
@@ -265,7 +289,7 @@ export function MarketCard({
               ? 'Enable trading'
               : submitting
                 ? 'Submitting…'
-                : `${side} ${numericShares || 0} shares`}
+                : `${side === 'BUY' ? 'Buy' : 'Sell'} $${numericAmount || 0}`}
           </button>
         </div>
       </div>

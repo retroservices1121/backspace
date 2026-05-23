@@ -1,8 +1,17 @@
-// Order placement. The trade card collects only side + shares, so the
-// "take a position" flow uses a market order (FOK):
-//   BUY  -> amount is the dollar notional (shares x current ask)
-//   SELL -> amount is the share count
-// builderCode attributes the order to the Backspace builder profile.
+// Order placement against Polymarket CLOB V2.
+//
+// The user expresses an order as a USD amount, Polymarket-style.
+// The CLOB SDK's market orders are denominated differently per side
+// (legacy quirk we just wrap around):
+//   BUY  -> SDK takes USD notional. We pass the user's usdAmount as-is.
+//   SELL -> SDK takes share count. We convert usdAmount → shares using
+//           the current bid (the price a seller actually receives) so
+//           the resulting USD value is approximately what the user
+//           asked for.
+//
+// builderCode attributes the order to the Backspace builder profile
+// for fee accounting on Polymarket's side.
+
 import { ClobClient, OrderType, Side } from '@polymarket/clob-client-v2';
 
 import { builderCode } from './config';
@@ -11,7 +20,8 @@ export type PlaceOrderArgs = {
   clobClient: ClobClient;
   tokenID: string;
   side: 'BUY' | 'SELL';
-  shares: number;
+  /** USD amount as a positive finite number — validated by the hook. */
+  usdAmount: number;
   negRisk: boolean;
 };
 
@@ -22,9 +32,10 @@ export type PlaceOrderResult = {
   venueOrderId: string | null;
   status: string;
   side: 'BUY' | 'SELL';
-  // Shares the user asked for vs. what actually filled (FOK should
-  // match, but read it back rather than assume).
-  requestedShares: number;
+  // What the user requested vs. what actually filled. requestedShares
+  // is a derived estimate (usdAmount / observed price), useful for
+  // audit logs when the SDK doesn't echo back the input.
+  requestedShares: number | null;
   filledShares: number | null;
   // Average fill price per share, in USD (0..1).
   priceUsd: number | null;
@@ -42,7 +53,7 @@ type RawOrderResponse = {
 
 function normalize(
   side: 'BUY' | 'SELL',
-  requestedShares: number,
+  requestedShares: number | null,
   resp: RawOrderResponse,
 ): PlaceOrderResult {
   const making = parseFloat(resp.makingAmount ?? '');
@@ -74,21 +85,44 @@ function normalize(
 export async function placeOrder(
   args: PlaceOrderArgs,
 ): Promise<PlaceOrderResult> {
-  const { clobClient, tokenID, side, shares, negRisk } = args;
+  const { clobClient, tokenID, side, usdAmount, negRisk } = args;
   const orderSide = side === 'BUY' ? Side.BUY : Side.SELL;
 
-  let amount = shares;
-  if (orderSide === Side.BUY) {
-    // Market BUY orders are denominated in dollars — convert the share
-    // count to notional using the current ask (the price a buyer pays).
-    const priceResp = await clobClient.getPrice(tokenID, Side.SELL);
-    const ask = parseFloat(
+  // What we send to the SDK depends on the side. Capture the
+  // estimated share count we expect to trade so we can echo it back
+  // to the audit log if Polymarket doesn't (it usually does).
+  let amount = usdAmount;
+  let requestedShares: number | null = null;
+
+  if (orderSide === Side.SELL) {
+    // SELL is share-denominated. Convert using the current bid — what
+    // a seller receives per share — so the dollar value approximates
+    // the user's input. Bid = price a buyer pays at = Side.SELL on
+    // the get-price call (which asks "what is the SELL price?", i.e.
+    // the bid).
+    const priceResp = await clobClient.getPrice(tokenID, Side.BUY);
+    const bid = parseFloat(
       typeof priceResp === 'string' ? priceResp : priceResp?.price,
     );
-    if (!Number.isFinite(ask) || ask <= 0 || ask >= 1) {
+    if (!Number.isFinite(bid) || bid <= 0 || bid >= 1) {
       throw new Error('Could not get a valid market price for this outcome');
     }
-    amount = shares * ask;
+    const shares = usdAmount / bid;
+    amount = shares;
+    requestedShares = shares;
+  } else {
+    // BUY estimate: how many shares the user *should* get at the
+    // current ask. Useful for the audit log when the SDK echo is
+    // missing. Doesn't change what we send.
+    const priceResp = await clobClient.getPrice(tokenID, Side.SELL).catch(() => null);
+    if (priceResp) {
+      const ask = parseFloat(
+        typeof priceResp === 'string' ? priceResp : priceResp?.price,
+      );
+      if (Number.isFinite(ask) && ask > 0 && ask < 1) {
+        requestedShares = usdAmount / ask;
+      }
+    }
   }
 
   const tickSize = await clobClient.getTickSize(tokenID);
@@ -105,7 +139,7 @@ export async function placeOrder(
     OrderType.FOK,
   );
 
-  const result = normalize(side, shares, (resp ?? {}) as RawOrderResponse);
+  const result = normalize(side, requestedShares, (resp ?? {}) as RawOrderResponse);
   if (result.status === 'UNKNOWN' && (resp as RawOrderResponse)?.success === false) {
     throw new Error(
       (resp as RawOrderResponse)?.errorMsg || 'Polymarket rejected the order',

@@ -6,6 +6,13 @@
 // Trade-gating (log in / set up wallet) is surfaced via <WalletReadiness />
 // injected as MarketCard's readinessSlot — useTrade only handles the
 // happy path where the session is already established.
+//
+// Polymarket-style accounting: the user expresses an order as a USD
+// amount, not a share count. Why USD: at 4¢ per share, $10 buys 250
+// shares and pays out $250 if it wins. The CLOB SDK also wants USD
+// for market BUYs (and shares for SELLs); see lib/polymarket/order.ts
+// for the per-side conversion logic.
+
 import { useCallback } from 'react';
 import { useQueryClient } from 'react-query';
 import { toast } from 'react-toastify';
@@ -18,7 +25,8 @@ import type { EvmWallet } from '@src/lib/wallet/types';
 export type TradeIntent = {
   outcomeExternalId: string;
   side: 'BUY' | 'SELL';
-  shares: string;
+  /** USD amount, as the user typed it. Validated inside the handler. */
+  usdAmount: string;
 };
 
 type TradeMarket = {
@@ -40,9 +48,9 @@ export function useTrade(market: TradeMarket, signerWallet?: EvmWallet | null) {
         toast.error('Set up your trading wallet to place orders.');
         return;
       }
-      const shares = Number(intent.shares);
-      if (!Number.isFinite(shares) || shares <= 0) {
-        toast.error('Enter a valid number of shares.');
+      const usdAmount = Number(intent.usdAmount);
+      if (!Number.isFinite(usdAmount) || usdAmount <= 0) {
+        toast.error('Enter a USD amount.');
         return;
       }
 
@@ -53,7 +61,7 @@ export function useTrade(market: TradeMarket, signerWallet?: EvmWallet | null) {
           // Outcome.externalId IS the Polymarket CLOB tokenID.
           tokenID: intent.outcomeExternalId,
           side: intent.side,
-          shares,
+          usdAmount,
           negRisk: market.negRisk,
         });
 
@@ -64,7 +72,12 @@ export function useTrade(market: TradeMarket, signerWallet?: EvmWallet | null) {
             venueOrderId: result.venueOrderId,
             tokenID: intent.outcomeExternalId,
             side: intent.side,
-            shares: String(result.filledShares ?? shares),
+            // Audit log stores actual filled shares (from Polymarket's
+            // response), not the user's input — keeps the audit table
+            // talking the same unit as Polymarket's own positions data.
+            shares: result.filledShares != null
+              ? String(result.filledShares)
+              : String(result.requestedShares ?? 0),
             priceUsd: result.priceUsd != null ? String(result.priceUsd) : null,
             status: result.status,
             safeAddress: session.safeAddress,

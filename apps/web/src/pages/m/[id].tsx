@@ -142,14 +142,23 @@ function BigBlocks({
   const { wallet: signerWallet } = useEvmTradeSigner();
   const trade = useTrade({ id: market.id, negRisk: market.negRisk }, signerWallet);
   const [side, setSide] = useState<'YES' | 'NO' | null>(null);
-  const [shares, setShares] = useState('10');
+  // USD amount the user wants to spend, Polymarket-style.
+  const [amount, setAmount] = useState('10');
+
+  // What the user would get for `amount` USD at the side's current
+  // cents-per-share. payout (= shares) tracks max winnings if right.
+  const sidePct = side === 'YES' ? yesPct : side === 'NO' ? noPct : null;
+  const numericAmount = Number(amount) || 0;
+  const sharesAtThisAmount =
+    sidePct && sidePct > 0 ? numericAmount / (sidePct / 100) : null;
+  const toWin = sharesAtThisAmount != null ? sharesAtThisAmount.toFixed(2) : '—';
 
   const onBuy = async (which: 'YES' | 'NO') => {
     const outcome = which === 'YES' ? yesOutcome : noOutcome;
     await trade.handleTrade({
       outcomeExternalId: outcome.externalId,
       side: 'BUY',
-      shares,
+      usdAmount: amount,
     });
     setSide(null);
   };
@@ -180,38 +189,53 @@ function BigBlocks({
         <div className="rounded-[14px] border border-line bg-surface p-4 flex items-end gap-3">
           <div className="flex flex-col gap-1 flex-1">
             <label className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
-              Buy {side} — shares
+              Buy {side} — amount
             </label>
-            <input
-              type="number"
-              min="1"
-              value={shares}
-              onChange={(e) => setShares(e.target.value)}
-              className="
-                bg-canvas border border-line rounded-[10px]
-                px-3 py-2 text-ink text-[16px] font-mono
-                outline-none focus:border-line-2
-              "
-            />
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-[16px] font-mono">
+                $
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="
+                  w-full bg-canvas border border-line rounded-[10px]
+                  pl-7 pr-3 py-2 text-ink text-[16px] font-mono
+                  outline-none focus:border-line-2
+                "
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
+              To win
+            </label>
+            <div className="text-ink text-[16px] font-mono font-semibold tabular-nums">
+              ${toWin}
+            </div>
           </div>
           <button
             type="button"
             onClick={() => onBuy(side)}
             disabled={!trade.walletConnected}
-            className={[
-              'rounded-[10px] px-5 py-2.5 text-[14px] font-semibold',
-              'transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-              side === 'YES'
-                ? 'bg-green-vivid hover:bg-green-2 text-ink'
-                : 'bg-pink-vivid hover:bg-pink-2 text-ink',
-            ].join(' ')}
+            className="
+              rounded-full px-5 h-9 text-[13px] font-semibold text-ink
+              bg-brand hover:bg-brand-2
+              shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
+              transition-colors duration-150
+              disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+            "
           >
             Confirm
           </button>
           <button
             type="button"
             onClick={() => setSide(null)}
-            className="rounded-[10px] px-3 py-2.5 text-[14px] text-ink-2 hover:text-ink"
+            className="rounded-[10px] px-3 h-9 text-[14px] text-ink-2 hover:text-ink"
           >
             Cancel
           </button>
