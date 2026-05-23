@@ -61,11 +61,17 @@ type Props = {
   livePrices?: Record<string, number | null>;
 };
 
-function pct(p: string | number | null | undefined) {
+// Polymarket convention: outcome prices display as cents per share
+// (0¢–100¢, summing to 100¢ across a binary market). The underlying
+// CLOB price IS the cents value as a decimal — 0.96 = 96¢ = 96%
+// probability = $0.96 you pay per share. Showing cents reinforces the
+// "you're buying a $1 contract" mental model that probability never
+// does.
+function cents(p: string | number | null | undefined) {
   if (p == null) return '—';
   const n = Number(p);
   if (!Number.isFinite(n)) return '—';
-  return `${(n * 100).toFixed(0)}%`;
+  return `${(n * 100).toFixed(0)}¢`;
 }
 
 function timeUntil(d: Date | string) {
@@ -181,7 +187,7 @@ export function MarketCard({
                 {o.label}
               </span>
               <span className="shrink-0 text-sm font-mono tabular-nums text-white/80">
-                {pct(livePrices?.[o.externalId] ?? o.lastPrice)}
+                {cents(livePrices?.[o.externalId] ?? o.lastPrice)}
               </span>
             </button>
           );

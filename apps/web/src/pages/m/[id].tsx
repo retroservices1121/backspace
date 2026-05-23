@@ -255,7 +255,7 @@ function BigBlock({
         {label}
       </div>
       <div className={`mt-2 text-[48px] font-bold italic leading-none ${accent}`}>
-        {pct}%
+        {pct}¢
       </div>
       <div className={`mt-1 text-[12px] font-mono ${accent}`}>
         Payout · {payout}×
