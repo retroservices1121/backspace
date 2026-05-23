@@ -55,18 +55,18 @@ export function WalletReadiness({ signerWallet }: Props = {}) {
     : 'Set up your trading wallet to place orders — one-time, gasless.';
 
   return (
-    <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+    <div className="mt-3 rounded-xl border border-brand-2/30 bg-brand-soft px-3 py-2 text-xs text-ink/90">
       <p className="mb-2">{body}</p>
       <div className="flex items-center gap-3">
         <button
           onClick={initialize}
           disabled={busy}
-          className="rounded-lg bg-amber-400/80 px-3 py-1 font-semibold text-ink transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg bg-brand px-3 py-1 font-semibold text-ink transition hover:bg-brand-2 shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
         >
           {busy ? STEP_LABEL[step] ?? 'Setting up…' : 'Enable trading'}
         </button>
         <Link href="/settings/wallet">
-          <a className="underline hover:text-amber-50">Fund wallet</a>
+          <a className="underline hover:text-brand-2">Fund wallet</a>
         </Link>
       </div>
       {error && <p className="mt-2 text-rose-300">{error.message}</p>}

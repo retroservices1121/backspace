@@ -251,10 +251,8 @@ export function MarketCard({
           className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
             !walletConnected
               ? 'bg-white/5 text-white/40'
-              : side === 'BUY'
-                ? 'bg-emerald-500/80 text-ink hover:bg-emerald-400'
-                : 'bg-rose-500/80 text-ink hover:bg-rose-400'
-          } disabled:cursor-not-allowed disabled:opacity-60`}
+              : 'bg-brand text-ink hover:bg-brand-2 shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]'
+          } disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none`}
         >
           {!walletConnected
             ? 'Enable trading to place orders'
