@@ -251,21 +251,23 @@ export function MarketCard({
 
         {readinessSlot}
 
-        <button
-          onClick={handleSubmit}
-          disabled={!walletConnected || submitting || !outcome || numericShares <= 0}
-          className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
-            !walletConnected
-              ? 'bg-white/5 text-white/40'
-              : 'bg-brand text-ink hover:bg-brand-2 shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]'
-          } disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none`}
-        >
-          {!walletConnected
-            ? 'Enable trading to place orders'
-            : submitting
-              ? 'Submitting…'
-              : `${side} ${numericShares || 0} shares of ${outcome?.label ?? '—'}`}
-        </button>
+        <div className="mt-3 flex justify-end">
+          <button
+            onClick={handleSubmit}
+            disabled={!walletConnected || submitting || !outcome || numericShares <= 0}
+            className={`rounded-full px-5 h-9 text-[13px] font-semibold transition ${
+              !walletConnected
+                ? 'bg-white/5 text-white/40'
+                : 'bg-brand text-ink hover:bg-brand-2 shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]'
+            } disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none`}
+          >
+            {!walletConnected
+              ? 'Enable trading'
+              : submitting
+                ? 'Submitting…'
+                : `${side} ${numericShares || 0} shares`}
+          </button>
+        </div>
       </div>
     </div>
   );
