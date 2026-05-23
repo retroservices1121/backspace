@@ -1,23 +1,18 @@
 // Copyright 2022 NewSocial Inc. - All Rights Reserved
 // Author(s): See Git History
 //
-// Auth middleware. End-user access tokens are verified by whichever auth
-// provider is configured at runtime:
-//   - CDP   when CDP_API_KEY_ID is set (preferred; post-migration default)
-//   - Privy when PRIVY_APP_ID is set   (legacy; pre-migration fallback)
-//
-// The selection is per-process, not per-request, so a Railway env-var
-// flip is enough to switch providers. The User.authId column stores
-// the provider's stable user id (Privy DID 'did:privy:...' or CDP
-// end-user UUID); the rest of the codebase treats authId as opaque.
+// Auth middleware. Migrated from Firebase Admin's verifyIdToken to Privy's
+// verifyAuthToken (2026-05-08). The User.authId column now stores the Privy
+// DID (`did:privy:...`) instead of the Firebase UID. Existing Firebase users
+// claim their account via the email-link flow which mints them a Privy
+// session and rewrites their authId in-place.
 
-import { verifyCdpToken, verifyPrivyToken } from '@backspace/auth';
+import { isDevelopment } from '@src/utils/common_utils';
+import { verifyPrivyToken } from '@backspace/auth';
 import chalk from 'chalk';
 import HttpStatus from 'http-status-codes';
 import { NextApiRequest as Req, NextApiResponse as Res } from 'next';
 import nc, { ErrorHandler, Middleware, NoMatchHandler, Options } from 'next-connect';
-
-import { isDevelopment } from '@src/utils/common_utils';
 
 const colorArray = [chalk.cyan, chalk.yellow, chalk.magenta];
 
@@ -32,50 +27,19 @@ type RequestBase = {
 
 export type Request<Params extends RequestBase> = Required<Params>;
 
-// CDP creds take priority — if the project has migrated, the Privy
-// env vars typically stay set during the rollout window but should
-// be ignored.
-const CDP_API_KEY_ID = process.env.CDP_API_KEY_ID;
-const CDP_API_KEY_SECRET = process.env.CDP_API_KEY_SECRET;
-const PRIVY_APP_ID = process.env.PRIVY_APP_ID;
-const PRIVY_APP_SECRET = process.env.PRIVY_APP_SECRET;
-
-const useCdp = Boolean(CDP_API_KEY_ID && CDP_API_KEY_SECRET);
+const PRIVY_CFG = {
+  appId: process.env.PRIVY_APP_ID!,
+  appSecret: process.env.PRIVY_APP_SECRET!,
+};
 
 const validate = async (token: string): Promise<string | null> => {
-  if (useCdp) {
-    try {
-      const user = await verifyCdpToken(token, {
-        apiKeyId: CDP_API_KEY_ID!,
-        apiKeySecret: CDP_API_KEY_SECRET!,
-      });
-      return (user as { userId: string }).userId;
-    } catch {
-      console.warn('Not able to verify CDP token');
-      return null;
-    }
+  try {
+    const claims = await verifyPrivyToken(token, PRIVY_CFG);
+    return claims.userId;
+  } catch (error) {
+    console.warn('Not able to verify Privy token');
+    return null;
   }
-
-  if (PRIVY_APP_ID && PRIVY_APP_SECRET) {
-    try {
-      const claims = await verifyPrivyToken(token, {
-        appId: PRIVY_APP_ID,
-        appSecret: PRIVY_APP_SECRET,
-      });
-      return claims.userId;
-    } catch {
-      console.warn('Not able to verify Privy token');
-      return null;
-    }
-  }
-
-  // Neither provider configured — every request 401s, surface it in the
-  // log so an operator knows the env is incomplete rather than thinking
-  // tokens are bad.
-  console.warn(
-    'Auth provider not configured: set CDP_API_KEY_ID+CDP_API_KEY_SECRET or PRIVY_APP_ID+PRIVY_APP_SECRET',
-  );
-  return null;
 };
 
 export const onError: ErrorHandler<ExtReq, Res> = (err, req, res, next) => {
