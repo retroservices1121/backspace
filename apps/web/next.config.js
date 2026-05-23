@@ -2,11 +2,23 @@
 // Next 12 doesn't transpile node_modules by default, so imports of
 // @backspace/* hit webpack as untyped TS and fail to parse. Next 13.1
 // added `transpilePackages` natively; for 12 we need this shim.
+//
+// The CDP + wagmi stack ships ES2025 syntax (import attributes,
+// top-level await, etc.) that Next 12's webpack 5 can't parse raw;
+// running them through SWC via this transpile pass downlevels them.
+// @base-org/account is the worst offender — wagmi/connectors pulls it
+// in transitively for Coinbase's Base Account connector even though
+// we don't use it directly.
 const withTM = require('next-transpile-modules')([
   '@backspace/auth',
   '@backspace/db',
   '@backspace/markets',
   '@backspace/usernames',
+  '@coinbase/cdp-core',
+  '@coinbase/cdp-hooks',
+  '@coinbase/cdp-react',
+  '@coinbase/cdp-wagmi',
+  '@base-org/account',
 ]);
 
 /** @type {import('next').NextConfig} */
