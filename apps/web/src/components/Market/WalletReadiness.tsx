@@ -51,7 +51,7 @@ export function WalletReadiness({ signerWallet }: Props = {}) {
   // approve in your wallet.
   const isExternal = signerWallet?.source === 'external';
   const body = isExternal
-    ? 'Sign once in your wallet to enable trading on Backspace — gasless.'
+    ? 'Sign once in your Backspace wallet to enable gasless trading.'
     : 'Set up your trading wallet to place orders — one-time, gasless.';
 
   return (
