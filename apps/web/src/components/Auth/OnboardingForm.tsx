@@ -16,8 +16,6 @@ import { OnboardingFields, OnboardingFormState } from 'types/auth';
 import { FormType } from 'types/forms';
 import { FormDebug } from 'utils/FormDebug';
 
-import { AppearanceSettings } from '../Settings/AppearanceSettings';
-
 const OnboardingSchema = Yup.object().shape({
   [OnboardingFields.Username]: Yup.string()
     .min(2, 'is too short')
@@ -119,10 +117,6 @@ const OnboardingForm = ({
       />
 
       <Space direction="column" />
-
-      <div>
-        <AppearanceSettings/>
-      </div>
 
       <ButtonLarge type="submit">Continue</ButtonLarge>
     </Form>
