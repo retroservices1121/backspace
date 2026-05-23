@@ -7,6 +7,7 @@ import React, { useEffect } from 'react';
 import { ReactLayoutComponentType } from 'react-layout';
 import { toast } from 'react-toastify';
 import useConstructor from '@src/hooks/useConstructor';
+import useLogout from '@src/hooks/useLogout';
 import { useOnboarding } from '@src/hooks/useOnboarding';
 import { fetchUser } from '@src/store/userSlice';
 import AuthLayout from 'layouts/authLayout';
@@ -26,6 +27,8 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
   const router = useRouter();
   const onboard = useOnboarding();
   const auth = useAppSelector((state: RootState) => state.auth);
+  const logout = useLogout();
+  const signedInAs = useAppSelector((state: RootState) => state.auth.email);
 
   useConstructor(() => {
     dispatch(setPageTitle(pageTitle));
@@ -105,6 +108,25 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
           onSubmit={handleSubmitOnboarding}
           initialUsername={onboard.reservedUsername}
         />
+      </div>
+
+      {/* Escape hatch — without this the page is a dead-end for a
+          user who landed here on the wrong account (e.g. signed
+          in as the test user, wants to sign back in as themselves).
+          Mirrors the "Back to sign in" CTA on /auth/logout. */}
+      <div className="mt-6 pt-5 border-t border-line text-center">
+        {signedInAs && (
+          <div className="text-[12px] text-ink-3 font-mono mb-2 break-all">
+            Signed in as {signedInAs}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => logout('User left onboarding to switch accounts')}
+          className="text-[13px] text-ink-2 underline hover:text-ink"
+        >
+          Use a different account
+        </button>
       </div>
     </>
   );
