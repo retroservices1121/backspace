@@ -23,8 +23,6 @@ import type { WalletProvider } from './types';
 const USE_CDP = Boolean(process.env.NEXT_PUBLIC_CDP_PROJECT_ID);
 
 export function useWallet(): WalletProvider {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   if (USE_CDP) return useCdpWalletProvider();
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return usePrivyWalletProvider();
 }

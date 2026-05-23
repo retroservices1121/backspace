@@ -134,7 +134,7 @@ export function useCdpWalletProvider(): WalletProvider {
         address: solanaAddress,
         source: 'embedded',
         clientType: 'cdp',
-        signTransaction: async <T,>(transaction: T): Promise<T> => {
+        signTransaction: async <T>(transaction: T): Promise<T> => {
           const result = await signSolanaTransaction({
             solanaAccount: solanaAddress,
             transaction: transaction as never,
@@ -145,7 +145,7 @@ export function useCdpWalletProvider(): WalletProvider {
           // this sign-only branch is mostly forward-looking.
           return (result as unknown) as T;
         },
-        signAndSendTransaction: async <T,>(transaction: T): Promise<string> => {
+        signAndSendTransaction: async <T>(transaction: T): Promise<string> => {
           const result = await sendSolanaTransaction({
             solanaAccount: solanaAddress,
             transaction: transaction as never,
