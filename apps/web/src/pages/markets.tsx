@@ -2,12 +2,17 @@
 //
 // Layout:
 //   1. Sticky TopTabs header (title only)
-//   2. Trending horizontal scroller — top 5–6 markets by 24h volume,
+//   2. Trending horizontal scroller — top markets by 24h volume,
 //      always shown regardless of selected sort or category
-//   3. Sticky filter bar — scrollable category pills + sort dropdown
-//      + search box
-//   4. Single-column list of CatalogMarketCard rows reflecting the
-//      filter + sort selection
+//   3. Sticky filter bar — category dropdown + sort dropdown + search
+//   4. Polymarket-style responsive grid of MarketGridCard tiles
+//      (1 col mobile → 2 → 3 → 4 across breakpoints).
+//
+// Two card shapes for two contexts:
+//   - TrendingMarketCard (image-overlay, horizontal scroll)
+//   - MarketGridCard (vertical tile, click-through to /m/[id])
+// Neither does inline trading — trading happens on the detail page
+// or on inline post embeds. The catalog is a discover surface.
 //
 // The page is rendered without the shell's RightRail (see
 // NavigationV2/Navigation.tsx's wideLayout check), so the content
@@ -22,10 +27,9 @@ import { AuthStatus } from '@src/store/authSlice';
 import { setPageTitle } from '@src/store/appSlice';
 import { useAppDispatch } from '@src/store/store';
 
-import { CatalogMarketCard } from '@src/components/Market/CatalogMarketCard';
+import { MarketGridCard } from '@src/components/Market/MarketGridCard';
 import { TrendingMarketCard } from '@src/components/Market/TrendingMarketCard';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
-import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
 import TopTabs from 'components/Shell/TopTabs';
 
 const ALL = 'all';
@@ -49,8 +53,6 @@ async function fetchCatalog(sort: SortKey): Promise<MarketCardData[]> {
 }
 
 async function fetchTrending(): Promise<MarketCardData[]> {
-  // Independent of the user's selected sort — always shows the hottest
-  // markets so the row reads consistently as "what's hot now."
   const { data } = await axios().get<MarketCardData[]>(
     `/markets?limit=${TRENDING_COUNT}&sort=trending`,
   );
@@ -77,25 +79,29 @@ const Markets: React.FC = () => {
   const authState = useAuthentication();
   const dispatch = useAppDispatch();
   const [category, setCategory] = useState<string>(ALL);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const [sort, setSort] = useState<SortKey>('trending');
   const [sortOpen, setSortOpen] = useState(false);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounced(query.trim(), 250);
+  const categoryRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(setPageTitle('Markets'));
   }, []);
 
+  // Both dropdowns close on outside click.
   useEffect(() => {
-    if (!sortOpen) return;
+    if (!sortOpen && !categoryOpen) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (sortRef.current && !sortRef.current.contains(t)) setSortOpen(false);
+      if (sortOpen && sortRef.current && !sortRef.current.contains(t)) setSortOpen(false);
+      if (categoryOpen && categoryRef.current && !categoryRef.current.contains(t)) setCategoryOpen(false);
     };
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [sortOpen]);
+  }, [sortOpen, categoryOpen]);
 
   const catalog = useQuery(
     ['markets-catalog', sort],
@@ -128,11 +134,10 @@ const Markets: React.FC = () => {
     },
   );
 
-  // Categories derived from the loaded catalog. Order: All first, then
-  // alphabetical so the bar is predictable. Lowercase keys, original
-  // casing for display.
+  // Categories derived from the loaded catalog. All first, then
+  // alphabetical so the dropdown is predictable.
   const categories = useMemo(() => {
-    if (!catalog.data) return [{ key: ALL, label: 'All' }];
+    if (!catalog.data) return [{ key: ALL, label: 'All categories' }];
     const seen = new Map<string, string>();
     for (const m of catalog.data) {
       if (m.category) {
@@ -141,7 +146,7 @@ const Markets: React.FC = () => {
       }
     }
     return [
-      { key: ALL, label: 'All' },
+      { key: ALL, label: 'All categories' },
       ...Array.from(seen, ([key, label]) => ({ key, label })).sort((a, b) =>
         a.label.localeCompare(b.label),
       ),
@@ -160,6 +165,8 @@ const Markets: React.FC = () => {
   }, [isSearching, search.data, catalog.data, category]);
 
   const activeSortLabel = SORTS.find((s) => s.key === sort)?.label ?? 'Trending';
+  const activeCategoryLabel =
+    categories.find((c) => c.key === category)?.label ?? 'All categories';
 
   return (
     <>
@@ -171,8 +178,7 @@ const Markets: React.FC = () => {
         <EmptyState text="Sign in to browse markets." />
       ) : (
         <>
-          {/* Trending hero row — only shown when we have data and
-              user isn't searching (search swaps the entire list). */}
+          {/* Trending hero row — only shown when not searching. */}
           {!isSearching && (
             <section className="px-6 pt-5 pb-2">
               <div className="flex items-baseline justify-between mb-3">
@@ -209,9 +215,9 @@ const Markets: React.FC = () => {
             </section>
           )}
 
-          {/* Filter bar — category pills + sort dropdown + search.
+          {/* Filter bar — category dropdown + sort dropdown + search.
               Sticky just under TopTabs so it stays reachable while the
-              catalog scrolls. */}
+              grid scrolls. */}
           <div
             className="
               sticky top-[64px] z-[5]
@@ -220,40 +226,68 @@ const Markets: React.FC = () => {
             "
           >
             <div className="px-6 pt-3 pb-2 flex items-center gap-3 flex-wrap">
-              <div
-                className="
-                  flex-1 min-w-[260px] flex items-center gap-1.5
-                  overflow-x-auto -mx-2 px-2
-                  [&::-webkit-scrollbar]{display:none}
-                "
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {categories.map((c) => {
-                  const isActive = c.key === category;
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      onClick={() => setCategory(c.key)}
-                      className={[
-                        'flex-none px-3 h-8 rounded-full text-[13px] font-medium',
-                        'transition-colors duration-150',
-                        'border whitespace-nowrap',
-                        isActive
-                          ? 'bg-brand text-ink border-brand'
-                          : 'bg-transparent text-ink-2 border-line hover:text-ink hover:border-line-2',
-                      ].join(' ')}
-                    >
-                      {c.label}
-                    </button>
-                  );
-                })}
+              {/* Category dropdown */}
+              <div className="relative flex-none" ref={categoryRef}>
+                <button
+                  type="button"
+                  onClick={() => { setCategoryOpen((v) => !v); setSortOpen(false); }}
+                  className="
+                    inline-flex items-center gap-2 px-3 h-8 rounded-full
+                    border border-line bg-surface text-ink text-[13px] font-medium
+                    hover:border-brand-2/50 transition-colors duration-150
+                  "
+                >
+                  <span className="text-ink-3 text-[11px] font-mono">Category</span>
+                  <span>{activeCategoryLabel}</span>
+                  <svg
+                    viewBox="0 0 24 24" width="12" height="12"
+                    fill="none" stroke="currentColor" strokeWidth="2.2"
+                    strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {categoryOpen && (
+                  <div
+                    className="
+                      absolute left-0 z-20 mt-1 w-[260px] max-h-[60vh] overflow-y-auto
+                      rounded-[12px] border border-line bg-surface
+                      shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
+                    "
+                  >
+                    {categories.map((c) => {
+                      const isActive = c.key === category;
+                      return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          onClick={() => { setCategory(c.key); setCategoryOpen(false); }}
+                          className={[
+                            'w-full text-left px-2.5 py-2 rounded-[8px]',
+                            'transition-colors duration-150',
+                            isActive ? 'bg-brand-soft' : 'hover:bg-hover',
+                          ].join(' ')}
+                        >
+                          <div
+                            className={[
+                              'text-[13px] font-semibold',
+                              isActive ? 'text-brand-2' : 'text-ink',
+                            ].join(' ')}
+                          >
+                            {c.label}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
+              {/* Sort dropdown */}
               <div className="relative flex-none" ref={sortRef}>
                 <button
                   type="button"
-                  onClick={() => setSortOpen((v) => !v)}
+                  onClick={() => { setSortOpen((v) => !v); setCategoryOpen(false); }}
                   className="
                     inline-flex items-center gap-2 px-3 h-8 rounded-full
                     border border-line bg-surface text-ink text-[13px] font-medium
@@ -273,7 +307,7 @@ const Markets: React.FC = () => {
                 {sortOpen && (
                   <div
                     className="
-                      absolute right-0 z-20 mt-1 w-[260px]
+                      absolute left-0 z-20 mt-1 w-[260px]
                       rounded-[12px] border border-line bg-surface
                       shadow-[0_24px_60px_-12px_rgba(0,0,0,0.6)] p-1.5
                     "
@@ -338,18 +372,22 @@ const Markets: React.FC = () => {
             </div>
           </div>
 
-          {/* Main list */}
-          <div className="font-display text-ink">
+          {/* Main grid — responsive: 1 / 2 / 3 / 4 columns. Polymarket
+              hits 3-up at desktop; we keep going to 4 at xl since the
+              shell can stretch to 1320px without the right rail. */}
+          <div className="px-6 py-5 font-display text-ink">
             {isSearching ? (
               search.isLoading ? (
-                <SkeletonLoader renderCount={4} />
+                <GridSkeleton count={6} />
               ) : visible.length > 0 ? (
-                visible.map((m) => (
-                  <CatalogMarketCard
-                    key={`${m.venue}:${m.externalId}`}
-                    market={m}
-                  />
-                ))
+                <Grid>
+                  {visible.map((m) => (
+                    <MarketGridCard
+                      key={`${m.venue}:${m.externalId}`}
+                      market={m}
+                    />
+                  ))}
+                </Grid>
               ) : (
                 <EmptyState
                   title="No matches"
@@ -357,14 +395,16 @@ const Markets: React.FC = () => {
                 />
               )
             ) : catalog.isLoading ? (
-              <SkeletonLoader renderCount={8} />
+              <GridSkeleton count={9} />
             ) : visible.length > 0 ? (
-              visible.map((m) => (
-                <CatalogMarketCard
-                  key={`${m.venue}:${m.externalId}`}
-                  market={m}
-                />
-              ))
+              <Grid>
+                {visible.map((m) => (
+                  <MarketGridCard
+                    key={`${m.venue}:${m.externalId}`}
+                    market={m}
+                  />
+                ))}
+              </Grid>
             ) : (
               <EmptyState
                 title={
@@ -385,6 +425,33 @@ const Markets: React.FC = () => {
     </>
   );
 };
+
+function Grid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="
+        grid gap-4
+        grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
+      "
+    >
+      {children}
+    </div>
+  );
+}
+
+function GridSkeleton({ count }: { count: number }) {
+  return (
+    <Grid>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-[16px] border border-line bg-surface animate-pulse"
+          style={{ paddingTop: '125%' }}
+        />
+      ))}
+    </Grid>
+  );
+}
 
 function EmptyState({ title, text }: { title?: string; text: string }) {
   return (
