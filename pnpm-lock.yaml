@@ -182,6 +182,9 @@ importers:
       '@backspace/usernames':
         specifier: workspace:^
         version: link:../../packages/usernames
+      '@base-org/account':
+        specifier: ^2.5.6
+        version: 2.5.6(@types/react@17.0.80)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(immer@9.0.21)(react@18.0.0)(typescript@4.9.5)(use-sync-external-store@1.4.0(react@18.0.0))(utf-8-validate@6.0.6)(zod@4.4.3)
       '@coinbase/cdp-core':
         specifier: ^0.0.108
         version: 0.0.108(@types/react@17.0.80)(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(immer@9.0.21)(react@18.0.0)(typescript@4.9.5)(use-sync-external-store@1.4.0(react@18.0.0))(utf-8-validate@6.0.6)(x402-fetch@1.2.0(@solana/sysvars@5.5.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5))(@tanstack/query-core@5.100.13)(@tanstack/react-query@5.100.13(react@18.0.0))(@types/react@17.0.80)(bufferutil@4.1.0)(encoding@0.1.13)(fastestsmallesttextencoderdecoder@1.0.22)(immer@9.0.21)(react@18.0.0)(typescript@4.9.5)(utf-8-validate@6.0.6))(zod@4.4.3)
@@ -1494,6 +1497,10 @@ packages:
 
   '@base-org/account@2.4.0':
     resolution: {integrity: sha512-A4Umpi8B9/pqR78D1Yoze4xHyQaujioVRqqO3d6xuDFw9VRtjg6tK3bPlwE0aW+nVH/ntllCpPa2PbI8Rnjcug==}
+
+  '@base-org/account@2.5.6':
+    resolution: {integrity: sha512-DOKfn3Ax80NQGh9m+iUFTu0it9lqu2Oo0AgM7UQhbDR8iUMijT87J2EINLnUTV0YqX2Gr8m/rM6w6RDhQcPy4g==}
+    engines: {node: '>=20'}
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
@@ -5875,6 +5882,10 @@ packages:
 
   brorand@1.1.0:
     resolution: {integrity: sha512-cKV8tMCEpQs4hK/ik71d6LrPOnpkpGBR0wzxqr68g2m/LB2GxVYQroAjMJZRVM1Y4BCjCKc3vAamxSzOY2RP+w==}
+
+  brotli-wasm@3.0.1:
+    resolution: {integrity: sha512-U3K72/JAi3jITpdhZBqzSUq+DUY697tLxOuFXB+FpAE/Ug+5C3VZrv4uA674EUZHxNAuQ9wETXNqQkxZD6oL4A==}
+    engines: {node: '>=v18.0.0'}
 
   browser-or-node@3.0.0:
     resolution: {integrity: sha512-iczIdVJzGEYhP5DqQxYM9Hh7Ztpqqi+CXZpSmX8ALFs9ecXkQIeqRyM6TfxEfMVpwhl3dSuDvxdzzo9sUOIVBQ==}
@@ -13786,6 +13797,29 @@ snapshots:
       - utf-8-validate
       - zod
     optional: true
+
+  '@base-org/account@2.5.6(@types/react@17.0.80)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(immer@9.0.21)(react@18.0.0)(typescript@4.9.5)(use-sync-external-store@1.4.0(react@18.0.0))(utf-8-validate@6.0.6)(zod@4.4.3)':
+    dependencies:
+      '@coinbase/cdp-sdk': 1.50.0(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@4.9.5)(utf-8-validate@6.0.6)
+      brotli-wasm: 3.0.1
+      clsx: 1.2.1
+      eventemitter3: 5.0.1
+      idb-keyval: 6.2.1
+      ox: 0.6.9(typescript@4.9.5)(zod@4.4.3)
+      preact: 10.24.2
+      viem: 2.48.11(bufferutil@4.1.0)(typescript@4.9.5)(utf-8-validate@6.0.6)(zod@4.4.3)
+      zustand: 5.0.3(@types/react@17.0.80)(immer@9.0.21)(react@18.0.0)(use-sync-external-store@1.4.0(react@18.0.0))
+    transitivePeerDependencies:
+      - '@types/react'
+      - bufferutil
+      - debug
+      - fastestsmallesttextencoderdecoder
+      - immer
+      - react
+      - typescript
+      - use-sync-external-store
+      - utf-8-validate
+      - zod
 
   '@bcoe/v8-coverage@0.2.3': {}
 
@@ -23736,6 +23770,8 @@ snapshots:
       unload: 2.2.0
 
   brorand@1.1.0: {}
+
+  brotli-wasm@3.0.1: {}
 
   browser-or-node@3.0.0: {}
 
