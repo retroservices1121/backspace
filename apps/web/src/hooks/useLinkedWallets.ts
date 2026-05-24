@@ -70,9 +70,13 @@ async function syncLinkedWallets(address?: string): Promise<LinkedWallet[]> {
   return data.linked ?? [];
 }
 
+async function deleteLinkedWallet(id: string): Promise<void> {
+  await axios().delete(`/users/me/linked-wallets/${encodeURIComponent(id)}`);
+}
+
 export function useLinkedWallets() {
   const queryClient = useQueryClient();
-  const { user } = usePrivy();
+  const { user, unlinkWallet } = usePrivy();
   const { wallets } = useWallets();
   const [phase, setPhase] = useState<LinkPhase>('idle');
   const [error, setError] = useState<Error | null>(null);
@@ -196,6 +200,37 @@ export function useLinkedWallets() {
     },
   );
 
+  // Unlink flow: Privy first (so user.linkedAccounts drops the address
+  // and the auto-sync effect above doesn't re-add the wallet), then
+  // server soft-delete (clears the linked-polymarket source marker;
+  // Trade/Position FKs keep the row alive for audit history).
+  //
+  // If Privy fails, we still drop our DB row — the user sees the
+  // wallet leave the UI. On the next render Privy may report it as
+  // linked again and the auto-sync will revive the row; the user can
+  // retry. We accept that flap rather than blocking the local delete
+  // on a flaky third-party call.
+  const unlinkMutation = useMutation(
+    async ({ id, address }: { id: string; address: string }) => {
+      try {
+        await unlinkWallet(address);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Privy unlinkWallet failed; proceeding with DB delete', err);
+      }
+      // Block the address from being immediately re-synced this
+      // session even if Privy's user object hasn't refreshed yet.
+      syncedRef.current.add(address.toLowerCase());
+      await deleteLinkedWallet(id);
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['linked-wallets']);
+        queryClient.invalidateQueries(['polymarket-positions']);
+      },
+    },
+  );
+
   /** Step 1: open the Privy modal, deep-link to the wallet, get the
    *  user back with an active connection. After this resolves, the
    *  effect above flips phase → 'pending' and the UI renders the
@@ -280,6 +315,12 @@ export function useLinkedWallets() {
     }
   }, [candidate, generateSiweMessage, linkWithSiwe, syncMutation]);
 
+  const unlink = useCallback(
+    (id: string, address: string) =>
+      unlinkMutation.mutateAsync({ id, address }),
+    [unlinkMutation],
+  );
+
   return {
     wallets: list.data ?? [],
     isLoading: list.isLoading,
@@ -291,6 +332,8 @@ export function useLinkedWallets() {
     error,
     startLinking,
     finishLinking,
+    unlink,
+    unlinking: unlinkMutation.isLoading,
     refresh: () => queryClient.invalidateQueries(['linked-wallets']),
   };
 }

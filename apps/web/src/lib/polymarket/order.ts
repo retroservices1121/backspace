@@ -140,9 +140,26 @@ export async function placeOrder(
   );
 
   const result = normalize(side, requestedShares, (resp ?? {}) as RawOrderResponse);
-  if (result.status === 'UNKNOWN' && (resp as RawOrderResponse)?.success === false) {
+  const raw = (resp ?? {}) as RawOrderResponse;
+
+  // Explicit rejection from the relayer.
+  if (raw.success === false) {
+    throw new Error(raw.errorMsg || 'Polymarket rejected the order');
+  }
+
+  // FOK market orders either fill fully or fail — Polymarket should
+  // always echo back an orderID + status + fill amounts on success. A
+  // response missing all three is the relayer soft-rejecting (typically
+  // the Safe has no pUSD balance, no approvals, or hasn't been deployed
+  // yet). Earlier we treated this as success and toasted "order placed"
+  // while the user's wallet sat empty — never again.
+  const noOrderId = !result.venueOrderId;
+  const noStatus = !raw.status || result.status === 'UNKNOWN';
+  const noFill = result.filledShares == null || result.filledShares <= 0;
+  if (noOrderId && noStatus && noFill) {
     throw new Error(
-      (resp as RawOrderResponse)?.errorMsg || 'Polymarket rejected the order',
+      raw.errorMsg
+        || 'Order did not execute — check that your trading wallet has pUSD and approvals are set.',
     );
   }
   return result;

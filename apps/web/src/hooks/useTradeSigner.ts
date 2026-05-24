@@ -1,28 +1,26 @@
-// Auto-resolve which EVM wallet signs trades.
+// Resolve which EVM wallet signs trades.
 //
-// Rule: if the user has linked an external wallet via Privy, that wallet
-// IS their trading wallet — same Safe, same approvals, same position
-// history. The embedded Backspace wallet is only the signer for users
-// who haven't linked anything. We don't ask the user to pick: they
-// already declared their intent when they linked the wallet to their
-// profile. See [[project_signer_no_picker]] for the product reasoning.
-//
-// When the user has multiple linked wallets (rare), the most recently
-// added one wins — typically what they want, since the latest link is
-// the most fresh declaration of intent.
+// Resolution order:
+//   1. The user's primary trading wallet preference (set on
+//      /settings/wallet) — wins when present AND still mounted.
+//   2. The most recently linked external wallet — historical
+//      auto-pick. See [[project_signer_no_picker]] for the original
+//      product reasoning; the explicit picker is the power-user
+//      override on top.
+//   3. The embedded Backspace wallet.
 //
 // Edge cases:
-//   - No linked wallets → falls back to embedded.
-//   - User unlinks the wallet they were trading from mid-session →
-//     hook re-evaluates and falls back to embedded silently. SessionStorage
-//     for that EOA stays around in case they re-link.
-//   - Multiple wallets, want to override → power-user override belongs
-//     in /settings/wallet (not built yet — only build when someone asks).
+//   - User picked a wallet then unlinked it → preference no longer
+//     matches anything in evmWallets, falls through to auto-pick. The
+//     stale preference stays in the DB until the user changes it; that's
+//     fine because next time they link the same wallet it re-engages.
+//   - No linked wallets and no preference → embedded.
 
 import { useMemo } from 'react';
 
 import { useWallet } from '@src/lib/wallet';
 import type { EvmWallet } from '@src/lib/wallet/types';
+import { usePrimaryTradingWallet } from './usePrimaryTradingWallet';
 
 export type TradeSigner = {
   /** The wallet that will sign trades. Null when the user is signed out
@@ -36,16 +34,21 @@ export type TradeSigner = {
 
 export function useEvmTradeSigner(): TradeSigner {
   const { evmWallets, embeddedEvmWallet } = useWallet();
+  const { address: preferredAddress } = usePrimaryTradingWallet();
 
   const wallet = useMemo<EvmWallet | null>(() => {
-    // Prefer the most recently added external wallet. evmWallets order
-    // from Privy puts embedded first then externals in attach order, so
-    // we pick the last external; if none exists, we fall back to
-    // embedded.
+    if (preferredAddress) {
+      const match = evmWallets.find(
+        (w) => w.address.toLowerCase() === preferredAddress.toLowerCase(),
+      );
+      if (match) return match;
+      // Preference is stale (wallet unlinked / not yet hydrated) —
+      // fall through to auto-pick rather than blocking trading.
+    }
     const externals = evmWallets.filter((w) => w.source === 'external');
     if (externals.length > 0) return externals[externals.length - 1];
     return embeddedEvmWallet;
-  }, [evmWallets, embeddedEvmWallet]);
+  }, [evmWallets, embeddedEvmWallet, preferredAddress]);
 
   return {
     wallet,

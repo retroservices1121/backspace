@@ -45,6 +45,13 @@ model User {
   // mounted on the home feed. /settings/account exposes a "Replay
   // welcome tour" action that resets it.
   hasCompletedTour     Boolean         @default(false)
+  // Lowercased EVM address the user picked as their primary trading
+  // wallet on /settings/wallet. When set, useEvmTradeSigner returns
+  // this wallet instead of auto-picking the most-recent linked EOA.
+  // Stored as a plain address (no FK) so unlinking the wallet
+  // gracefully falls back to auto-pick rather than failing a join.
+  primaryTradingWalletAddress String?
+
   // PERSON vs ORG. ORG accounts render a gold badge + square avatar.
   // Affiliation linking (X-style "affiliated to") is intentionally not
   // modelled yet — add a self-relation here when orgs actually need it.
