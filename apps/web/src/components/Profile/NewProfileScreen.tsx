@@ -112,7 +112,7 @@ const NewProfileScreen: React.FC<Props> = ({
           profile because communities are a first-class thing on
           Backspace. Skips when no featured/owned community. */}
       {featured && (
-        <div className="px-5 pb-3">
+        <div className="px-4 sm:px-5 pb-3">
           <ProfileCommunityCard community={featured} ownerName={profile.name} />
         </div>
       )}
@@ -127,19 +127,32 @@ const NewProfileScreen: React.FC<Props> = ({
 };
 
 function ProfileTopHeader({ title, postCount }: { title: string; postCount: number }) {
+  const router = useRouter();
   return (
     <div
       className="
-        sticky top-0 z-10
-        px-6 pt-3.5 pb-3
+        sticky top-0 z-[55] sm:z-10
+        px-4 sm:px-6 pt-3.5 pb-3
         border-b border-line
         bg-canvas/[0.78]
         backdrop-blur-[14px] backdrop-saturate-[160%]
-        flex items-center justify-between
+        flex items-center gap-3
       "
     >
-      <div>
-        <h1 className="m-0 text-[20px] font-bold tracking-[-0.02em] text-ink">
+      {/* Mobile back — this header is the top bar on /[username]
+          (global brand header is suppressed there). */}
+      <button
+        type="button"
+        aria-label="Back"
+        onClick={() => router.back()}
+        className="sm:hidden w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-ink flex-none"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div className="flex-1 min-w-0">
+        <h1 className="m-0 text-[20px] font-bold tracking-[-0.02em] text-ink truncate">
           {title}
         </h1>
         <div className="mt-0.5 text-[11.5px] font-mono tracking-[0.06em] text-ink-3">
@@ -167,13 +180,13 @@ function ProfileBanner({ customBannerUrl }: { customBannerUrl?: string | null })
   if (customBannerUrl) {
     return (
       <div
-        className="h-44 w-full bg-surface bg-cover bg-center"
+        className="h-32 sm:h-44 w-full bg-surface bg-cover bg-center"
         style={{ backgroundImage: `url(${customBannerUrl})` }}
       />
     );
   }
   return (
-    <div className="relative h-44 w-full overflow-hidden bg-surface">
+    <div className="relative h-32 sm:h-44 w-full overflow-hidden bg-surface">
       <div
         className="absolute inset-0"
         style={{
@@ -223,13 +236,13 @@ function ProfileBio({
   const avatarShape = isOrg ? 'rounded-[20px]' : 'rounded-full';
   const wrapperShape = isOrg ? 'rounded-[24px]' : 'rounded-full';
   return (
-    <div className="px-5">
+    <div className="px-4 sm:px-5">
       {/* Avatar overlaps the banner. Right side: message + bell
           + Follow/Following pill, or Edit profile when isSelf. */}
-      <div className="flex items-end justify-between -mt-16">
+      <div className="flex items-end justify-between -mt-12 sm:-mt-16">
         <div className={`${wrapperShape} border-4 border-canvas bg-canvas`}>
           <div
-            className={`w-[120px] h-[120px] ${avatarShape} overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]`}
+            className={`w-[88px] h-[88px] sm:w-[120px] sm:h-[120px] ${avatarShape} overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]`}
           >
             {avatar
               ? <img src={avatar} alt="" className="w-full h-full object-cover" />
@@ -281,7 +294,7 @@ function ProfileBio({
       {/* Name + handle + conv badge */}
       <div className="mt-3">
         <div className="flex items-center gap-1.5">
-          <span className="text-[22px] font-bold tracking-[-0.01em] text-ink">
+          <span className="text-[20px] sm:text-[22px] font-bold tracking-[-0.01em] text-ink">
             {profile.name || profile.username}
           </span>
           {profile.verified && (
@@ -408,7 +421,7 @@ function ProfileStatsRow({ username, isSelf }: { username: string; isSelf: boole
   if (!stats || stats.resolvedPositions === 0) {
     if (!isSelf) return null;
     return (
-      <div className="px-5 mb-4">
+      <div className="px-4 sm:px-5 mb-4">
         <Link href={APP.SETTINGS.WALLET}>
           <a
             className="
@@ -434,7 +447,7 @@ function ProfileStatsRow({ username, isSelf }: { username: string; isSelf: boole
   const accuracyPct = stats.accuracy != null ? Math.round((stats.accuracy as number) * 100) : null;
 
   return (
-    <div className="mx-5 mb-4 grid grid-cols-4 gap-[1px] rounded-[14px] overflow-hidden bg-line">
+    <div className="mx-4 sm:mx-5 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-[1px] rounded-[14px] overflow-hidden bg-line">
       <StatCell label="Calls" value={String(stats.resolvedPositions)} sub="resolved" />
       <StatCell
         label="Hit rate"
@@ -470,11 +483,11 @@ function StatCell({
   if (tone === 'down') valueClass = 'text-pink-2';
   if (tone === 'gold') valueClass = 'text-gold';
   return (
-    <div className="bg-canvas px-4 py-3 flex flex-col gap-1">
-      <div className="text-[10px] uppercase tracking-[0.08em] text-ink-3 font-mono">
+    <div className="bg-canvas px-3 sm:px-4 py-3 flex flex-col gap-1">
+      <div className="text-[10px] uppercase tracking-[0.08em] text-ink-3 font-mono truncate">
         {label}
       </div>
-      <div className={`text-[20px] font-mono font-semibold ${valueClass}`}>
+      <div className={`text-[18px] sm:text-[20px] font-mono font-semibold truncate ${valueClass}`}>
         {value}
       </div>
       <div className="text-[11px] text-ink-3 font-mono truncate">
@@ -496,7 +509,10 @@ function ProfileTabsBar({
 }: { active: ProfileTab; onChange: (t: ProfileTab) => void }) {
   return (
     <div className="border-t border-b border-line bg-canvas">
-      <div className="flex items-center gap-1 px-5 -mx-1">
+      <div
+        className="flex items-center gap-1 px-4 sm:px-5 overflow-x-auto"
+        style={{ scrollbarWidth: 'none' }}
+      >
         {PROFILE_TABS.map((t) => {
           const isActive = t.key === active;
           return (
@@ -505,7 +521,7 @@ function ProfileTabsBar({
               key={t.key}
               onClick={() => onChange(t.key)}
               className={[
-                'relative px-3 py-3 text-[14px] font-medium tracking-[-0.005em]',
+                'relative flex-none whitespace-nowrap px-3 py-3 text-[14px] font-medium tracking-[-0.005em]',
                 'transition-colors duration-150',
                 isActive ? 'text-ink' : 'text-ink-2 hover:text-ink',
               ].join(' ')}

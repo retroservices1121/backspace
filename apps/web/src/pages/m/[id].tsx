@@ -26,6 +26,7 @@ import { useTrade } from '@src/hooks/useTrade';
 import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
 import { SignerHint } from 'components/Market/SignerHint';
 import { WalletReadiness } from 'components/Market/WalletReadiness';
+import TradeSlipSheet from 'components/Market/TradeSlipSheet';
 import { ShellIcons as I } from 'components/Shell/icons';
 
 import { APP } from 'pages';
@@ -62,9 +63,14 @@ export default function MarketDetail() {
 
   return (
     <div className="font-display text-ink">
-      <div className="px-6 pt-6 pb-4">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
+      {/* Mobile header — owns the top bar on this route (the global
+          brand header is suppressed on /m). Back + category/Live +
+          truncated title + share/more. */}
+      <MobileDetailHeader market={market} />
+
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4">
+        {/* Breadcrumb — desktop only; mobile uses the header above. */}
+        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
           <span className="cursor-pointer hover:text-ink" onClick={() => router.push(APP.MARKETS.INDEX)}>
             Markets
           </span>
@@ -83,7 +89,7 @@ export default function MarketDetail() {
         </div>
 
         {/* Big question */}
-        <h2 className="mt-3 text-[28px] font-bold tracking-[-0.022em] text-ink max-w-[32ch] leading-tight">
+        <h2 className="mt-1 sm:mt-3 text-[22px] sm:text-[28px] font-bold tracking-[-0.022em] text-ink max-w-full sm:max-w-[32ch] leading-tight">
           {market.question}
         </h2>
 
@@ -113,7 +119,7 @@ export default function MarketDetail() {
 
       {/* Stats row — Resolves is real; the others are placeholders
           until the import grabs Polymarket's volume + traders. */}
-      <div className="mx-6 mb-4 grid grid-cols-4 gap-[1px] rounded-[14px] overflow-hidden bg-line">
+      <div className="mx-4 sm:mx-6 mb-4 grid grid-cols-4 gap-[1px] rounded-[14px] overflow-hidden bg-line">
         <Stat label="Volume (24h)" value="—" sub="coming soon" />
         <Stat label="Open interest" value="—" sub="coming soon" />
         <Stat label="Traders" value="—" sub="coming soon" />
@@ -127,6 +133,74 @@ export default function MarketDetail() {
       {/* Tabs row + the Recent trades stub */}
       <TradesTabs />
     </div>
+  );
+}
+
+// Mobile-only sticky header for the detail route. Replaces the global
+// brand bar (suppressed on /m): back · category + Live · truncated
+// title · share · more.
+function MobileDetailHeader({ market }: { market: any }) {
+  const router = useRouter();
+  const onShare = () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    // Native share sheet where available; clipboard fallback.
+    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
+    if (nav?.share) {
+      nav.share({ title: market.question, url }).catch(() => {});
+    } else if (nav?.clipboard?.writeText) {
+      nav.clipboard.writeText(url).catch(() => {});
+    }
+  };
+
+  return (
+    <header
+      className="
+        sm:hidden sticky top-0 z-[55]
+        bg-canvas/[0.85] backdrop-blur-[14px] backdrop-saturate-[160%]
+        border-b border-line
+        px-4 h-14 flex items-center gap-2.5
+      "
+    >
+      <button
+        type="button"
+        aria-label="Back"
+        onClick={() => router.back()}
+        className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-ink flex-none"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <div className="flex-1 min-w-0 leading-tight">
+        <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ink-3">
+          <span className="truncate">{market.category ?? 'Market'}</span>
+          <span className="inline-flex items-center gap-1 text-green-2 flex-none">
+            <span className="w-[5px] h-[5px] rounded-full bg-green-vivid" />
+            Live
+          </span>
+        </div>
+        <div className="text-[13px] font-semibold text-ink truncate">{market.question}</div>
+      </div>
+
+      <button
+        type="button"
+        aria-label="Share"
+        onClick={onShare}
+        className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-ink flex-none"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+          <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7M16 6l-4-4-4 4M12 2v13" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        aria-label="More"
+        className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-ink flex-none"
+      >
+        <I.dots className="w-4 h-4" />
+      </button>
+    </header>
   );
 }
 
@@ -182,11 +256,11 @@ function BigBlocks({
         />
       </div>
 
-      {/* Inline buy panel — appears under the blocks when a side
-          is selected. Keeps the trade gesture lightweight (no
-          modal) until the trade-slip overlay design is built. */}
+      {/* Desktop inline buy panel — appears under the blocks when a
+          side is selected. On mobile the TradeSlipSheet (below) takes
+          over instead. */}
       {side && (
-        <div className="rounded-[14px] border border-line bg-surface p-4 flex items-end gap-3">
+        <div className="hidden sm:flex rounded-[14px] border border-line bg-surface p-4 flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1 flex-1">
             <label className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
               Buy {side} — amount
@@ -242,6 +316,22 @@ function BigBlocks({
         </div>
       )}
 
+      {/* Mobile buy surface — bottom-sheet trade slip. Shares the same
+          amount state + handleTrade as the desktop inline panel, so
+          there's one trade path. Self-hides at sm+. */}
+      <TradeSlipSheet
+        open={!!side}
+        side={(side ?? 'YES')}
+        question={market.question}
+        pricePct={side === 'NO' ? noPct : yesPct}
+        amount={amount}
+        onAmountChange={setAmount}
+        onConfirm={() => { if (side) onBuy(side); }}
+        onClose={() => setSide(null)}
+        walletConnected={trade.walletConnected}
+        balanceUsd={trade.walletBalanceUsd != null ? Number(trade.walletBalanceUsd) : null}
+      />
+
       {/* Readiness gate disappears once the trading session is
           established. SignerHint surfaces the auto-picked wallet so
           the popup origin isn't a surprise. */}
@@ -278,7 +368,7 @@ function BigBlock({
       <div className="text-[11px] uppercase tracking-[0.16em] font-mono text-ink-3">
         {label}
       </div>
-      <div className={`mt-2 text-[48px] font-bold italic leading-none ${accent}`}>
+      <div className={`mt-2 text-[38px] sm:text-[48px] font-bold italic leading-none ${accent}`}>
         {pct}¢
       </div>
       <div className={`mt-1 text-[12px] font-mono ${accent}`}>
@@ -297,12 +387,12 @@ function BigBlock({
 
 function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-canvas px-4 py-3 flex flex-col gap-1">
-      <div className="text-[10px] uppercase tracking-[0.08em] text-ink-3 font-mono">
+    <div className="bg-canvas px-2 sm:px-4 py-3 flex flex-col gap-1">
+      <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.08em] text-ink-3 font-mono truncate">
         {label}
       </div>
-      <div className="text-[20px] font-mono font-semibold text-ink">{value}</div>
-      <div className="text-[11px] text-ink-3 font-mono truncate">{sub}</div>
+      <div className="text-[14px] sm:text-[20px] font-mono font-semibold text-ink truncate">{value}</div>
+      <div className="text-[10px] sm:text-[11px] text-ink-3 font-mono truncate">{sub}</div>
     </div>
   );
 }
@@ -323,11 +413,11 @@ function SyntheticChart() {
   const fillD = `${pathD} L${xs(94)},${H} L${xs(0)},${H} Z`;
 
   return (
-    <div className="mx-6 mb-4 rounded-[14px] border border-line bg-surface p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="mx-4 sm:mx-6 mb-4 rounded-[14px] border border-line bg-surface p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
         <h4 className="m-0 text-[14px] font-semibold tracking-[-0.005em] text-ink">
           YES probability — 14 days
-          <span className="ml-2 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3">
+          <span className="hidden sm:inline ml-2 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3">
             preview · real chart shipping with price history
           </span>
         </h4>
@@ -347,7 +437,7 @@ function SyntheticChart() {
           ))}
         </div>
       </div>
-      <div className="h-[200px] w-full">
+      <div className="h-[140px] sm:h-[200px] w-full">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-full">
           <defs>
             <linearGradient id="md-fill" x1="0" y1="0" x2="0" y2="1">
@@ -387,8 +477,11 @@ function TradesTabs() {
   const tabs = ['Recent trades', 'Top holders', 'Comments', 'Related markets'];
   const [active, setActive] = useState(tabs[0]);
   return (
-    <div className="mx-6 mb-8 rounded-[14px] border border-line bg-surface overflow-hidden">
-      <div className="flex items-center gap-1 px-3 border-b border-line">
+    <div className="mx-4 sm:mx-6 mb-8 rounded-[14px] border border-line bg-surface overflow-hidden">
+      <div
+        className="flex items-center gap-1 px-3 border-b border-line overflow-x-auto"
+        style={{ scrollbarWidth: 'none' }}
+      >
         {tabs.map((t) => {
           const isActive = t === active;
           return (
@@ -397,7 +490,7 @@ function TradesTabs() {
               key={t}
               onClick={() => setActive(t)}
               className={[
-                'relative px-3 py-3 text-[13px] font-medium',
+                'relative flex-none whitespace-nowrap px-3 py-3 text-[13px] font-medium',
                 'transition-colors duration-150',
                 isActive ? 'text-ink' : 'text-ink-2 hover:text-ink',
               ].join(' ')}

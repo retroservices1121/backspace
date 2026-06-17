@@ -1,23 +1,21 @@
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import LeftNav from 'components/Shell/LeftNav';
 import RightRail from 'components/Shell/RightRail';
+import MobileTabBar from 'components/Shell/MobileTabBar';
 
 import { APP } from 'pages';
-import { togglePostModal } from 'store/appSlice';
 import { RootState } from 'store/store';
 import { SafeArea } from 'styles/layout';
 
 import AccountDrawer from './AccountDrawer';
 import MobileNavigation from './MobileNavigation';
-import NavigationBar from './NavigationBar';
 
 const Navigation: React.FC = ({
   children,
 }) => {
-  const { postModalOpen } = useSelector((state: RootState) => state.app);
   const { pageTitle } = useSelector((state : RootState) => state.app);
   // Tab title: "<page> · Backspace" so the brand name is always
   // visible. The default pageTitle is 'backspace' (legacy lowercase) —
@@ -44,11 +42,12 @@ const Navigation: React.FC = ({
   const onMessages = router.pathname.startsWith(APP.MESSAGES.INDEX);
   const onMarkets = router.pathname.startsWith(APP.MARKETS.INDEX);
   const wideLayout = onCommunity || onMessages || onMarkets;
-  const dispatch = useDispatch();
-
-  const handleOpenPostModal = () => {
-    dispatch(togglePostModal(true));
-  };
+  // Detail-style routes own their own mobile header (back + title +
+  // actions), so the global brand header is suppressed there on mobile
+  // to avoid two stacked bars. The bottom MobileTabBar still shows.
+  // Covers market detail (/m/[id]) and profile (/[username][/...]).
+  const mobileHeaderless =
+    router.pathname.startsWith('/m/') || router.pathname.startsWith('/[username]');
 
   // Auth pages render bare — no chrome on top.
   if (onAuth) {
@@ -66,7 +65,7 @@ const Navigation: React.FC = ({
   }
 
   // Single children mount with breakpoint-aware chrome. The mobile
-  // chrome (MobileNavigation + AccountDrawer + bottom NavigationBar)
+  // chrome (MobileNavigation header + AccountDrawer + bottom MobileTabBar)
   // hides on sm+; the desktop LeftNav + RightRail hide on mobile.
   // Children render exactly once in the middle column — mounting
   // twice would double-fire effects and queries.
@@ -82,7 +81,7 @@ const Navigation: React.FC = ({
           visibility. Children mount EXACTLY once below — never
           duplicate them per-breakpoint or every page-level effect
           fires twice. */}
-      <MobileNavigation onAuth={false}/>
+      {!mobileHeaderless && <MobileNavigation onAuth={false}/>}
       <AccountDrawer />
 
       {/* Shell. Mobile = single column (rails hidden); desktop =
@@ -122,7 +121,9 @@ const Navigation: React.FC = ({
             <LeftNav />
           </div>
 
-          <main className="min-w-0">{children}</main>
+          {/* Bottom padding clears the fixed mobile tab bar; removed at
+              sm+ where the bar is hidden. */}
+          <main className="min-w-0 pb-24 sm:pb-0">{children}</main>
 
           {!wideLayout && (
             <div className="hidden sm:block">
@@ -132,11 +133,10 @@ const Navigation: React.FC = ({
         </div>
       </div>
 
-      {/* Mobile-only bottom nav. NavigationBar internally hides on
-          desktop too, but the wrapper keeps the page tree quieter. */}
-      <div className="sm:hidden">
-        <NavigationBar handleOpenPostModal={handleOpenPostModal} postModalOpen={postModalOpen}/>
-      </div>
+      {/* Mobile-only bottom tab bar (Home · Markets · compose · Messages
+          · Profile). Self-hides at sm+ and is fixed to the viewport
+          bottom, so it sits outside the shell grid. */}
+      <MobileTabBar />
     </>
   );
 };

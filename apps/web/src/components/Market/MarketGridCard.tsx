@@ -164,20 +164,29 @@ function OutcomeChip({
   cents: number;
   tone: 'up' | 'down';
 }) {
+  // Match the .m-embed YES/NO language: leading outcome green, runner-up
+  // pink. Keeps the discover grid's color story consistent with the
+  // tradeable embed and the market-detail blocks.
+  const isUp = tone === 'up';
   return (
     <div
       className={[
         'flex-1 flex items-center justify-between',
         'rounded-[10px] border px-2.5 py-1.5',
-        tone === 'up'
-          ? 'border-line bg-canvas/40'
-          : 'border-line bg-canvas/40',
+        isUp
+          ? 'border-green-vivid/30 bg-green-vivid/10'
+          : 'border-pink-vivid/25 bg-pink-vivid/10',
       ].join(' ')}
     >
       <span className="text-[12px] font-medium text-ink-2 truncate max-w-[80px]">
         {label}
       </span>
-      <span className="text-[13px] font-mono font-bold text-ink tabular-nums">
+      <span
+        className={[
+          'text-[13px] font-mono font-bold tabular-nums',
+          isUp ? 'text-green-2' : 'text-pink-2',
+        ].join(' ')}
+      >
         {cents}¢
       </span>
     </div>

@@ -16,12 +16,12 @@ import { TokenCatalogCard } from '@src/components/Dflow/TokenCatalogCard';
 import axios from '@src/lib/axios';
 
 import type { MessageUnion } from 'types/legacy-aliases';
-import FeedDrawer from 'components/Feed/FeedDrawer';
 import InlineCompose from 'components/Feed/InlineCompose';
 import { Container, FeedContainer } from 'components/Feed/styles';
 import SkeletonLoader from 'components/MediaPost/SkeletonLoader';
 import DiscoverModal from 'components/modals/DiscoverModal';
 import TopTabs from 'components/Shell/TopTabs';
+import MobileTrendingStrip from 'components/Shell/MobileTrendingStrip';
 import { logEventScreen, Screens } from 'lib/events';
 import useQuery from 'lib/getQuery';
 import { setPageTitle } from 'store/appSlice';
@@ -136,11 +136,9 @@ const Feed: React.FC<Props> = ({}) => {
         />
       </div>
 
-      {/* Mobile keeps the existing collapsible drawer until the mobile
-          UI lands separately. */}
-      <div className="sm:hidden">
-        <FeedDrawer />
-      </div>
+      {/* Mobile feed filters now live in the sticky MobileNavigation
+          header (the sub-tab strip), so the legacy collapsible
+          FeedDrawer is gone. */}
 
       <Container>
         <FeedContainer>
@@ -151,6 +149,14 @@ const Feed: React.FC<Props> = ({}) => {
               && myFeed.filter !== FilterOptions.MARKETS
               && myFeed.filter !== FilterOptions.TOKENS && (
               <InlineCompose />
+            )}
+
+            {/* Mobile-only trending markets carousel — post-style
+                filters only (the catalog tabs are themselves market
+                lists). Self-hides at sm+. */}
+            {myFeed.filter !== FilterOptions.MARKETS
+              && myFeed.filter !== FilterOptions.TOKENS && (
+              <MobileTrendingStrip />
             )}
             {myFeed.filter === FilterOptions.MARKETS ? (
               myFeed.markets && myFeed.markets.length > 0 ? (
