@@ -3,11 +3,13 @@
 // Messages · Profile, with a brand-2 active state. Fixed to the bottom
 // of the viewport with safe-area padding for the iOS home indicator.
 //
-// Deltas from the prototype, by design:
+// Tabs: Home · Markets · compose FAB · Portfolio · Profile. Deltas from
+// the prototype, by design:
 //  - The prototype's 4th slot is "Activity" (notifications). We don't
-//    have a notifications backend yet (the LeftNav item is disabled),
-//    so the slot routes to Messages instead — a real, shipping surface
-//    — rather than a dead tab. Swap to notifications when that ships.
+//    have a notifications backend yet (the LeftNav item is disabled), so
+//    the slot is Portfolio instead — your open positions + token buys,
+//    the most-used surface for a markets/tokens product. Messages stays
+//    reachable in the account drawer (the avatar in the header).
 //  - Signed-out users keep the existing AuthButtons (Login / Register)
 //    so we don't regress the logged-out entry point.
 
@@ -26,12 +28,12 @@ import { AuthButtons } from 'components/NavigationV2/AuthButtons';
 
 import { ShellIcons as I } from './icons';
 
-type TabKey = 'home' | 'markets' | 'messages' | 'profile';
+type TabKey = 'home' | 'markets' | 'portfolio' | 'profile';
 
 function activeKey(pathname: string): TabKey | null {
   if (pathname === APP.INDEX) return 'home';
   if (pathname.startsWith(APP.MARKETS.INDEX)) return 'markets';
-  if (pathname.startsWith(APP.MESSAGES.INDEX)) return 'messages';
+  if (pathname.startsWith(APP.PORTFOLIO.INDEX)) return 'portfolio';
   return null;
 }
 
@@ -95,7 +97,7 @@ const MobileTabBar: React.FC = () => {
         <I.plus className="w-6 h-6" />
       </button>
 
-      <Tab href={APP.MESSAGES.INDEX} label="Messages" active={active === 'messages'} icon={<I.mail className="w-[22px] h-[22px]" />} />
+      <Tab href={APP.PORTFOLIO.INDEX} label="Portfolio" active={active === 'portfolio'} icon={<I.bag className="w-[22px] h-[22px]" />} />
 
       {/* Profile uses the live avatar as its icon. */}
       <Tab

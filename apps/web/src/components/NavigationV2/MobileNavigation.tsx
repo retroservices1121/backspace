@@ -55,12 +55,17 @@ export default function MobileNavigation({ onAuth }: NavProps) {
 
   return (
     <header
-      className="
-        sm:hidden sticky top-0 z-[55]
-        bg-canvas/[0.85] backdrop-blur-[14px] backdrop-saturate-[160%]
-        border-b border-line
-        font-display text-ink
-      "
+      className={[
+        'sm:hidden z-[55]',
+        // Pin only on Home, where this is the sole header and carries
+        // the feed sub-tabs. On other routes it scrolls away so each
+        // page's own sticky header (Portfolio, Markets, …) pins to the
+        // top instead of colliding with this bar.
+        onHome ? 'sticky top-0' : '',
+        'bg-canvas/[0.85] backdrop-blur-[14px] backdrop-saturate-[160%]',
+        'border-b border-line',
+        'font-display text-ink',
+      ].join(' ')}
     >
       {/* App bar */}
       <div className="flex items-center gap-3 px-4 h-14">
