@@ -30,10 +30,11 @@ handler.use(requireAuthMiddleware).post(async (req, res) => {
     return;
   }
 
-  const { method, path, body } = (req.body ?? {}) as {
+  const { method, path, body, timestamp: reqTimestamp } = (req.body ?? {}) as {
     method?: string;
     path?: string;
     body?: string;
+    timestamp?: number;
   };
   if (typeof method !== 'string' || typeof path !== 'string') {
     res.status(HttpStatus.BAD_REQUEST).json({
@@ -43,7 +44,14 @@ handler.use(requireAuthMiddleware).post(async (req, res) => {
     return;
   }
 
-  const timestamp = Date.now();
+  // Unix timestamp in SECONDS — must match Polymarket's builder-signing-sdk
+  // BuilderSigner reference (Math.floor(Date.now() / 1000)). Sending
+  // milliseconds makes the relayer reject the headers with
+  // 401 "invalid authorization" (fails its freshness window).
+  const timestamp =
+    typeof reqTimestamp === 'number'
+      ? reqTimestamp
+      : Math.floor(Date.now() / 1000);
   const signature = buildHmacSignature(
     creds.secret,
     timestamp,
