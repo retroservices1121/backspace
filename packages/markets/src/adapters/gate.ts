@@ -88,6 +88,7 @@ export class GatePredictionAdapter implements MarketVenue {
     const markets = (page.items ?? [])
       .map(mapMarket)
       .filter((market): market is VenueMarket => market !== null)
+      .filter((market) => market.status === 'ACTIVE')
       .filter((market) =>
         args.search
           ? market.question.toLowerCase().includes(args.search.toLowerCase())
@@ -160,6 +161,7 @@ function mapMarket(raw: GateMarket): VenueMarket | null {
   });
   if (outcomes.length === 0) return null;
 
+  const status = marketStatus(raw, closesAt);
   return {
     venue: 'GATE',
     externalId: raw.market_id,
@@ -170,14 +172,14 @@ function mapMarket(raw: GateMarket): VenueMarket | null {
     chain: null,
     contractAddress: raw.condition_id || null,
     negRisk: raw.neg_risk === true,
-    status: marketStatus(raw),
+    status,
     opensAt: unixDate(raw.start_date ?? raw.start_time),
     closesAt,
     resolvedAt: unixDate(raw.resolved_at),
     slug: raw.slug || null,
     resolutionSource: raw.resolution_source || null,
     winningOutcome: raw.winning_outcome || null,
-    acceptingOrders: raw.accepting_orders !== false && raw.closed !== true,
+    acceptingOrders: status === 'ACTIVE' && raw.accepting_orders !== false,
     tickSize: validDecimal(raw.tick_size),
     volumeUsd: positiveDecimal(raw.volume),
     volume24hUsd: positiveDecimal(raw.volume_24hr),
@@ -229,10 +231,11 @@ function firstTag(tags: unknown): string | null {
   return null;
 }
 
-function marketStatus(raw: GateMarket): VenueMarket['status'] {
+function marketStatus(raw: GateMarket, closesAt: Date): VenueMarket['status'] {
   const status = raw.status?.toUpperCase();
   if (status === 'INVALIDATED' || status === 'INVALID') return 'INVALIDATED';
   if (raw.closed || status === 'RESOLVED' || status === 'SETTLED') return 'RESOLVED';
+  if (closesAt.getTime() <= Date.now()) return 'FROZEN';
   if (raw.active === false || raw.accepting_orders === false || status === 'FROZEN') return 'FROZEN';
   return 'ACTIVE';
 }
