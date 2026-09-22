@@ -172,7 +172,7 @@ export namespace Post {
     author: {
       include: {
         avatar: true,
-        // Pull the author's Polymarket-derived accuracy + the
+        // Pull the author's the previous prediction provider-derived accuracy + the
         // publicAccuracy gate alongside the avatar. Lets the feed
         // render the calibration chip inline without a follow-up
         // per-author query. UserAccuracy is a 1:0 relation, so the

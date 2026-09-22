@@ -9,8 +9,8 @@ Backspace Markets lives inside the existing social product at `/markets`.
 - `/api/markets/{market_id}` requests the live Gate market definition.
 - Outcome prices update from Gate's public `pred.bbo` WebSocket channel.
 - Responses use `Cache-Control: private, no-store`; Gate remains the market-data authority.
-- Legacy Polymarket import and local trade-record endpoints return HTTP 410.
-- Polymarket execution is disconnected from the market UI.
+- The previous prediction-market provider, its import jobs, SDKs, wallet setup,
+  and proxy endpoints have been removed.
 - Gate trading remains disabled until Gate documents Builder user registration and authenticated credential issuance.
 
 ## Runtime configuration

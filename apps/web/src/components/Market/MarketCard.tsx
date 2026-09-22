@@ -35,12 +35,12 @@ export type MarketCardData = {
   // The DB Market.id (as a string) — distinct from externalId, which is
   // the venue's condition_id. Trade routes key on this.
   id: string;
-  venue: 'GATE' | 'POLYMARKET' | 'AZURO' | 'INTERNAL';
+  venue: 'GATE' | 'AZURO' | 'INTERNAL';
   externalId: string;
   question: string;
   category: string | null;
   imageUrl: string | null;
-  // Polymarket negative-risk flag — needed per order at trade time.
+  // Gate negative-risk metadata for mutually exclusive outcomes.
   negRisk: boolean;
   // Date over the wire is an ISO string (JSON has no Date type);
   // accept both so consumers don't have to remember to coerce.
@@ -77,7 +77,7 @@ type Props = {
   livePrices?: Record<string, number | null>;
 };
 
-// Polymarket convention: outcome prices display as cents per share
+// Prediction-market convention: outcome prices display as cents per share
 // (0¢–100¢, summing to 100¢ across a binary market). The underlying
 // CLOB price IS the cents value as a decimal — 0.96 = 96¢ = 96%
 // probability = $0.96 you pay per share. Showing cents reinforces the
@@ -141,7 +141,7 @@ export function MarketCard({
 }: Props) {
   const [selectedOutcome, setSelectedOutcome] = useState(market.outcomes[0]?.externalId);
   const [side, setSide] = useState<Side>('BUY');
-  // The user enters a USD amount, Polymarket-style. Shares received +
+  // The user enters a USD amount. Shares received +
   // max payout are derived from amount / price. Default $10 because
   // it's the rough minimum that produces a meaningful fill on most
   // markets without committing real capital on a first try.
@@ -348,7 +348,7 @@ export function MarketCard({
               ))}
             </div>
 
-            {/* USD amount input — Polymarket-style. */}
+            {/* USD amount input. */}
             <div className="relative flex-1 max-w-[140px]">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-mono text-ink-3">
                 $
@@ -476,4 +476,3 @@ function BinaryBody({
     </>
   );
 }
-

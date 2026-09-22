@@ -98,23 +98,7 @@ Gate DexBuilder is the exclusive prediction-market provider. Market data is requ
 |---|---|
 | `GATE_DEXBUILDER_API_URL` | Optional server-side base URL override for Gate sandbox or production. Defaults to `https://api.dexbuilder.com`. |
 
-The legacy Polymarket import endpoints return HTTP 410. No Gate catalog-import cron is required.
-
-## Retired Polymarket trading
-
-This provider is no longer used for catalog imports or user-facing prediction markets. The variables below are retained only while its old trading implementation is being removed.
-
-On-chain trade integration (CLOB V2). See `apps/web/src/lib/polymarket/`.
-
-| Var | Notes |
-| --- | --- |
-| `NEXT_PUBLIC_POLYGON_RPC_URL` | Polygon mainnet RPC. Used by the Privy embedded wallet (chain override in `_app.tsx`) and the viem read clients. Any provider (Alchemy/Infura/public). |
-| `NEXT_PUBLIC_POLYMARKET_BUILDER_CODE` | Builder order-attribution code from the Polymarket Builder Profile (polymarket.com/settings?tab=builder). Public — attached to every order, not a secret. |
-| `POLYMARKET_BUILDER_API_KEY` | **Server-only.** Builder HMAC key — authenticates Backspace to Polymarket's gasless Relayer (Safe deploy + token approvals). Used only by `pages/api/polymarket/sign.ts`. |
-| `POLYMARKET_BUILDER_SECRET` | **Server-only.** Builder HMAC secret. |
-| `POLYMARKET_BUILDER_PASSPHRASE` | **Server-only.** Builder HMAC passphrase. |
-
-All three `POLYMARKET_BUILDER_*` values come together from the Builder Profile. Without them the relayer signing endpoint returns 503 and trading stays disabled.
+No catalog-import cron is required. Gate remains the market-data authority.
 
 ## Dflow spot trading
 
@@ -186,4 +170,3 @@ When adding a new `process.env.X` reference anywhere in `apps/web/src` or `packa
 1. Add a row above in the appropriate section (or create a new section).
 2. Note whether it's server-only (no `NEXT_PUBLIC_`) or browser-exposed.
 3. Set it in the Railway service env.
-

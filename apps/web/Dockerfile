@@ -10,7 +10,7 @@ WORKDIR /app
 # libssl at runtime — without this the container boots, then 500s
 # every DB-touching request with PrismaClientInitializationError
 # "libssl.so.3: cannot open shared object file". ca-certificates is
-# required for outbound HTTPS (Privy, Stripe, R2, Polymarket).
+# required for outbound HTTPS (Privy, Stripe, R2, Gate DexBuilder).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssl libssl3 ca-certificates \
  && rm -rf /var/lib/apt/lists/*
@@ -68,9 +68,8 @@ ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 ARG NEXT_PUBLIC_FIREBASE_APP_ID
 # Solana — shared RPC URL for Dflow, Phoenix, and the wallet spike.
 ARG NEXT_PUBLIC_SOLANA_RPC_URL
-# Polygon / Polymarket
+# EVM wallet RPC
 ARG NEXT_PUBLIC_POLYGON_RPC_URL
-ARG NEXT_PUBLIC_POLYMARKET_BUILDER_CODE
 # Dflow spot trading (browser-side display values; the API key
 # itself is server-only via the /api/dflow/* proxy, not declared here).
 ARG NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS
@@ -94,7 +93,6 @@ ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID \
     NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID \
     NEXT_PUBLIC_SOLANA_RPC_URL=$NEXT_PUBLIC_SOLANA_RPC_URL \
     NEXT_PUBLIC_POLYGON_RPC_URL=$NEXT_PUBLIC_POLYGON_RPC_URL \
-    NEXT_PUBLIC_POLYMARKET_BUILDER_CODE=$NEXT_PUBLIC_POLYMARKET_BUILDER_CODE \
     NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS=$NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS \
     NEXT_PUBLIC_PHOENIX_BUILDER_AUTHORITY=$NEXT_PUBLIC_PHOENIX_BUILDER_AUTHORITY \
     NEXT_PUBLIC_PHOENIX_BUILDER_PDA_INDEX=$NEXT_PUBLIC_PHOENIX_BUILDER_PDA_INDEX \

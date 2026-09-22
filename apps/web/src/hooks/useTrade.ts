@@ -9,7 +9,7 @@ export type TradeIntent = {
 
 type TradeMarket = { id: string; negRisk: boolean };
 
-// Deliberately contains no Polymarket, Privy, or local-storage fallback.
+// Deliberately contains no the previous prediction provider, Privy, or local-storage fallback.
 export function useTrade(_market: TradeMarket) {
   const handleTrade = useCallback(async (_intent: TradeIntent) => {
     toast.info('Gate trading will be enabled after account authorization is connected.');

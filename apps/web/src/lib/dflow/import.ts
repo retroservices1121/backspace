@@ -10,7 +10,7 @@
 // Upserts into the Token table so the rest of the app — token
 // picker, PostTokenCard — can read directly from Postgres.
 //
-// Two trigger paths mirror the Polymarket import:
+// Two trigger paths mirror the the previous prediction provider import:
 //   - Manual: POST /api/admin/import-dflow (admin-gated, ad-hoc).
 //   - Scheduled: POST /api/cron/import-dflow (Railway cron, gated
 //     on CRON_SECRET in the Authorization header).

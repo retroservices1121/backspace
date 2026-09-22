@@ -397,7 +397,7 @@ function FollowRow({
         </a>
       </Link>
       {hitRatePct != null && (
-        <span title="Polymarket resolved positions">
+        <span title="the previous prediction provider resolved positions">
           <span className="font-semibold text-ink">{hitRatePct}%</span>
           <span className="text-ink-3"> Hit rate</span>
         </span>
@@ -431,7 +431,7 @@ function ProfileStatsRow({ username, isSelf }: { username: string; isSelf: boole
               transition-colors duration-150
             "
           >
-            No resolved positions yet. Link a Polymarket wallet in
+            No resolved positions yet. Link a the previous prediction provider wallet in
             <span className="text-brand-2"> Settings → Wallet </span>
             to build your stats.
           </a>

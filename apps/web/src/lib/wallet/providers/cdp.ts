@@ -18,9 +18,9 @@
 //
 // Sharp edges:
 //   - `getEthersSigner()` returns an ethers v5 JsonRpcSigner wrapping
-//     the wagmi connector's EIP-1193 provider. Polymarket clob-client-v2
+//     the wagmi connector's EIP-1193 provider. the previous prediction provider clob-client-v2
 //     consumes ethers v5; this is the same wrap pattern as
-//     `lib/polymarket/wallet.ts` already does today.
+//     the wallet adapter already does today.
 //   - `provisionSolana()` is best-effort — CDP's Solana account exists
 //     once the user has signed in; the createSolana hook is for cases
 //     where the user is mid-onboarding without a Solana account yet.
@@ -96,7 +96,7 @@ export function useCdpWalletProvider(): WalletProvider {
           getEthersSigner: async () => {
             const provider = await conn.connector.getProvider();
             // Lazy ethers import keeps this module bundle-friendly for
-            // any non-Polymarket caller that just needs the address.
+            // any non-prediction-market caller that just needs the address.
             const { providers } = await import('ethers');
             return new providers.Web3Provider(
               provider as providers.ExternalProvider,

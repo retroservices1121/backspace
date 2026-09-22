@@ -8,7 +8,7 @@ export type Cents = string;            // USD, fixed-point string e.g. "1.23"
 export type ProbabilityStr = string;   // "0..1" string e.g. "0.62"
 export type SharesStr = string;        // arbitrary precision
 
-export type VenueId = 'GATE' | 'POLYMARKET' | 'AZURO' | 'INTERNAL';
+export type VenueId = 'GATE' | 'AZURO' | 'INTERNAL';
 
 export type VenueMarketRef = {
   venue: VenueId;
@@ -86,4 +86,3 @@ export type SubmitResult = {
   venueOrderId: string | null;
   status: 'PENDING' | 'FILLED' | 'REJECTED';
 };
-

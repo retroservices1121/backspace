@@ -92,7 +92,7 @@ export default function MarketDetail() {
         </h2>
 
         {/* Created-by / meta — we don't capture market author
-            attribution on Polymarket imports, so this just shows the
+            attribution on the previous prediction provider imports, so this just shows the
             resolve date + a sample placeholder for traders/volume
             until we wire those fields into the import. */}
         <div className="mt-2 text-[13px] text-ink-3">
@@ -116,7 +116,7 @@ export default function MarketDetail() {
       </div>
 
       {/* Stats row — Resolves is real; the others are placeholders
-          until the import grabs Polymarket's volume + traders. */}
+          until the import grabs the previous prediction provider's volume + traders. */}
       <div className="mx-4 sm:mx-6 mb-4 grid grid-cols-4 gap-[1px] rounded-[14px] overflow-hidden bg-line">
         <Stat label="Volume (24h)" value="—" sub="coming soon" />
         <Stat label="Open interest" value="—" sub="coming soon" />
@@ -213,7 +213,7 @@ function BigBlocks({
 }) {
   const trade = useTrade({ id: market.id, negRisk: market.negRisk });
   const [side, setSide] = useState<'YES' | 'NO' | null>(null);
-  // USD amount the user wants to spend, Polymarket-style.
+  // USD amount the user wants to spend, the previous prediction provider-style.
   const [amount, setAmount] = useState('10');
 
   // What the user would get for `amount` USD at the side's current
@@ -515,4 +515,3 @@ function TradesTabs() {
     </div>
   );
 }
-

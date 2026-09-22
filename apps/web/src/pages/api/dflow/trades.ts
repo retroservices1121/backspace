@@ -1,6 +1,6 @@
 // /api/dflow/trades — Dflow swap audit log.
 //
-// Record-only (mirrors /api/markets/[id]/trade for Polymarket): the
+// Record-only (mirrors /api/markets/[id]/trade for the previous prediction provider): the
 // swap already executed on Solana via Dflow's aggregator, signed by
 // the user's Privy embedded wallet. This route just writes a row so
 // the app can surface recent activity / power future leaderboards

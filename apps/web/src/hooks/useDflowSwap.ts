@@ -74,7 +74,7 @@ export function useDflowSwap() {
       setSignature(result.signature);
       setPhase('success');
 
-      // Record-only audit log. Polymarket already returned the order id
+      // Record-only audit log. the previous prediction provider already returned the order id
       // before this point — for Dflow we have the submitted tx
       // signature; that's the dedupe key on the server. Fire-and-forget:
       // a failed audit write must not surface as a trade failure since
@@ -107,7 +107,7 @@ export function useDflowSwap() {
   }, []);
 
   // Privy's `createOnLogin` only provisions one wallet type. Backspace
-  // auto-creates the Ethereum embedded wallet (Polymarket needs it), so
+  // auto-creates the Ethereum embedded wallet (the previous prediction provider needs it), so
   // we provision Solana lazily — the first time the user opens a swap.
   // CDP's provider auto-creates both via createOnLogin:true; this call
   // is a no-op for already-provisioned wallets in either provider.

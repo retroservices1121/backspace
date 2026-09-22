@@ -10,7 +10,7 @@ WORKDIR /app
 # libssl at runtime — without this the container boots, then 500s
 # every request with PrismaClientInitializationError "libssl.so.3:
 # cannot open shared object file". ca-certificates is required for
-# outbound HTTPS to npm + Resend + Polymarket.
+# outbound HTTPS to npm + Resend + the previous prediction provider.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssl libssl3 ca-certificates \
  && rm -rf /var/lib/apt/lists/*

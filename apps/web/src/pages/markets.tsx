@@ -5,7 +5,7 @@
 //   2. Trending horizontal scroller — top markets by 24h volume,
 //      always shown regardless of selected sort or category
 //   3. Sticky filter bar — category dropdown + sort dropdown + search
-//   4. Polymarket-style responsive grid of MarketGridCard tiles
+//   4. the previous prediction provider-style responsive grid of MarketGridCard tiles
 //      (1 col mobile → 2 → 3 → 4 across breakpoints).
 //
 // Two card shapes for two contexts:
@@ -382,7 +382,7 @@ const Markets: React.FC = () => {
             </div>
           </div>
 
-          {/* Main grid — responsive: 1 / 2 / 3 / 4 columns. Polymarket
+          {/* Main grid — responsive: 1 / 2 / 3 / 4 columns. the previous prediction provider
               hits 3-up at desktop; we keep going to 4 at xl since the
               shell can stretch to 1320px without the right rail. */}
           <div className="px-6 py-5 font-display text-ink">
@@ -481,4 +481,3 @@ function EmptyState({ title, text }: { title?: string; text: string }) {
 }
 
 export default Markets;
-

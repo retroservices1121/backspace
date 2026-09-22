@@ -5,7 +5,7 @@ import { MarketCard, MarketCardData } from '@src/components/Market/MarketCard';
 import { useState } from 'react';
 
 const MOCK_BINARY: MarketCardData = {
-  venue: 'POLYMARKET',
+  venue: 'GATE',
   externalId: 'mock-binary-1',
   question: 'Will the next U.S. president be a Democrat?',
   category: 'Politics',
@@ -18,7 +18,7 @@ const MOCK_BINARY: MarketCardData = {
 };
 
 const MOCK_MULTI: MarketCardData = {
-  venue: 'POLYMARKET',
+  venue: 'GATE',
   externalId: 'mock-multi-1',
   question: 'Which team wins the next NBA championship?',
   category: 'Sports',

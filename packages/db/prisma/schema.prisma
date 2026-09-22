@@ -35,7 +35,7 @@ model User {
   legacyAuthId         String?         @unique
   bio                  String          @default("")
   verified             Boolean         @default(false)
-  // Whether this user's Polymarket-derived accuracy stats render on
+  // Whether this user's prediction accuracy stats render on
   // their public profile. Default off — opt-in surfacing because we
   // pull trade history from a venue the user may or may not want
   // tied to their public handle.
@@ -93,7 +93,6 @@ model User {
   positions            Position[]
   trades               Trade[]
   tokenTrades          TokenTrade[]
-  polymarketSnapshots  PolymarketPositionSnapshot[]
   marketsCreated       Market[]            @relation(name: "marketCreator")
   marketsResolved      MarketResolution[]  @relation(name: "marketResolver")
   accuracy             UserAccuracy?
@@ -646,7 +645,7 @@ enum NotificationType {
 // "ethereum" | "polygon" | "base" | "arbitrum" | "optimism" | "solana".
 
 enum MarketVenue {
-  POLYMARKET
+  LEGACY_EXTERNAL
   AZURO
   INTERNAL
 }
@@ -690,22 +689,13 @@ model Wallet {
   isPrimary   Boolean   @default(false)
   // Privy embedded (custodial-by-us) wallets vs externally-connected
   custodial   Boolean   @default(false)
-  // How this row got here. Discriminator so we can find linked
-  // external EOAs (for reading off-platform Polymarket history)
-  // without scanning every wallet for negation patterns. Values are
+  // How this row got here. Values are
   // free-form strings rather than an enum so future sources
   // (e.g. 'wallet-connect', 'imported-csv') don't need a migration.
   //   - 'privy-embedded'    — created by Privy on login
-  //   - 'linked-polymarket' — external EOA the user linked to import
-  //                           their existing Polymarket history
-  //   - 'safe-polymarket'   — Gnosis Safe derived from an EOA we
-  //                           already track (proxy wallet, not signed)
+  //   - 'wallet-connect'    — externally linked EVM wallet
   //   - 'audit-solana'      — Solana wallet inferred from a Dflow swap
   source      String?
-  // Cached Safe address (Polymarket Gnosis Safe proxy) derived from
-  // this EOA. Optional — only meaningful for chain='polygon' EOA rows.
-  // Stored so the snapshot worker doesn't re-derive on every tick.
-  safeAddress String?
   positions   Position[]
   trades      Trade[]
   tokenTrades TokenTrade[]
@@ -726,15 +716,13 @@ model Market {
   description     String        @default("")
   category        String?
   imageUrl        String?
-  // Polymarket negative-risk market (multi-outcome event split into
-  // linked binary markets). The CLOB needs this flag per order — it
-  // routes through the NegRisk Exchange instead of the base Exchange.
+  // Negative-risk market composed of mutually exclusive outcomes.
   negRisk         Boolean       @default(false)
   status          MarketStatus  @default(ACTIVE)
   opensAt         DateTime?
   closesAt        DateTime
   resolvedAt      DateTime?
-  // Volume + depth snapshots from the venue (Polymarket Gamma).
+  // Historical volume and depth snapshots from imported venues.
   // Refreshed on every catalog import sweep — not real-time, but
   // good enough for ranking ("trending" = highest 24h volume,
   // "high volume" = highest all-time). Decimal so USD math stays
@@ -849,8 +837,8 @@ model Trade {
   createdAt     DateTime  @default(now())
   user          User      @relation(fields: [userId], references: [id])
   userId        BigInt
-  // Nullable: trades recorded straight from the venue (Polymarket's
-  // CLOB) are an audit log — positions are read from the venue's Data
+  // Nullable: trades recorded straight from an external venue
+  // are an audit log — positions are read from the venue API
   // API, not recomputed locally, so a Trade need not hang off a
   // local Position row.
   position      Position? @relation(fields: [positionId], references: [id])
@@ -872,45 +860,6 @@ model Trade {
   @@index([userId, createdAt])
   @@index([marketId])
   @@index([txHash])
-}
-
-// Snapshot of a user's resolved Polymarket position. Populated by a
-// scheduled worker that walks every linked-EOA-derived Safe through
-// Polymarket's Data API. Polymarket is the source of truth for
-// settlement (payout, realizedPnl, won/lost) — we don't recompute,
-// we just persist the answer so UserAccuracy aggregation isn't a
-// round-trip-per-user across the public internet.
-//
-// Dedupe: (safeAddress, conditionId, outcomeAssetId) is unique. The
-// worker upserts; positions that stay resolved overwrite cleanly.
-model PolymarketPositionSnapshot {
-  id              BigInt   @id @unique @default(autoincrement())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          BigInt
-  // Safe address that holds the position. Multiple Safes per user
-  // are possible (one per linked EOA + the embedded Backspace one).
-  safeAddress     String
-  // Polymarket identifiers — keep both so we can render the market
-  // even if the local Market row hasn't been imported yet.
-  conditionId     String
-  outcomeAssetId  String
-  outcomeLabel    String
-  // Avg entry price (0..1 prob), size in shares, settled payout in
-  // pUSD. Stored as Decimal strings on the wire.
-  avgPrice        Decimal  @db.Decimal(18, 8)
-  size            Decimal  @db.Decimal(36, 18)
-  payoutUsd       Decimal  @db.Decimal(18, 8)
-  realizedPnlUsd  Decimal  @db.Decimal(18, 8)
-  // True if this position paid out (the user's outcome won). Derived
-  // from payoutUsd > 0 by the worker — cached so accuracy aggregation
-  // doesn't have to re-derive every row.
-  won             Boolean
-  settledAt       DateTime
-  @@unique([safeAddress, conditionId, outcomeAssetId], name: "snapshotIdentity")
-  @@index([userId, settledAt])
-  @@index([conditionId])
 }
 
 // Spot token swap audit log. Separate from Trade because spot swaps

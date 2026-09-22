@@ -4,7 +4,7 @@
 // Author(s): See Git History
 
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { addRpcUrlOverrideToChain, PrivyProvider } from '@privy-io/react-auth';
+import { PrivyProvider } from '@privy-io/react-auth';
 import CreatePost from '@src/components/CreatePost';
 import Loading from '@src/components/Loading';
 import AppWelcome from '@src/components/modals/AppWelcome';
@@ -12,12 +12,10 @@ import PostViewer from '@src/components/modals/PostViewer';
 import useAuthentication from '@src/hooks/useAuthenticate';
 import { useWalletSync } from '@src/hooks/useWalletSync';
 import { solanaRpcUrl } from '@src/lib/dflow/config';
-import { polygonRpcUrl } from '@src/lib/polymarket/config';
 import { AuthStatus } from '@src/store/authSlice';
 import { isMarketsEntry } from '@src/lib/markets/entry';
 import { AppLayoutProps } from 'next/app';
 import { useRouter } from 'next/router';
-import { polygon } from 'viem/chains';
 
 import Navigation from 'components/NavigationV2';
 import useAttribution from 'hooks/useAttribution';
@@ -33,14 +31,6 @@ import 'styles/globals.css';
 import 'styles/common.css';
 
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-
-// Polymarket trades settle on Polygon, so the Privy embedded wallet
-// must run there. Override the RPC when one is configured so the
-// wallet uses our endpoint rather than the public default.
-const POLYGON_RPC_URL = polygonRpcUrl();
-const polygonChain = POLYGON_RPC_URL
-  ? addRpcUrlOverrideToChain(polygon, POLYGON_RPC_URL)
-  : polygon;
 
 // Dflow spot trading runs on Solana. The Privy v1.99 SDK ships with
 // Solana support — useSolanaWallets() returns ConnectedSolanaWallet
@@ -128,17 +118,13 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
             loginMethods: ['email', 'google', 'apple', 'wallet'],
             embeddedWallets: { createOnLogin: 'users-without-wallets' },
             appearance: { theme: 'dark', accentColor: '#5822FB' },
-            defaultChain: polygonChain,
-            supportedChains: [polygonChain],
             // External wallets — route to the user's INSTALLED wallet
             // app (extension on desktop, native app on mobile), not
             // Privy's smart-wallet creation flow.
             //
             // 'eoaOnly' on coinbaseWallet stops Privy defaulting users
             // into the Coinbase Smart Wallet (Base Sepolia) signup. We
-            // want existing on-mainnet Polymarket traders to be able
-            // to link the wallet they already use; smart-wallet signup
-            // is the opposite of that.
+            // Keep external connections on the user's installed wallet.
             //
             // WalletConnect (the path Privy uses to deep-link
             // MetaMask / Rabby / Phantom / Trust on mobile) is enabled
@@ -186,4 +172,3 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
 // };
 
 export default wrapper.withRedux(MyApp);
-

@@ -1,6 +1,6 @@
 // Vertical grid tile for the /markets discover grid. Read-only — the
 // whole tile is a button that routes to /m/[id] where the user can
-// actually trade. Modeled on polymarket.com's discover grid: image on
+// actually trade. Modeled on prediction-market's discover grid: image on
 // the top half, question below, YES/NO cents on the bottom row, with
 // a small footer for 24h volume + time-until-close.
 //

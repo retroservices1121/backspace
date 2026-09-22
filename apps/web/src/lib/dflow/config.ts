@@ -1,5 +1,5 @@
 // Static constants + env reads for the Dflow integration. Lives
-// alongside lib/polymarket/config.ts; each venue keeps its own.
+// each trading venue keeps its own configuration.
 //
 // Client/server split:
 //   - Solana RPC URL is NEXT_PUBLIC_ (the wallet broadcasts in the

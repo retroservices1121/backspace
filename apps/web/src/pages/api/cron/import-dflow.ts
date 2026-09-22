@@ -7,7 +7,7 @@
 //
 // Cadence is decided by the Railway cron config calling this endpoint
 // (a few times a day is plenty; the Dflow tradeable-mint set doesn't
-// churn the way Polymarket markets do).
+// churn the way the previous prediction provider markets do).
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 

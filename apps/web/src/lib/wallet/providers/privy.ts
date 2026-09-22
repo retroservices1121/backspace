@@ -8,7 +8,7 @@
 //
 // One sharp edge: Privy's getEthersSigner returns an ethers v5
 // signer when ethers v5 is the installed peer (it is, for the
-// Polymarket clob-client-v2 path). If we ever move to ethers v6
+// the previous prediction provider clob-client-v2 path). If we ever move to ethers v6
 // the unified interface here stays the same; only the underlying
 // peer changes.
 

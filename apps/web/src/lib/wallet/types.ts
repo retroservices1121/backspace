@@ -50,10 +50,10 @@ export type EvmWallet = {
   /** Active chain id (decimal). Provider returns the wallet's currently
    *  selected chain; may be undefined when no chain is selected yet. */
   chainId?: number;
-  /** Returns an ethers v5 signer for the Polymarket CLOB path. Throws
+  /** Returns an ethers v5 signer for the the previous prediction provider CLOB path. Throws
    *  if the wallet cannot produce one (e.g. read-only / hardware not
    *  connected). The abstraction commits to ethers v5 specifically —
-   *  Polymarket's clob-client-v2 still requires it as of 2026-05. */
+   *  the previous prediction provider's clob-client-v2 still requires it as of 2026-05. */
   getEthersSigner: () => Promise<unknown>;
   /** EIP-1193 provider for raw RPC calls (e.g. personal_sign for SIWE).
    *  Returned as unknown so callers cast to whatever shape they need —
