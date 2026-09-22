@@ -19,11 +19,11 @@
 // can span the full 1320px shell.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
 import { useQuery } from 'react-query';
 
 import axios from '@src/lib/axios';
-import useAuthentication from '@src/hooks/useAuthenticate';
-import { AuthStatus } from '@src/store/authSlice';
 import { setPageTitle } from '@src/store/appSlice';
 import { useAppDispatch } from '@src/store/store';
 
@@ -76,7 +76,6 @@ function useDebounced<T>(value: T, ms: number): T {
 }
 
 const Markets: React.FC = () => {
-  const authState = useAuthentication();
   const dispatch = useAppDispatch();
   const [category, setCategory] = useState<string>(ALL);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -88,7 +87,7 @@ const Markets: React.FC = () => {
   const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    dispatch(setPageTitle('Markets'));
+    dispatch(setPageTitle('Backspace Markets'));
   }, []);
 
   // Both dropdowns close on outside click.
@@ -107,7 +106,6 @@ const Markets: React.FC = () => {
     ['markets-catalog', sort],
     () => fetchCatalog(sort),
     {
-      enabled: authState === AuthStatus.SignedIn,
       refetchInterval: 60_000,
       staleTime: 30_000,
       keepPreviousData: true,
@@ -118,7 +116,6 @@ const Markets: React.FC = () => {
     ['markets-trending'],
     fetchTrending,
     {
-      enabled: authState === AuthStatus.SignedIn,
       refetchInterval: 60_000,
       staleTime: 30_000,
     },
@@ -128,8 +125,7 @@ const Markets: React.FC = () => {
     ['markets-search', debouncedQuery],
     () => fetchSearch(debouncedQuery),
     {
-      enabled:
-        authState === AuthStatus.SignedIn && debouncedQuery.length >= SEARCH_MIN,
+      enabled: debouncedQuery.length >= SEARCH_MIN,
       keepPreviousData: true,
     },
   );
@@ -170,14 +166,28 @@ const Markets: React.FC = () => {
 
   return (
     <>
+      <Head>
+        <title>Backspace Markets</title>
+        <meta name="description" content="Explore prediction markets and the conversations around them. Markets and social, with one Backspace account." />
+        <meta property="og:title" content="Backspace Markets" />
+        <meta property="og:description" content="Prediction markets and a shared community. Discover Backspace Markets." />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Backspace Markets" />
+        <meta name="twitter:description" content="Prediction markets and a shared community. Discover Backspace Markets." />
+      </Head>
       <div className="hidden sm:block">
-        <TopTabs title="Markets" tabs={[]} active="" onChange={() => undefined} />
+        <TopTabs title="Backspace Markets" tabs={[]} active="" onChange={() => undefined} />
       </div>
 
-      {authState !== AuthStatus.SignedIn ? (
-        <EmptyState text="Sign in to browse markets." />
-      ) : (
-        <>
+      <>
+          <section className="px-6 pt-6 pb-2" aria-label="Backspace Markets">
+            <h1 className="text-2xl font-bold text-ink">Discover your next perspective.</h1>
+            <p className="mt-2 text-sm text-ink-2">Explore markets and the conversations around them.</p>
+            <nav aria-label="Markets shortcuts" className="mt-4 flex gap-5 text-sm text-brand-2">
+              <Link href="/portfolio"><a>View portfolio</a></Link>
+              <Link href="/"><a>Open social feed</a></Link>
+            </nav>
+          </section>
           {/* Trending hero row — only shown when not searching. */}
           {!isSearching && (
             <section className="px-6 pt-5 pb-2">
@@ -394,6 +404,11 @@ const Markets: React.FC = () => {
                   text={`Nothing matched "${debouncedQuery}". Try a different keyword.`}
                 />
               )
+            ) : catalog.isError ? (
+              <EmptyState
+                title="Markets are temporarily unavailable"
+                text="Gate market data could not be reached. Please try again shortly."
+              />
             ) : catalog.isLoading ? (
               <GridSkeleton count={9} />
             ) : visible.length > 0 ? (
@@ -414,14 +429,13 @@ const Markets: React.FC = () => {
                 }
                 text={
                   category === ALL
-                    ? 'Check back soon — the catalog refreshes on a cron.'
+                    ? 'Check back soon for new markets.'
                     : 'Try another category, or search above.'
                 }
               />
             )}
           </div>
-        </>
-      )}
+      </>
     </>
   );
 };
@@ -467,3 +481,4 @@ function EmptyState({ title, text }: { title?: string; text: string }) {
 }
 
 export default Markets;
+

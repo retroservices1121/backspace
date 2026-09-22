@@ -8,7 +8,7 @@ export type Cents = string;            // USD, fixed-point string e.g. "1.23"
 export type ProbabilityStr = string;   // "0..1" string e.g. "0.62"
 export type SharesStr = string;        // arbitrary precision
 
-export type VenueId = 'POLYMARKET' | 'AZURO' | 'INTERNAL';
+export type VenueId = 'GATE' | 'POLYMARKET' | 'AZURO' | 'INTERNAL';
 
 export type VenueMarketRef = {
   venue: VenueId;
@@ -29,8 +29,7 @@ export type VenueMarket = VenueMarketRef & {
   imageUrl: string | null;
   chain: string | null;
   contractAddress: string | null;
-  // Polymarket negative-risk flag — orders on these markets route
-  // through the NegRisk Exchange. Non-Polymarket venues report false.
+  // Whether the venue groups mutually exclusive outcome markets.
   negRisk: boolean;
   status: 'ACTIVE' | 'FROZEN' | 'RESOLVED' | 'INVALIDATED';
   opensAt: Date | null;
@@ -87,3 +86,4 @@ export type SubmitResult = {
   venueOrderId: string | null;
   status: 'PENDING' | 'FILLED' | 'REJECTED';
 };
+

@@ -21,6 +21,7 @@ import { AuthStatus, clearAuthSlice, setAuthId, setEmail, setStatus } from '@src
 import { RootState, useAppDispatch, useAppSelector } from '@src/store/store';
 import { autoLogin, logout } from '@src/store/userSlice';
 import { useRouter } from 'next/router';
+import { isMarketsEntry, marketsOnboarding } from '@src/lib/markets/entry';
 
 export default function useAuthentication() {
   const dispatch = useAppDispatch();
@@ -77,7 +78,9 @@ export default function useAuthentication() {
   // Gate on fetchAttempted so we do not flicker-redirect during the
   // initial /user/self request.
   useEffect(() => {
+    if (!router.isReady) return;
     if (authState === AuthStatus.SignedOut) {
+      if (isMarketsEntry(router.pathname) || router.pathname.startsWith('/auth/')) return;
       router.push(APP.AUTH.LOGIN);
       return;
     }
@@ -89,8 +92,9 @@ export default function useAuthentication() {
       return;
     }
     if (router.pathname === APP.AUTH.ONBOARDING) return;
-    router.push(APP.AUTH.ONBOARDING);
-  }, [authState, userState?.onboarded, fetchAttempted, bootstrapping]);
+    router.push(marketsOnboarding(router.pathname, router.query.next));
+  }, [authState, userState?.onboarded, fetchAttempted, bootstrapping, router.isReady, router.pathname, router.query.next]);
 
   return authState;
 }
+

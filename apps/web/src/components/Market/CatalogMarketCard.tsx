@@ -5,10 +5,8 @@
 
 import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useTrade } from '@src/hooks/useTrade';
-import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
 
 import { MarketCard, MarketCardData } from './MarketCard';
-import { SignerHint } from './SignerHint';
 import { WalletReadiness } from './WalletReadiness';
 
 type Props = {
@@ -18,8 +16,7 @@ type Props = {
 export function CatalogMarketCard({ market }: Props) {
   // Auto-pick signer: linked wallet (if any) > embedded. SignerHint
   // discloses the popup target without forcing a picker.
-  const { wallet } = useEvmTradeSigner();
-  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market, wallet);
+  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
   const livePrices = useLivePrices(market.outcomes.map((o) => o.externalId));
 
   return (
@@ -29,12 +26,10 @@ export function CatalogMarketCard({ market }: Props) {
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
       readinessSlot={
-        <>
-          <WalletReadiness signerWallet={wallet} />
-          <SignerHint wallet={wallet} />
-        </>
+        <WalletReadiness />
       }
       livePrices={livePrices}
     />
   );
 }
+

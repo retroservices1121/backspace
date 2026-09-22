@@ -87,10 +87,22 @@ Required only if `Media` rows with `host=FIREBASE` or `host=SUPABASE` still exis
 
 | Var | Notes |
 | --- | --- |
-| `CRON_SECRET` | **Server-only.** Bearer token the Railway cron service sends to `/api/cron/import-polymarket`. The cron service config is `curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/import-polymarket` on schedule `*/15 * * * *`. Generate with `openssl rand -hex 32`. |
+| `CRON_SECRET` | **Server-only.** Bearer token used by Railway cron services. Generate with `openssl rand -hex 32`. |
 | `ADMIN_BOOTSTRAP_SECRET` | **Server-only.** One-shot token for `POST /api/admin/bootstrap` (promotes the first signed-in caller to ADMIN), sent in the `X-Bootstrap-Secret` header (the Authorization slot already carries the Privy session token). The route refuses 409 once any admin exists; **unset this var after first admin is set** so the endpoint hard-disables. Generate with `openssl rand -hex 32`. |
 
-## Polymarket trading
+## Gate DexBuilder prediction markets
+
+Gate DexBuilder is the exclusive prediction-market provider. Market data is requested live from `https://api.dexbuilder.com/api/v4/prediction` and is not stored in Backspace's database.
+
+| Variable | Purpose |
+|---|---|
+| `GATE_DEXBUILDER_API_URL` | Optional server-side base URL override for Gate sandbox or production. Defaults to `https://api.dexbuilder.com`. |
+
+The legacy Polymarket import endpoints return HTTP 410. No Gate catalog-import cron is required.
+
+## Retired Polymarket trading
+
+This provider is no longer used for catalog imports or user-facing prediction markets. The variables below are retained only while its old trading implementation is being removed.
 
 On-chain trade integration (CLOB V2). See `apps/web/src/lib/polymarket/`.
 
@@ -174,3 +186,4 @@ When adding a new `process.env.X` reference anywhere in `apps/web/src` or `packa
 1. Add a row above in the appropriate section (or create a new section).
 2. Note whether it's server-only (no `NEXT_PUBLIC_`) or browser-exposed.
 3. Set it in the Railway service env.
+

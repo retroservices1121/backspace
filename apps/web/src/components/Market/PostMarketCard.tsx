@@ -6,10 +6,8 @@
 import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
 import { useTrade } from '@src/hooks/useTrade';
-import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
 
 import { MarketCard } from './MarketCard';
-import { SignerHint } from './SignerHint';
 import { WalletReadiness } from './WalletReadiness';
 
 type Props = {
@@ -44,8 +42,7 @@ function TradeableMarketCard({
   // Auto-pick signer: linked wallet (if any) > embedded. No UI choice —
   // the user already declared intent when they linked the wallet to
   // their profile. SignerHint discloses the popup target.
-  const { wallet } = useEvmTradeSigner();
-  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market, wallet);
+  const { walletConnected, walletBalanceUsd, handleTrade } = useTrade(market);
   const livePrices = useLivePrices(market.outcomes.map((o) => o.externalId));
 
   return (
@@ -55,12 +52,10 @@ function TradeableMarketCard({
       walletBalanceUsd={walletBalanceUsd}
       onTrade={handleTrade}
       readinessSlot={
-        <>
-          <WalletReadiness signerWallet={wallet} />
-          <SignerHint wallet={wallet} />
-        </>
+        <WalletReadiness />
       }
       livePrices={livePrices}
     />
   );
 }
+

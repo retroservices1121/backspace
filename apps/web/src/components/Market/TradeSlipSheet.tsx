@@ -199,8 +199,8 @@ const TradeSlipSheet: React.FC<Props> = ({
           </button>
           <div className="mt-2.5 text-center font-mono text-[10px] tracking-[0.08em] text-ink-3">
             {walletConnected
-              ? 'Orders route to Polymarket · settled in USDC'
-              : 'Set up your trading wallet to place orders'}
+              ? 'Orders route through Gate DexBuilder'
+              : 'Gate account authorization is not connected yet'}
           </div>
         </div>
       </div>
@@ -218,3 +218,4 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 export default TradeSlipSheet;
+

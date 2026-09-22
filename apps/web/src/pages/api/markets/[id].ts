@@ -1,43 +1,25 @@
-// GET /api/markets/[id]  — return a single market with its outcomes,
-// shaped to match MarketCardData on the client. The Decimal columns are
-// serialized as strings on the wire (never floats).
+// Live Gate DexBuilder market gateway. No market data is persisted.
 
-import prisma from '@src/api2/prisma';
-import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
+import { GatePredictionAdapter } from '@backspace/markets';
 import HttpStatus from 'http-status-codes';
 
+import createHandler from '@src/lib/nextconnect';
+
 const handler = createHandler();
-handler.use(requireAuthMiddleware);
 
 handler.get(async (req, res) => {
-  const market = await prisma.market.findUnique({
-    where: { id: BigInt(req.query.id as string) },
-    include: { outcomes: true },
+  const marketId = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+  if (!marketId) return res.status(HttpStatus.BAD_REQUEST).end('market id required');
+
+  const adapter = new GatePredictionAdapter({
+    apiUrl: process.env.GATE_DEXBUILDER_API_URL,
   });
+  const market = await adapter.getMarket({ venue: 'GATE', externalId: marketId });
   if (!market) return res.status(HttpStatus.NOT_FOUND).end();
 
-  res.json({
-    id: market.id.toString(),
-    venue: market.venue,
-    externalId: market.externalId,
-    question: market.question,
-    description: market.description,
-    category: market.category,
-    imageUrl: market.imageUrl,
-    chain: market.chain,
-    contractAddress: market.contractAddress,
-    negRisk: market.negRisk,
-    status: market.status,
-    opensAt: market.opensAt,
-    closesAt: market.closesAt,
-    resolvedAt: market.resolvedAt,
-    outcomes: market.outcomes.map((o) => ({
-      externalId: o.externalId,
-      label: o.label,
-      lastPrice: o.lastPrice ? o.lastPrice.toString() : null,
-      lastPriceAt: o.lastPriceAt,
-    })),
-  });
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.json({ id: market.externalId, ...market });
 });
 
 export default handler;
+

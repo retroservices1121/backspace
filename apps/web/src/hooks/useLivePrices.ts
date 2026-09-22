@@ -1,45 +1,73 @@
-// Live midpoint prices for a set of Polymarket outcome token ids,
-// streamed from the CLOB market-channel websocket (priceSocket).
-//
-// Returns a map of tokenId -> midpoint (0..1) or null when not yet
-// known. The market cards overlay this on top of the cron-cached
-// price so the displayed number tracks the order book in real time.
-
-import { useEffect, useState } from 'react';
-
-import { priceSocket } from '@src/lib/polymarket/priceSocket';
+import { useEffect, useMemo, useState } from 'react';
 
 export type LivePriceMap = Record<string, number | null>;
+const WS_URL = 'wss://broker.dexbuilder.com/ws/dex-builder/prediction';
 
 export function useLivePrices(tokenIds: string[]): LivePriceMap {
-  // Stable, order-independent key so the effect only re-subscribes
-  // when the set of tokens actually changes — not on every render.
-  const key = tokenIds.slice().sort().join(',');
+  const key = tokenIds.slice().filter(Boolean).sort().join(',');
+  const ids = useMemo(() => Array.from(new Set(key ? key.split(',') : [])), [key]);
   const [prices, setPrices] = useState<LivePriceMap>({});
 
   useEffect(() => {
-    const ids = key ? key.split(',') : [];
-    if (ids.length === 0) {
+    if (ids.length === 0 || typeof WebSocket === 'undefined') {
       setPrices({});
       return undefined;
     }
+    let stopped = false;
+    let socket: WebSocket | null = null;
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    let backoff = 1_000;
 
-    const read = () => {
-      setPrices((prev) => {
-        let changed = Object.keys(prev).length !== ids.length;
-        const next: LivePriceMap = {};
-        for (const id of ids) {
-          next[id] = priceSocket.getPrice(id);
-          if (prev[id] !== next[id]) changed = true;
+    const connect = () => {
+      socket = new WebSocket(WS_URL);
+      socket.onopen = () => {
+        backoff = 1_000;
+        socket?.send(JSON.stringify({
+          t: Date.now(), id: `bbo-${Date.now()}`, op: 'subscribe', ch: 'pred.bbo',
+          payload: { items: ids.map((token_id) => ({ token_id })) },
+        }));
+      };
+      socket.onmessage = (event) => {
+        if (typeof event.data !== 'string') return;
+        try {
+          const message = JSON.parse(event.data) as {
+            ch?: string;
+            result?: { token_id?: string; bid_px?: string; ask_px?: string; last_px?: string };
+          };
+          if (message.ch !== 'pred.bbo' || !message.result?.token_id) return;
+          const { token_id, bid_px, ask_px, last_px } = message.result;
+          const bid = decimal(bid_px);
+          const ask = decimal(ask_px);
+          const last = decimal(last_px);
+          const price = bid != null && ask != null ? (bid + ask) / 2 : bid ?? ask ?? last;
+          if (price == null) return;
+          setPrices((current) => current[token_id] === price ? current : { ...current, [token_id]: price });
+        } catch {
+          // Ignore acknowledgements and malformed messages.
         }
-        return changed ? next : prev;
-      });
+      };
+      socket.onclose = () => {
+        if (stopped) return;
+        retry = setTimeout(connect, backoff);
+        backoff = Math.min(backoff * 2, 30_000);
+      };
+      socket.onerror = () => socket?.close();
     };
 
-    const unsubscribe = priceSocket.subscribe(ids, read);
-    read(); // seed with whatever's already cached on the socket
-    return unsubscribe;
+    setPrices({});
+    connect();
+    return () => {
+      stopped = true;
+      if (retry) clearTimeout(retry);
+      socket?.close();
+    };
   }, [key]);
-
   return prices;
 }
+
+function decimal(value: string | undefined): number | null {
+  if (value == null) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+

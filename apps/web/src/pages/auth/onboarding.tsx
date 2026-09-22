@@ -12,6 +12,7 @@ import { useOnboarding } from '@src/hooks/useOnboarding';
 import { fetchUser } from '@src/store/userSlice';
 import AuthLayout from 'layouts/authLayout';
 import { useRouter } from 'next/router';
+import { afterSignIn } from '@src/lib/markets/entry';
 
 import OnboardingForm from 'components/Auth/OnboardingForm';
 import { logEventScreen, Screens } from 'lib/events';
@@ -53,14 +54,14 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
       });
       const success = await onboard.submit(data);
       if (success) {
-        dispatch(fetchUser(auth?.authId));
+        await dispatch(fetchUser(auth?.authId));
         toast.update(toastId, {
           render: 'Account Created',
           type: 'success',
           isLoading: false,
           autoClose: 3000,
         });
-        router.push(APP.INDEX);
+        router.push(afterSignIn(router.query.next));
       } else {
         toast.update(toastId, {
           render: 'An error occurred, please refresh the page and try again',
@@ -88,10 +89,10 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
   };
 
   useEffect(() => {
-    if (onboard.isOnboarded === false) {
-      router.push(APP.INDEX);
+    if (router.isReady && onboard.isOnboarded === true) {
+      router.replace(afterSignIn(router.query.next));
     }
-  }, [onboard.isOnboarded]);
+  }, [onboard.isOnboarded, router.isReady, router.query.next]);
 
   return (
     <>
@@ -135,3 +136,4 @@ const Onboarding: ReactLayoutComponentType = ({}) => {
 Onboarding.Layout = AuthLayout;
 
 export default Onboarding;
+

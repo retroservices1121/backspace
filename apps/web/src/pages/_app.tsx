@@ -14,6 +14,7 @@ import { useWalletSync } from '@src/hooks/useWalletSync';
 import { solanaRpcUrl } from '@src/lib/dflow/config';
 import { polygonRpcUrl } from '@src/lib/polymarket/config';
 import { AuthStatus } from '@src/store/authSlice';
+import { isMarketsEntry } from '@src/lib/markets/entry';
 import { AppLayoutProps } from 'next/app';
 import { useRouter } from 'next/router';
 import { polygon } from 'viem/chains';
@@ -73,6 +74,7 @@ const AppBody = ({ Component, pageProps } : AppLayoutProps) => {
   // every refresh. Let those pages render immediately.
   const router = useRouter();
   const onAuth = router.pathname.startsWith(APP.AUTH.INDEX);
+  const onPublicMarkets = isMarketsEntry(router.pathname) && authState !== AuthStatus.SignedIn;
   //Remove me eventually
   const queryClient = new QueryClient();
   // useEffect(() => {
@@ -102,11 +104,9 @@ const AppBody = ({ Component, pageProps } : AppLayoutProps) => {
         <TryCatch Fallback={DefaultError}>
           <Navigation>
             {/* Global Modals/Components */}
-            <AppWelcome/>
-            <PostViewer />
-            <CreatePost />
+            {!onPublicMarkets && <><AppWelcome/><PostViewer /><CreatePost /></>}
 
-            {authState === AuthStatus.Unknown && !onAuth
+            {authState === AuthStatus.Unknown && !onAuth && !onPublicMarkets
               ? <Loading loading={true}/>
               : <Layout><Component {...pageProps} /></Layout>
             }
@@ -186,3 +186,4 @@ const MyApp = ({ Component, pageProps } : AppLayoutProps) => {
 // };
 
 export default wrapper.withRedux(MyApp);
+

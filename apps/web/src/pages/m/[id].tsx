@@ -23,8 +23,6 @@ import Loading from 'react-loading';
 
 import { useMarket } from '@src/hooks/useMarket';
 import { useTrade } from '@src/hooks/useTrade';
-import { useEvmTradeSigner } from '@src/hooks/useTradeSigner';
-import { SignerHint } from 'components/Market/SignerHint';
 import { WalletReadiness } from 'components/Market/WalletReadiness';
 import TradeSlipSheet from 'components/Market/TradeSlipSheet';
 import { ShellIcons as I } from 'components/Shell/icons';
@@ -98,7 +96,7 @@ export default function MarketDetail() {
             resolve date + a sample placeholder for traders/volume
             until we wire those fields into the import. */}
         <div className="mt-2 text-[13px] text-ink-3">
-          <span className="text-ink-2">Polymarket</span>
+          <span className="text-ink-2">Gate DexBuilder</span>
           <span className="mx-2 text-ink-4">·</span>
           <span>resolves {fmtDate(market.closesAt)}</span>
           <span className="mx-2 text-ink-4">·</span>
@@ -213,8 +211,7 @@ function BigBlocks({
   yesPct: number;
   noPct: number;
 }) {
-  const { wallet: signerWallet } = useEvmTradeSigner();
-  const trade = useTrade({ id: market.id, negRisk: market.negRisk }, signerWallet);
+  const trade = useTrade({ id: market.id, negRisk: market.negRisk });
   const [side, setSide] = useState<'YES' | 'NO' | null>(null);
   // USD amount the user wants to spend, Polymarket-style.
   const [amount, setAmount] = useState('10');
@@ -336,9 +333,8 @@ function BigBlocks({
           established. SignerHint surfaces the auto-picked wallet so
           the popup origin isn't a surprise. */}
       {!trade.walletConnected && (
-        <WalletReadiness signerWallet={signerWallet} />
+        <WalletReadiness />
       )}
-      <SignerHint wallet={signerWallet} />
     </div>
   );
 }
@@ -519,3 +515,4 @@ function TradesTabs() {
     </div>
   );
 }
+

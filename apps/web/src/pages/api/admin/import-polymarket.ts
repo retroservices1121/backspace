@@ -14,38 +14,12 @@
 //
 // Returns the ImportSummary so the caller can log volume / errors.
 
-import { PlatformUserType } from '@prisma/client';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-import prisma from '@src/api2/prisma';
-import { importPolymarketCatalog } from '@src/lib/markets/import';
-import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
-
-const handler = createHandler();
-
-handler.use(requireAuthMiddleware).post(async (req, res) => {
-  const me = await prisma.user.findUnique({
-    where: { authId: req.authId },
-    select: { platformPermission: true },
+export default function handler(_req: NextApiRequest, res: NextApiResponse) {
+  res.status(410).json({
+    error: 'provider_retired',
+    message: 'Polymarket imports are disabled. Gate market data is served live.',
   });
-  if (!me || me.platformPermission !== PlatformUserType.ADMIN) {
-    res.status(403).end('Admin only');
-    return;
-  }
+}
 
-  const body = (req.body ?? {}) as {
-    maxPages?: number;
-    pageSize?: number;
-    startCursor?: string;
-  };
-
-  // BigInt id columns elsewhere — keep the response JSON-safe even if
-  // we ever start including them in the summary.
-  const summary = await importPolymarketCatalog({
-    maxPages: typeof body.maxPages === 'number' ? body.maxPages : undefined,
-    pageSize: typeof body.pageSize === 'number' ? body.pageSize : undefined,
-    startCursor: typeof body.startCursor === 'string' ? body.startCursor : undefined,
-  });
-  res.json(summary);
-});
-
-export default handler;

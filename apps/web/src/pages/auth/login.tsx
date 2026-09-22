@@ -16,6 +16,8 @@ import { AuthStatus } from '@src/store/authSlice';
 import { useWallet } from '@src/lib/wallet';
 import AuthLayout from 'layouts/authLayout';
 import { useRouter } from 'next/router';
+import { afterSignIn, marketsOnboarding } from '@src/lib/markets/entry';
+import { useAppSelector } from 'store/store';
 
 import { APP } from 'pages';
 import { setPageTitle } from 'store/appSlice';
@@ -27,16 +29,19 @@ const Login: ReactLayoutComponentType = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const authStatus = useAuthentication();
+  const { state: userState, fetchAttempted, bootstrapping } = useAppSelector((state) => state.user);
   const { ready, authenticated, login } = useWallet();
   const [email, setEmail] = useState('');
 
   useEffect(() => { dispatch(setPageTitle(pageTitle)); }, []);
 
   useEffect(() => {
-    if (authStatus === AuthStatus.SignedIn) {
-      router.push(APP.INDEX);
+    if (router.isReady && authStatus === AuthStatus.SignedIn && fetchAttempted && !bootstrapping) {
+      router.replace(userState?.onboarded === true
+        ? afterSignIn(router.query.next)
+        : marketsOnboarding(router.pathname, router.query.next));
     }
-  }, [authStatus]);
+  }, [authStatus, fetchAttempted, bootstrapping, userState?.onboarded, router.isReady, router.query.next]);
 
   const start = () => { if (ready && !authenticated) login(); };
 
@@ -412,3 +417,4 @@ const AppleMark = () => (
     <path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.9-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.8-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.2 1.7 2.5 2.9 2.4 1.2 0 1.6-.8 3-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.5-.9-2.5-3.7zM14.3 5.8c.6-.8 1-1.9.9-3-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.3-.6 2.9-1.3z" />
   </svg>
 );
+
