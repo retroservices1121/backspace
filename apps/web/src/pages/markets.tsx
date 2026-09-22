@@ -1,10 +1,10 @@
 // /markets — Discover-style market catalog page.
 //
 // Layout:
-//   1. Sticky TopTabs header (title only)
+//   1. Branded Backspace Markets header
 //   2. Trending horizontal scroller — top markets by 24h volume,
 //      always shown regardless of selected sort or category
-//   3. Sticky filter bar — category dropdown + sort dropdown + search
+//   3. Search and filters
 //   4. the previous prediction provider-style responsive grid of MarketGridCard tiles
 //      (1 col mobile → 2 → 3 → 4 across breakpoints).
 //
@@ -30,7 +30,6 @@ import { useAppDispatch } from '@src/store/store';
 import { MarketGridCard } from '@src/components/Market/MarketGridCard';
 import { TrendingMarketCard } from '@src/components/Market/TrendingMarketCard';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
-import TopTabs from 'components/Shell/TopTabs';
 
 const ALL = 'all';
 const SEARCH_MIN = 2;
@@ -175,22 +174,60 @@ const Markets: React.FC = () => {
         <meta name="twitter:title" content="Backspace Markets" />
         <meta name="twitter:description" content="Prediction markets and a shared community. Discover Backspace Markets." />
       </Head>
-      <div className="hidden sm:block">
-        <TopTabs title="Backspace Markets" tabs={[]} active="" onChange={() => undefined} />
-      </div>
-
       <>
-          <section className="px-6 pt-6 pb-2" aria-label="Backspace Markets">
-            <h1 className="text-2xl font-bold text-ink">Discover your next perspective.</h1>
-            <p className="mt-2 text-sm text-ink-2">Explore markets and the conversations around them.</p>
-            <nav aria-label="Markets shortcuts" className="mt-4 flex gap-5 text-sm text-brand-2">
-              <Link href="/portfolio"><a>View portfolio</a></Link>
-              <Link href="/"><a>Open social feed</a></Link>
-            </nav>
+          <header className="border-b border-line bg-canvas" aria-label="Backspace Markets header">
+            <div className="flex min-h-[68px] items-center justify-between gap-4 px-4 sm:px-6">
+              <Link href="/markets">
+                <a className="flex min-w-0 items-center gap-3" aria-label="Backspace Markets home">
+                  <img
+                    src="/graphics/navigation/backspace_with_logo.svg"
+                    alt="Backspace"
+                    className="h-6 w-auto sm:h-7"
+                  />
+                  <span className="h-5 w-px bg-line" aria-hidden="true" />
+                  <span className="truncate text-[15px] font-semibold tracking-[-0.01em] text-ink">
+                    Markets
+                  </span>
+                </a>
+              </Link>
+              <nav aria-label="Markets shortcuts" className="flex items-center gap-2 text-[13px] font-medium">
+                <Link href="/portfolio">
+                  <a className="rounded-full border border-line px-3 py-2 text-ink transition-colors hover:border-brand-2/50 hover:text-brand-2">
+                    Portfolio
+                  </a>
+                </Link>
+                <Link href="/">
+                  <a className="hidden rounded-full px-3 py-2 text-ink-2 transition-colors hover:bg-hover hover:text-ink sm:block">
+                    Social feed
+                  </a>
+                </Link>
+              </nav>
+            </div>
+          </header>
+
+          <section className="px-4 pt-5 pb-2 sm:px-6 sm:pt-7" aria-label="Backspace Markets">
+            <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface px-5 py-6 sm:px-7 sm:py-8">
+              <div
+                className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-brand-2/20 blur-3xl"
+                aria-hidden="true"
+              />
+              <div className="relative max-w-2xl">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-2/25 bg-brand-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Live markets
+                </div>
+                <h1 className="m-0 text-[28px] font-bold leading-[1.08] tracking-[-0.035em] text-ink sm:text-[38px]">
+                  Trade what happens next.
+                </h1>
+                <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-2 sm:text-[15px]">
+                  Explore live prediction markets, follow the odds, and join the conversations shaping every outcome.
+                </p>
+              </div>
+            </div>
           </section>
           {/* Trending hero row — only shown when not searching. */}
           {!isSearching && (
-            <section className="px-6 pt-5 pb-2">
+            <section className="px-4 pt-5 pb-2 sm:px-6">
               <div className="flex items-baseline justify-between mb-3">
                 <h2 className="m-0 text-[15px] font-bold tracking-[-0.01em] text-ink">
                   Trending now
@@ -225,17 +262,41 @@ const Markets: React.FC = () => {
             </section>
           )}
 
-          {/* Filter bar — category dropdown + sort dropdown + search.
-              Sticky just under TopTabs so it stays reachable while the
-              grid scrolls. */}
+          {/* Search and filters remain in document flow so they leave the
+              viewport naturally as the market grid scrolls. */}
           <div
             className="
-              sticky top-[64px] z-[5]
               border-b border-line
-              bg-canvas/[0.78] backdrop-blur-[14px] backdrop-saturate-[160%]
+              bg-canvas
             "
           >
-            <div className="px-6 pt-3 pb-2 flex items-center gap-3 flex-wrap">
+            <div className="px-4 pt-4 pb-3 sm:px-6">
+              <div className="relative">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18" height="18"
+                  fill="none" stroke="currentColor" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search live markets"
+                  className="
+                    h-12 w-full rounded-[14px] border border-line bg-surface pl-11 pr-4
+                    text-[14px] text-ink placeholder:text-ink-3 outline-none
+                    transition-colors duration-150 focus:border-brand-2
+                    focus:ring-2 focus:ring-brand-2/10 font-display
+                  "
+                />
+              </div>
+            </div>
+
+            <div className="px-4 pb-4 flex items-center gap-2 flex-wrap sm:px-6">
               {/* Category dropdown */}
               <div className="relative flex-none" ref={categoryRef}>
                 <button
@@ -354,38 +415,12 @@ const Markets: React.FC = () => {
               </div>
             </div>
 
-            <div className="px-6 pb-3">
-              <div className="relative">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16" height="16"
-                  fill="none" stroke="currentColor" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
-                >
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M21 21l-4.3-4.3" />
-                </svg>
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search markets not in this list…"
-                  style={{ background: 'transparent' }}
-                  className="
-                    w-full h-10 pl-10 pr-4 rounded-full
-                    border border-line text-[14px] text-ink placeholder:text-ink-3
-                    outline-none focus:border-brand-2
-                    transition-colors duration-150 font-display
-                  "
-                />
-              </div>
-            </div>
           </div>
 
           {/* Main grid — responsive: 1 / 2 / 3 / 4 columns. the previous prediction provider
               hits 3-up at desktop; we keep going to 4 at xl since the
               shell can stretch to 1320px without the right rail. */}
-          <div className="px-6 py-5 font-display text-ink">
+          <div className="px-4 py-5 font-display text-ink sm:px-6">
             {isSearching ? (
               search.isLoading ? (
                 <GridSkeleton count={6} />
