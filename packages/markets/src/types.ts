@@ -35,6 +35,11 @@ export type VenueMarket = VenueMarketRef & {
   opensAt: Date | null;
   closesAt: Date;
   resolvedAt: Date | null;
+  slug?: string | null;
+  resolutionSource?: string | null;
+  winningOutcome?: string | null;
+  acceptingOrders?: boolean;
+  tickSize?: string | null;
   // Venue-reported volume + book depth, in USD. Strings to preserve
   // precision over the wire (parsed to Decimal at the DB boundary).
   // Nullable: not every venue exposes these, and not every market

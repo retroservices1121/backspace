@@ -1,517 +1,175 @@
-// Market Detail page — port of /webui's screen 3.
-//
-// Real data sources (from /api/markets/[id] via useMarket):
-//   - question, category, image, closesAt, status
-//   - outcomes[].lastPrice (YES/NO or multi)
-//
-// Stubbed with "Coming soon" notes (no backend yet):
-//   - 24h price delta + 24h volume + total OI + traders count
-//     → would need a price-history table; the import path only
-//        snapshots current price
-//   - Chart curve → same; rendering a decorative SVG so the
-//     screen isn't empty, with an honest caption
-//   - Recent trades / Top holders / Related markets / per-market
-//     comments → none of these have endpoints yet
-//
-// Trade interaction: inline shares input below the big blocks
-// fires the existing useTrade handler. WalletReadiness covers
-// the "set up wallet" gating.
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Loading from 'react-loading';
+import Link from 'next/link';
+import { useQuery } from 'react-query';
 
+import axios from '@src/lib/axios';
+import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
-import { useTrade } from '@src/hooks/useTrade';
-import { WalletReadiness } from 'components/Market/WalletReadiness';
-import TradeSlipSheet from 'components/Market/TradeSlipSheet';
-import { ShellIcons as I } from 'components/Shell/icons';
+import type { MarketCardData } from '@src/components/Market/MarketCard';
 
-import { APP } from 'pages';
+type DetailMarket = MarketCardData & {
+  description?: string;
+  status?: 'ACTIVE' | 'FROZEN' | 'RESOLVED' | 'INVALIDATED';
+  resolutionSource?: string | null;
+  winningOutcome?: string | null;
+  acceptingOrders?: boolean;
+  volumeUsd?: string | null;
+  volume24hUsd?: string | null;
+  liquidityUsd?: string | null;
+};
+type Level = { price?: string; size?: string } | [string, string];
+type Book = { bids?: Level[]; asks?: Level[] };
+type Trade = { id?: string; trade_id?: string; token_id?: string; outcome?: string; side?: string; price?: string; size?: string; created_at?: number };
+type HistoryPoint = { p?: string; t?: number };
+type MarketData = {
+  trades: Trade[];
+  books: Array<{ tokenId: string; book: Book }>;
+  histories: Array<{ tokenId: string; history: { history?: HistoryPoint[] } | HistoryPoint[] }>;
+  fetchedAt: number;
+};
 
-function fmtDate(d?: Date): string {
-  if (!d) return '—';
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric' });
+async function fetchMarketData(id: string): Promise<MarketData> {
+  const { data } = await axios().get<MarketData>(`/markets/${encodeURIComponent(id)}/data`);
+  return data;
+}
+
+function number(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+function money(value?: string | null) {
+  const amount = number(value);
+  if (amount == null) return '—';
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', notation: amount >= 10000 ? 'compact' : 'standard', maximumFractionDigits: amount >= 100 ? 0 : 2 }).format(amount);
+}
+function date(value: Date | string) {
+  return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 export default function MarketDetail() {
   const router = useRouter();
-  const id = (router.query.id as string) ?? '';
-  const { data: market, isLoading } = useMarket(id || null);
+  const id = typeof router.query.id === 'string' ? router.query.id : '';
+  const marketQuery = useMarket(id || null);
+  const market = marketQuery.data as DetailMarket | undefined;
+  const dataQuery = useQuery(['gate-market-data', id], () => fetchMarketData(id), {
+    enabled: Boolean(id), refetchInterval: 10_000, staleTime: 5_000,
+  });
+  const live = useLivePrices(market?.outcomes.map((outcome) => outcome.externalId) || []);
+  const [selectedToken, setSelectedToken] = useState<string | null>(null);
 
-  if (isLoading || !market) {
-    return (
-      <div className="flex w-full justify-center py-10">
-        <Loading type="spinningBubbles" color="#7B4CFF" height={50} width={50} />
-      </div>
-    );
-  }
+  const selectedOutcome = market?.outcomes.find((outcome) => outcome.externalId === selectedToken)
+    || market?.outcomes[0];
+  const book = dataQuery.data?.books.find((item) => item.tokenId === selectedOutcome?.externalId)?.book;
+  const rawHistory = dataQuery.data?.histories.find((item) => item.tokenId === selectedOutcome?.externalId)?.history;
+  const history = Array.isArray(rawHistory) ? rawHistory : rawHistory?.history || [];
 
-  // Pick the leading binary outcome (YES/NO). For multi-outcome we
-  // fall back to the two highest-priced options so the big blocks
-  // always render — a future revision can render a ladder instead.
-  const sortedOutcomes = [...market.outcomes]
-    .filter((o) => o.lastPrice != null)
-    .map((o) => ({ ...o, p: parseFloat(o.lastPrice as unknown as string) }))
-    .sort((a, b) => b.p - a.p);
-  const yesOutcome = sortedOutcomes[0];
-  const noOutcome = sortedOutcomes[1];
-  const yesPct = yesOutcome ? Math.round(yesOutcome.p * 100) : null;
-  const noPct = noOutcome ? Math.round(noOutcome.p * 100) : null;
+  if (marketQuery.isLoading) return <MarketSkeleton />;
+  if (marketQuery.isError || !market) return <ErrorState retry={() => marketQuery.refetch()} />;
 
+  const status = market.status || (new Date(market.closesAt) <= new Date() ? 'FROZEN' : 'ACTIVE');
   return (
-    <div className="font-display text-ink">
-      {/* Mobile header — owns the top bar on this route (the global
-          brand header is suppressed on /m). Back + category/Live +
-          truncated title + share/more. */}
-      <MobileDetailHeader market={market} />
-
-      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4">
-        {/* Breadcrumb — desktop only; mobile uses the header above. */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
-          <span className="cursor-pointer hover:text-ink" onClick={() => router.push(APP.MARKETS.INDEX)}>
-            Markets
-          </span>
-          <span className="text-ink-4">›</span>
-          {market.category && (
-            <>
-              <span>{market.category}</span>
-              <span className="text-ink-4">›</span>
-            </>
-          )}
-          <span className="text-ink truncate max-w-[40ch]">{market.question}</span>
-          <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-green-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-vivid shadow-[0_0_0_3px_rgba(14,173,105,0.18)]" />
-            Live
-          </span>
-        </div>
-
-        {/* Big question */}
-        <h2 className="mt-1 sm:mt-3 text-[22px] sm:text-[28px] font-bold tracking-[-0.022em] text-ink max-w-full sm:max-w-[32ch] leading-tight">
-          {market.question}
-        </h2>
-
-        {/* Created-by / meta — we don't capture market author
-            attribution on the previous prediction provider imports, so this just shows the
-            resolve date + a sample placeholder for traders/volume
-            until we wire those fields into the import. */}
-        <div className="mt-2 text-[13px] text-ink-3">
-          <span className="text-ink-2">Gate DexBuilder</span>
-          <span className="mx-2 text-ink-4">·</span>
-          <span>resolves {fmtDate(market.closesAt)}</span>
-          <span className="mx-2 text-ink-4">·</span>
-          <span className="italic">volume / trader counts coming soon</span>
-        </div>
-
-        {/* Big YES/NO blocks */}
-        {yesOutcome && noOutcome && yesPct != null && noPct != null && (
-          <BigBlocks
-            market={market}
-            yesOutcome={yesOutcome}
-            noOutcome={noOutcome}
-            yesPct={yesPct}
-            noPct={noPct}
-          />
-        )}
+    <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-5 text-ink sm:px-6">
+      <Head><title>{market.question} · Backspace Markets</title></Head>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <Link href="/markets"><a className="text-sm text-brand-2">← Markets</a></Link>
+        <StatusBadge status={status} accepting={market.acceptingOrders} />
       </div>
 
-      {/* Stats row — Resolves is real; the others are placeholders
-          until the import grabs the previous prediction provider's volume + traders. */}
-      <div className="mx-4 sm:mx-6 mb-4 grid grid-cols-4 gap-[1px] rounded-[14px] overflow-hidden bg-line">
-        <Stat label="Volume (24h)" value="—" sub="coming soon" />
-        <Stat label="Open interest" value="—" sub="coming soon" />
-        <Stat label="Traders" value="—" sub="coming soon" />
-        <Stat label="Resolves" value={fmtDate(market.closesAt)} sub="" />
-      </div>
-
-      {/* Chart placeholder — synthetic curve to anchor the visual.
-          Caption is honest about what's coming. */}
-      <SyntheticChart />
-
-      {/* Tabs row + the Recent trades stub */}
-      <TradesTabs />
-    </div>
-  );
-}
-
-// Mobile-only sticky header for the detail route. Replaces the global
-// brand bar (suppressed on /m): back · category + Live · truncated
-// title · share · more.
-function MobileDetailHeader({ market }: { market: any }) {
-  const router = useRouter();
-  const onShare = () => {
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    // Native share sheet where available; clipboard fallback.
-    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null;
-    if (nav?.share) {
-      nav.share({ title: market.question, url }).catch(() => {});
-    } else if (nav?.clipboard?.writeText) {
-      nav.clipboard.writeText(url).catch(() => {});
-    }
-  };
-
-  return (
-    <header
-      className="
-        sm:hidden sticky top-0 z-[55]
-        bg-canvas/[0.85] backdrop-blur-[14px] backdrop-saturate-[160%]
-        border-b border-line
-        px-4 h-14 flex items-center gap-2.5
-      "
-    >
-      <button
-        type="button"
-        aria-label="Back"
-        onClick={() => router.back()}
-        className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-ink flex-none"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-
-      <div className="flex-1 min-w-0 leading-tight">
-        <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.12em] text-ink-3">
-          <span className="truncate">{market.category ?? 'Market'}</span>
-          <span className="inline-flex items-center gap-1 text-green-2 flex-none">
-            <span className="w-[5px] h-[5px] rounded-full bg-green-vivid" />
-            Live
-          </span>
-        </div>
-        <div className="text-[13px] font-semibold text-ink truncate">{market.question}</div>
-      </div>
-
-      <button
-        type="button"
-        aria-label="Share"
-        onClick={onShare}
-        className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-ink flex-none"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-          <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7M16 6l-4-4-4 4M12 2v13" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        aria-label="More"
-        className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-ink flex-none"
-      >
-        <I.dots className="w-4 h-4" />
-      </button>
-    </header>
-  );
-}
-
-function BigBlocks({
-  market, yesOutcome, noOutcome, yesPct, noPct,
-}: {
-  market: any;
-  yesOutcome: any;
-  noOutcome: any;
-  yesPct: number;
-  noPct: number;
-}) {
-  const trade = useTrade({ id: market.id, negRisk: market.negRisk });
-  const [side, setSide] = useState<'YES' | 'NO' | null>(null);
-  // USD amount the user wants to spend, the previous prediction provider-style.
-  const [amount, setAmount] = useState('10');
-
-  // What the user would get for `amount` USD at the side's current
-  // cents-per-share. payout (= shares) tracks max winnings if right.
-  const sidePct = side === 'YES' ? yesPct : side === 'NO' ? noPct : null;
-  const numericAmount = Number(amount) || 0;
-  const sharesAtThisAmount =
-    sidePct && sidePct > 0 ? numericAmount / (sidePct / 100) : null;
-  const toWin = sharesAtThisAmount != null ? sharesAtThisAmount.toFixed(2) : '—';
-
-  const onBuy = async (which: 'YES' | 'NO') => {
-    const outcome = which === 'YES' ? yesOutcome : noOutcome;
-    await trade.handleTrade({
-      outcomeExternalId: outcome.externalId,
-      side: 'BUY',
-      usdAmount: amount,
-    });
-    setSide(null);
-  };
-
-  return (
-    <div className="mt-5 flex flex-col gap-3">
-      <div className="flex gap-3">
-        <BigBlock
-          label="YES"
-          pct={yesPct}
-          payout={(100 / yesPct).toFixed(2)}
-          tone="yes"
-          onBuy={() => setSide('YES')}
-        />
-        <BigBlock
-          label="NO"
-          pct={noPct}
-          payout={(100 / noPct).toFixed(2)}
-          tone="no"
-          onBuy={() => setSide('NO')}
-        />
-      </div>
-
-      {/* Desktop inline buy panel — appears under the blocks when a
-          side is selected. On mobile the TradeSlipSheet (below) takes
-          over instead. */}
-      {side && (
-        <div className="hidden sm:flex rounded-[14px] border border-line bg-surface p-4 flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
-              Buy {side} — amount
-            </label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-[16px] font-mono">
-                $
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="
-                  w-full bg-canvas border border-line rounded-[10px]
-                  pl-7 pr-3 py-2 text-ink text-[16px] font-mono
-                  outline-none focus:border-line-2
-                "
-              />
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0">
+          <div className="flex gap-4">
+            {market.imageUrl && <img src={market.imageUrl} alt="" className="h-16 w-16 rounded-2xl object-cover" />}
+            <div>
+              {market.category && <div className="text-xs font-mono uppercase tracking-wider text-ink-3">{market.category}</div>}
+              <h1 className="mt-1 text-2xl font-bold leading-tight sm:text-3xl">{market.question}</h1>
             </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-mono uppercase tracking-[0.06em] text-ink-3">
-              To win
-            </label>
-            <div className="text-ink text-[16px] font-mono font-semibold tabular-nums">
-              ${toWin}
-            </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Metric label="24h volume" value={money(market.volume24hUsd)} />
+            <Metric label="Total volume" value={money(market.volumeUsd)} />
+            <Metric label="Liquidity" value={money(market.liquidityUsd)} />
+            <Metric label="Closes" value={date(market.closesAt)} small />
           </div>
-          <button
-            type="button"
-            onClick={() => onBuy(side)}
-            disabled={!trade.walletConnected}
-            className="
-              rounded-full px-5 h-9 text-[13px] font-semibold text-ink
-              bg-brand hover:bg-brand-2
-              shadow-[0_8px_22px_-6px_rgba(88,34,251,0.55)]
-              transition-colors duration-150
-              disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
-            "
-          >
-            Confirm
-          </button>
-          <button
-            type="button"
-            onClick={() => setSide(null)}
-            className="rounded-[10px] px-3 h-9 text-[14px] text-ink-2 hover:text-ink"
-          >
-            Cancel
-          </button>
+
+          <OutcomeSelector market={market} live={live} selected={selectedOutcome?.externalId} onSelect={setSelectedToken} />
+          <ProbabilityChart points={history} outcome={selectedOutcome?.label || 'Outcome'} loading={dataQuery.isLoading} />
+          <MarketRules market={market} />
+          <RecentTrades trades={dataQuery.data?.trades || []} loading={dataQuery.isLoading} />
         </div>
-      )}
 
-      {/* Mobile buy surface — bottom-sheet trade slip. Shares the same
-          amount state + handleTrade as the desktop inline panel, so
-          there's one trade path. Self-hides at sm+. */}
-      <TradeSlipSheet
-        open={!!side}
-        side={(side ?? 'YES')}
-        question={market.question}
-        pricePct={side === 'NO' ? noPct : yesPct}
-        amount={amount}
-        onAmountChange={setAmount}
-        onConfirm={() => { if (side) onBuy(side); }}
-        onClose={() => setSide(null)}
-        walletConnected={trade.walletConnected}
-        balanceUsd={trade.walletBalanceUsd != null ? Number(trade.walletBalanceUsd) : null}
-      />
-
-      {/* Readiness gate disappears once the trading session is
-          established. SignerHint surfaces the auto-picked wallet so
-          the popup origin isn't a surprise. */}
-      {!trade.walletConnected && (
-        <WalletReadiness />
-      )}
-    </div>
+        <aside className="min-w-0">
+          <div className="sticky top-20 space-y-4">
+            <OrderBook book={book} outcome={selectedOutcome?.label || 'Outcome'} loading={dataQuery.isLoading} />
+            <section className="rounded-2xl border border-line bg-surface p-5">
+              <h2 className="text-lg font-semibold">Trading through Gate</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-3">
+                Live prices and liquidity are connected. Order entry will unlock when Gate activates Backspace Builder user accounts and sandbox credentials.
+              </p>
+              <button type="button" disabled className="mt-4 w-full rounded-full bg-brand px-4 py-3 font-semibold text-white opacity-60">
+                Trading coming soon
+              </button>
+            </section>
+          </div>
+        </aside>
+      </section>
+    </main>
   );
 }
 
-function BigBlock({
-  label, pct, payout, tone, onBuy,
-}: {
-  label: 'YES' | 'NO';
-  pct: number;
-  payout: string;
-  tone: 'yes' | 'no';
-  onBuy: () => void;
-}) {
-  const isYes = tone === 'yes';
-  const tint = isYes ? 'rgba(14,173,105,0.12)' : 'rgba(255,84,112,0.12)';
-  const border = isYes ? 'rgba(14,173,105,0.32)' : 'rgba(255,84,112,0.32)';
-  const accent = isYes ? 'text-green-2' : 'text-pink-2';
-  const btnBase = isYes
-    ? 'bg-green-vivid hover:bg-green-2 text-ink'
-    : 'bg-pink-vivid hover:bg-pink-2 text-ink';
-
+function OutcomeSelector({ market, live, selected, onSelect }: { market: DetailMarket; live: Record<string, number | null>; selected?: string; onSelect: (id: string) => void }) {
+  const outcomes = [...market.outcomes].sort((a, b) => (live[b.externalId] ?? number(b.lastPrice) ?? -1) - (live[a.externalId] ?? number(a.lastPrice) ?? -1));
   return (
-    <div
-      className="flex-1 rounded-[14px] p-5 transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: tint, border: `1px solid ${border}` }}
-    >
-      <div className="text-[11px] uppercase tracking-[0.16em] font-mono text-ink-3">
-        {label}
-      </div>
-      <div className={`mt-2 text-[38px] sm:text-[48px] font-bold italic leading-none ${accent}`}>
-        {pct}¢
-      </div>
-      <div className={`mt-1 text-[12px] font-mono ${accent}`}>
-        Payout · {payout}×
-      </div>
-      <button
-        type="button"
-        onClick={onBuy}
-        className={`mt-4 w-full rounded-[10px] py-2.5 text-[14px] font-semibold transition-colors ${btnBase}`}
-      >
-        Buy {label}
-      </button>
-    </div>
-  );
-}
-
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="bg-canvas px-2 sm:px-4 py-3 flex flex-col gap-1">
-      <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.08em] text-ink-3 font-mono truncate">
-        {label}
-      </div>
-      <div className="text-[14px] sm:text-[20px] font-mono font-semibold text-ink truncate">{value}</div>
-      <div className="text-[10px] sm:text-[11px] text-ink-3 font-mono truncate">{sub}</div>
-    </div>
-  );
-}
-
-function SyntheticChart() {
-  // Hand-built decorative probability curve so the screen has a
-  // chart-shaped block in place. Real chart ships when the
-  // price-history table lands.
-  const points: Array<[number, number]> = [
-    [0, 50], [4, 48], [8, 52], [12, 49], [16, 55], [22, 53], [28, 58], [34, 56], [40, 60],
-    [46, 57], [52, 63], [58, 61], [64, 66], [70, 63], [76, 60], [82, 64], [88, 62], [94, 62],
-  ];
-  const W = 880;
-  const H = 200;
-  const xs = (v: number) => (v / 100) * W;
-  const ys = (v: number) => H - (v / 100) * H;
-  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${xs(p[0])},${ys(p[1])}`).join(' ');
-  const fillD = `${pathD} L${xs(94)},${H} L${xs(0)},${H} Z`;
-
-  return (
-    <div className="mx-4 sm:mx-6 mb-4 rounded-[14px] border border-line bg-surface p-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-        <h4 className="m-0 text-[14px] font-semibold tracking-[-0.005em] text-ink">
-          YES probability — 14 days
-          <span className="hidden sm:inline ml-2 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-3">
-            preview · real chart shipping with price history
-          </span>
-        </h4>
-        <div className="flex items-center gap-1 rounded-[10px] bg-canvas border border-line p-0.5">
-          {['1H', '1D', '14D', '1M', 'ALL'].map((r) => (
-            <button
-              key={r}
-              type="button"
-              disabled
-              className={[
-                'px-2.5 py-1 rounded-[8px] text-[11px] font-mono',
-                r === '14D' ? 'bg-brand-soft text-ink' : 'text-ink-3',
-              ].join(' ')}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="h-[140px] sm:h-[200px] w-full">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-full">
-          <defs>
-            <linearGradient id="md-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7B4CFF" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#7B4CFF" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="md-line" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#5822FB" />
-              <stop offset="100%" stopColor="#7B4CFF" />
-            </linearGradient>
-          </defs>
-          {[25, 50, 75].map((p) => (
-            <line key={p} x1="0" x2={W} y1={ys(p)} y2={ys(p)} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
-          ))}
-          <path d={fillD} fill="url(#md-fill)" />
-          <path d={pathD} stroke="url(#md-line)" strokeWidth="2.5" fill="none" />
-          <circle cx={xs(94)} cy={ys(62)} r="5" fill="#7B4CFF" stroke="#fff" strokeWidth="2" />
-          {[75, 50, 25].map((p) => (
-            <text
-              key={p}
-              x="0"
-              y={ys(p) - 4}
-              fill="rgba(255,255,255,0.35)"
-              fontSize="10"
-              fontFamily="JetBrains Mono"
-            >
-              {p}%
-            </text>
-          ))}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-function TradesTabs() {
-  const tabs = ['Recent trades', 'Top holders', 'Comments', 'Related markets'];
-  const [active, setActive] = useState(tabs[0]);
-  return (
-    <div className="mx-4 sm:mx-6 mb-8 rounded-[14px] border border-line bg-surface overflow-hidden">
-      <div
-        className="flex items-center gap-1 px-3 border-b border-line overflow-x-auto"
-        style={{ scrollbarWidth: 'none' }}
-      >
-        {tabs.map((t) => {
-          const isActive = t === active;
-          return (
-            <button
-              type="button"
-              key={t}
-              onClick={() => setActive(t)}
-              className={[
-                'relative flex-none whitespace-nowrap px-3 py-3 text-[13px] font-medium',
-                'transition-colors duration-150',
-                isActive ? 'text-ink' : 'text-ink-2 hover:text-ink',
-              ].join(' ')}
-            >
-              {t}
-              {isActive && (
-                <span className="absolute left-2 right-2 -bottom-px h-[3px] rounded-full bg-brand-2" />
-              )}
-            </button>
-          );
+    <section className="mt-6 rounded-2xl border border-line bg-surface p-4">
+      <h2 className="mb-3 text-sm font-semibold">Outcomes</h2>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {outcomes.map((outcome) => {
+          const price = live[outcome.externalId] ?? number(outcome.lastPrice);
+          const active = selected === outcome.externalId;
+          return <button key={outcome.externalId} type="button" onClick={() => onSelect(outcome.externalId)} className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left ${active ? 'border-brand-2 bg-brand-soft' : 'border-line bg-canvas hover:border-line-2'}`}>
+            <span className="font-medium">{outcome.label}</span>
+            <span className="font-mono text-lg font-semibold">{price == null ? '—' : `${Math.round(price * 100)}¢`}</span>
+          </button>;
         })}
       </div>
-      <div className="p-5 text-[13px] text-ink-3 font-mono">
-        {active === 'Recent trades' && (
-          <>
-            <I.dots className="w-4 h-4 inline-block invisible" />
-            Recent trades feed ships with the trade-history backend.
-            <br />Until then, trades placed here surface in
-            <span className="text-brand-2"> /portfolio </span>.
-          </>
-        )}
-        {active === 'Top holders' && 'Top holders ships when on-chain position aggregation lands.'}
-        {active === 'Comments' && 'Per-market comments — coming soon.'}
-        {active === 'Related markets' && 'Related markets ships with the recommender.'}
-      </div>
-    </div>
+    </section>
   );
 }
+
+function ProbabilityChart({ points, outcome, loading }: { points: HistoryPoint[]; outcome: string; loading: boolean }) {
+  const clean = points.map((point) => ({ x: number(point.t), y: number(point.p) })).filter((point): point is { x: number; y: number } => point.x != null && point.y != null).sort((a, b) => a.x - b.x);
+  const path = useMemo(() => {
+    if (clean.length < 2) return '';
+    const min = clean[0].x; const max = clean[clean.length - 1].x || min + 1;
+    return clean.map((point, index) => `${index ? 'L' : 'M'} ${((point.x - min) / (max - min)) * 1000} ${240 - point.y * 240}`).join(' ');
+  }, [points]);
+  return <section className="mt-4 rounded-2xl border border-line bg-surface p-4">
+    <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">{outcome} probability</h2><span className="text-xs font-mono text-ink-3">30 days · Gate</span></div>
+    <div className="h-52 rounded-xl bg-canvas p-2">
+      {loading ? <div className="h-full animate-pulse rounded-lg bg-white/[0.03]" /> : path ? <svg viewBox="0 0 1000 240" preserveAspectRatio="none" className="h-full w-full"><defs><linearGradient id="gateArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7B4CFF" stopOpacity=".42"/><stop offset="1" stopColor="#7B4CFF" stopOpacity="0"/></linearGradient></defs><path d={`${path} L 1000 240 L 0 240 Z`} fill="url(#gateArea)"/><path d={path} fill="none" stroke="#7B4CFF" strokeWidth="4" vectorEffect="non-scaling-stroke"/></svg> : <div className="flex h-full items-center justify-center text-sm text-ink-3">Price history is not available for this outcome yet.</div>}
+    </div>
+  </section>;
+}
+
+function OrderBook({ book, outcome, loading }: { book?: Book; outcome: string; loading: boolean }) {
+  const rows = (levels?: Level[]) => (levels || []).slice(0, 8).map((level) => Array.isArray(level) ? level : [level.price || '0', level.size || '0']);
+  const asks = rows(book?.asks).reverse(); const bids = rows(book?.bids);
+  return <section className="rounded-2xl border border-line bg-surface p-4">
+    <div className="mb-3 flex justify-between"><h2 className="font-semibold">Order book</h2><span className="text-xs text-ink-3">{outcome}</span></div>
+    <div className="grid grid-cols-2 pb-2 text-[10px] font-mono uppercase text-ink-3"><span>Price</span><span className="text-right">Shares</span></div>
+    {loading && !book ? <div className="h-48 animate-pulse rounded-lg bg-canvas" /> : <>{asks.map(([price, size], index) => <BookRow key={`a-${index}`} price={price} size={size} ask />)}{asks.length > 0 && bids.length > 0 && <div className="my-2 border-t border-line" />}{bids.map(([price, size], index) => <BookRow key={`b-${index}`} price={price} size={size} />)}{asks.length + bids.length === 0 && <p className="py-8 text-center text-sm text-ink-3">No resting orders.</p>}</>}
+  </section>;
+}
+function BookRow({ price, size, ask }: { price: string; size: string; ask?: boolean }) { return <div className="grid grid-cols-2 py-1 text-sm font-mono"><span className={ask ? 'text-pink-2' : 'text-green-2'}>{Math.round(Number(price) * 100)}¢</span><span className="text-right">{Number(size).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>; }
+
+function RecentTrades({ trades, loading }: { trades: Trade[]; loading: boolean }) {
+  return <section className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface"><div className="border-b border-line px-4 py-3"><h2 className="font-semibold">Recent trades</h2></div>{loading && trades.length === 0 ? <div className="h-36 animate-pulse bg-canvas" /> : trades.length ? <div className="divide-y divide-line">{trades.slice(0, 20).map((trade, index) => <div key={trade.id || trade.trade_id || index} className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2.5 text-sm"><span>{trade.outcome || 'Outcome'}</span><span className={trade.side === 'SELL' ? 'text-pink-2' : 'text-green-2'}>{trade.side || 'TRADE'} {trade.size}</span><span className="font-mono">{number(trade.price) == null ? '—' : `${Math.round(Number(trade.price) * 100)}¢`}</span></div>)}</div> : <p className="px-4 py-8 text-center text-sm text-ink-3">No recent trades reported.</p>}</section>;
+}
+
+function MarketRules({ market }: { market: DetailMarket }) { return <section className="mt-4 rounded-2xl border border-line bg-surface p-5"><h2 className="text-lg font-semibold">Rules and resolution</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-2">{market.description || 'Gate has not published additional market rules for this market.'}</p><div className="mt-4 border-t border-line pt-4 text-sm"><span className="text-ink-3">Resolution source: </span>{market.resolutionSource ? <a href={market.resolutionSource} target="_blank" rel="noreferrer" className="break-all text-brand-2">{market.resolutionSource}</a> : <span>Provided in Gate market metadata</span>}</div>{market.winningOutcome && <div className="mt-2 text-sm"><span className="text-ink-3">Winning outcome: </span><strong>{market.winningOutcome}</strong></div>}</section>; }
+function Metric({ label, value, small }: { label: string; value: string; small?: boolean }) { return <div className="rounded-xl border border-line bg-surface p-3"><div className="text-[10px] font-mono uppercase tracking-wider text-ink-3">{label}</div><div className={`mt-1 font-semibold ${small ? 'text-sm' : 'text-lg'}`}>{value}</div></div>; }
+function StatusBadge({ status, accepting }: { status: string; accepting?: boolean }) { const label = status === 'ACTIVE' && accepting !== false ? 'Live' : status === 'RESOLVED' ? 'Resolved' : status === 'INVALIDATED' ? 'Invalidated' : 'Trading closed'; return <span className={`rounded-full px-3 py-1 text-xs font-mono uppercase ${label === 'Live' ? 'bg-green-vivid/15 text-green-2' : 'bg-white/[0.06] text-ink-3'}`}>{label}</span>; }
+function MarketSkeleton() { return <div className="mx-auto max-w-6xl px-4 py-8"><div className="h-8 w-3/4 animate-pulse rounded bg-white/[0.05]"/><div className="mt-6 h-80 animate-pulse rounded-2xl bg-white/[0.04]"/></div>; }
+function ErrorState({ retry }: { retry: () => void }) { return <div className="mx-auto max-w-lg px-6 py-20 text-center text-ink"><h1 className="text-2xl font-bold">Market unavailable</h1><p className="mt-2 text-ink-3">Gate market data could not be loaded.</p><button type="button" onClick={retry} className="mt-5 rounded-full bg-brand px-5 py-2.5 font-semibold text-white">Try again</button></div>; }
