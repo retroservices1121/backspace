@@ -6,6 +6,10 @@ export function isMarketsEntry(pathname: string): boolean {
   return pathname === MARKETS_PATH;
 }
 
+export function isPublicMarketRoute(pathname: string): boolean {
+  return isMarketsEntry(pathname) || pathname === '/m/[id]';
+}
+
 export function afterSignIn(next: unknown): string {
   return next === MARKETS_PATH ? MARKETS_PATH : '/';
 }

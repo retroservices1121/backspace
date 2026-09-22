@@ -21,7 +21,7 @@ import { AuthStatus, clearAuthSlice, setAuthId, setEmail, setStatus } from '@src
 import { RootState, useAppDispatch, useAppSelector } from '@src/store/store';
 import { autoLogin, logout } from '@src/store/userSlice';
 import { useRouter } from 'next/router';
-import { isMarketsEntry, marketsOnboarding } from '@src/lib/markets/entry';
+import { isPublicMarketRoute, marketsOnboarding } from '@src/lib/markets/entry';
 
 export default function useAuthentication() {
   const dispatch = useAppDispatch();
@@ -80,11 +80,12 @@ export default function useAuthentication() {
   useEffect(() => {
     if (!router.isReady) return;
     if (authState === AuthStatus.SignedOut) {
-      if (isMarketsEntry(router.pathname) || router.pathname.startsWith('/auth/')) return;
+      if (isPublicMarketRoute(router.pathname) || router.pathname.startsWith('/auth/')) return;
       router.push(APP.AUTH.LOGIN);
       return;
     }
     if (authState !== AuthStatus.SignedIn) return;
+    if (isPublicMarketRoute(router.pathname)) return;
     if (!fetchAttempted || bootstrapping) return;
     if (userState?.onboarded === true) return;
     if (router.pathname.includes('logout')) {

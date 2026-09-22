@@ -1,11 +1,19 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { afterSignIn, isMarketsEntry, marketsOnboarding, MARKETS_LOGIN } = require('../src/lib/markets/entry.ts');
+const { afterSignIn, isMarketsEntry, isPublicMarketRoute, marketsOnboarding, MARKETS_LOGIN } = require('../src/lib/markets/entry.ts');
 
 test('Markets entry is public without making adjacent routes public', () => {
   assert.equal(isMarketsEntry('/markets'), true);
   for (const path of ['/markets/private', '/portfolio', '/m/123', '/', '/api/markets']) {
     assert.equal(isMarketsEntry(path), false);
+  }
+});
+
+test('Market catalog and detail pages are public', () => {
+  assert.equal(isPublicMarketRoute('/markets'), true);
+  assert.equal(isPublicMarketRoute('/m/[id]'), true);
+  for (const path of ['/portfolio', '/m', '/m/private/settings', '/', '/api/markets']) {
+    assert.equal(isPublicMarketRoute(path), false);
   }
 });
 

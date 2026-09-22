@@ -9,7 +9,7 @@ import MobileTabBar from 'components/Shell/MobileTabBar';
 import { APP } from 'pages';
 import { RootState } from 'store/store';
 import { AuthStatus } from '@src/store/authSlice';
-import { isMarketsEntry } from '@src/lib/markets/entry';
+import { isPublicMarketRoute } from '@src/lib/markets/entry';
 import { SafeArea } from 'styles/layout';
 
 import AccountDrawer from './AccountDrawer';
@@ -28,7 +28,7 @@ const Navigation: React.FC = ({
       : `${pageTitle} · Backspace`;
   const router = useRouter();
   const authStatus = useSelector((state: RootState) => state.auth.status);
-  if (isMarketsEntry(router.pathname) && authStatus !== AuthStatus.SignedIn) {
+  if (isPublicMarketRoute(router.pathname) && authStatus !== AuthStatus.SignedIn) {
     return <>{children}</>;
   }
   // All /auth/* routes render bare — login, register, forgot,
