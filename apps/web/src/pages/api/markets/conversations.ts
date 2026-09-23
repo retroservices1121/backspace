@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { Permissions } from '@prisma/client';
 
 import prisma from '@src/api2/prisma';
+import { ensureGatePostReference } from '@src/lib/markets/gatePostReference';
 import { GatePredictionAdapter } from '@backspace/markets';
 
 function plainText(value: string): string {
@@ -23,6 +24,7 @@ function plainText(value: string): string {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).end();
   res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  await ensureGatePostReference();
 
   const posts = await (prisma.post as any).findMany({
     where: {

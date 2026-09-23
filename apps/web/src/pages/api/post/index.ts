@@ -8,6 +8,7 @@ import prisma from '@src/api2/prisma';
 import { Mention, MentionSource, NotificationType, Prisma } from '@prisma/client';
 import { findMentions } from '@src/lib/mention';
 import { findTokenSymbols } from '@src/lib/tokenMention';
+import { ensureGatePostReference } from '@src/lib/markets/gatePostReference';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 import { PostFormState } from '@src/types/post';
 import { Post } from '@src/types/prisma';
@@ -42,6 +43,7 @@ handler
     res.json(post);
   })
   .post(async (req, res) => {
+    await ensureGatePostReference();
     const {
       authId,
       body,
@@ -200,6 +202,7 @@ handler
     res.json(post);
   })
   .put(async (req, res) => {
+    await ensureGatePostReference();
     const {
       authId,
       body,
