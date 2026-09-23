@@ -122,7 +122,7 @@ handler
       }
     }
 
-    const newPost : Prisma.PostCreateInput = {
+    const newPost : Prisma.PostCreateInput & { gateMarketId?: string } = {
       // Posts no longer have a title in the UI (X-style composer);
       // the column is still NOT NULL in the schema, so default it.
       title: typedBody.title ?? '',
@@ -169,14 +169,9 @@ handler
           id: BigInt(typedBody.mediaId),
         },
       } : undefined,
-      // Optional Market attachment — set by the CreatePost MarketPicker.
-      // When non-null, MediaPost/ContentContainer renders the inline
-      // <PostMarketCard /> under the post text in the feed.
-      market: typedBody.marketId ? {
-        connect: {
-          id: BigInt(typedBody.marketId),
-        },
-      } : undefined,
+      // Store only Gate's stable market identifier. Market metadata and
+      // prices are fetched live when the post is rendered.
+      gateMarketId: typedBody.marketId || undefined,
       // Optional Solana spot Token attachment. Either the composer
       // explicitly picked one (TokenPicker) OR the body text contains
       // a $SYMBOL we resolved against the catalog above. When set,
@@ -210,9 +205,10 @@ handler
       body,
     } = req;
     const typedBody : PostBody = body;
-    const update : Prisma.PostUpdateInput = {
+    const update : Prisma.PostUpdateInput & { gateMarketId?: string | null } = {
       text: typedBody.text,
       enableComments: typedBody.commentsEnabled,
+      gateMarketId: typedBody.marketId || null,
       author: {
         connect: {
           authId: authId,

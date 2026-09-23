@@ -28,6 +28,7 @@ import { setPageTitle } from '@src/store/appSlice';
 import { useAppDispatch } from '@src/store/store';
 
 import { MarketGridCard } from '@src/components/Market/MarketGridCard';
+import { MarketConversationCarousel } from '@src/components/Market/MarketConversationCarousel';
 import { TrendingMarketCard } from '@src/components/Market/TrendingMarketCard';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
 
@@ -225,6 +226,7 @@ const Markets: React.FC = () => {
               </div>
             </div>
           </section>
+          <MarketConversationCarousel />
           {/* Trending hero row — only shown when not searching. */}
           {!isSearching && (
             <section className="px-4 pt-5 pb-2 sm:px-6">

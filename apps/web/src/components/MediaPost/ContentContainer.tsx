@@ -89,9 +89,9 @@ export default function ContentContainer({ post, openPost, actionLikePost }: Con
 			}
 
 			{/* Tradeable market — only renders when this post is linked to a Market row */}
-			{post.marketId && (
+			{((post as any).gateMarketId || post.marketId) && (
 				<div className="mt-2">
-					<PostMarketCard marketId={post.marketId} />
+					<PostMarketCard marketId={(post as any).gateMarketId || post.marketId} />
 				</div>
 			)}
 

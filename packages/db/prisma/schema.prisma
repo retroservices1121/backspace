@@ -223,6 +223,9 @@ model Post {
   // Optional market link — non-null posts render <MarketCard />
   market         Market?       @relation(fields: [marketId], references: [id])
   marketId       BigInt?
+  // Lightweight Gate reference. All market metadata stays live at Gate;
+  // Backspace stores only the identifier needed to connect a post to it.
+  gateMarketId   String?
   // Optional spot-token attachment — non-null posts render an inline
   // <PostTokenCard /> with a Buy CTA (Dflow Solana swaps). Mirrors the
   // market attachment pattern but for tradeable tokens rather than
@@ -231,6 +234,7 @@ model Post {
   tokenId        BigInt?
   reports        Report[]
   @@index([marketId])
+  @@index([gateMarketId])
   @@index([tokenId])
 }
 

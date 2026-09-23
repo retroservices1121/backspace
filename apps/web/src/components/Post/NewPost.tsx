@@ -156,9 +156,9 @@ export default function NewPost({ post }: Props) {
         {/* Tradeable embeds — existing components, just spaced for
             the new chrome. PostMarketCard handles binary, multi-
             outcome, and the resolved-market badge internally. */}
-        {post.marketId && (
+        {((post as any).gateMarketId || post.marketId) && (
           <div className="mt-3">
-            <PostMarketCard marketId={post.marketId} />
+            <PostMarketCard marketId={(post as any).gateMarketId || post.marketId} />
           </div>
         )}
         {(post as any).tokenId && (

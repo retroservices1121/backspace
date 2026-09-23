@@ -103,7 +103,7 @@ RUN pnpm --filter @backspace/web build
 
 ENV NODE_ENV=production
 
-# next start reads PORT from env (set by Railway). Shell form so any
-# env-var expansion in the start script works as expected.
-CMD pnpm --filter @backspace/web start
+# Apply additive schema migrations before accepting traffic, then start the
+# web service. `migrate deploy` is idempotent and only runs pending files.
+CMD pnpm --filter @backspace/db migrate:deploy && pnpm --filter @backspace/web start
 
