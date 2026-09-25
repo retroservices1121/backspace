@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery } from 'react-query';
 
 import axios from '@src/lib/axios';
+import { useLiveMarketTrades } from '@src/hooks/useLiveMarketTrades';
 import { useLiveOrderBook } from '@src/hooks/useLiveOrderBook';
 import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
@@ -19,6 +20,7 @@ type DetailMarket = MarketCardData & {
   volumeUsd?: string | null;
   volume24hUsd?: string | null;
   liquidityUsd?: string | null;
+  contractAddress?: string | null;
 };
 type Level = { price?: string; size?: string } | [string, string];
 type Book = { bids?: Level[]; asks?: Level[] };
@@ -71,8 +73,10 @@ export default function MarketDetail() {
   const selectedOutcome = market?.outcomes.find((outcome) => outcome.externalId === selectedToken)
     || market?.outcomes[0];
   const liveDepth = useLiveOrderBook(selectedOutcome?.externalId);
+  const liveTrades = useLiveMarketTrades(market?.contractAddress);
   const restBook = dataQuery.data?.books.find((item) => item.tokenId === selectedOutcome?.externalId)?.book;
   const book = liveDepth.book || restBook;
+  const trades = useMemo(() => mergeTrades(liveTrades.trades, dataQuery.data?.trades || []), [liveTrades.trades, dataQuery.data?.trades]);
   const rawHistory = dataQuery.data?.histories.find((item) => item.tokenId === selectedOutcome?.externalId)?.history;
   const history = Array.isArray(rawHistory) ? rawHistory : rawHistory?.history || [];
 
@@ -114,7 +118,7 @@ export default function MarketDetail() {
             loading={dataQuery.isLoading}
           />
           <MarketRules market={market} />
-          <RecentTrades trades={dataQuery.data?.trades || []} loading={dataQuery.isLoading} />
+          <RecentTrades trades={trades} loading={dataQuery.isLoading} live={liveTrades.connected} />
         </div>
 
         <aside className="min-w-0">
@@ -209,8 +213,18 @@ function OrderBook({ book, outcome, loading, live }: { book?: Book; outcome: str
 }
 function BookRow({ price, size, ask }: { price: string; size: string; ask?: boolean }) { return <div className="grid grid-cols-2 py-1 text-sm font-mono"><span className={ask ? 'text-pink-2' : 'text-green-2'}>{Math.round(Number(price) * 100)}¢</span><span className="text-right">{Number(size).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>; }
 
-function RecentTrades({ trades, loading }: { trades: Trade[]; loading: boolean }) {
-  return <section className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface"><div className="flex items-center justify-between border-b border-line px-4 py-3"><h2 className="font-semibold">Recent trades</h2><span className="text-[10px] font-mono uppercase tracking-wider text-ink-3">Live</span></div>{loading && trades.length === 0 ? <div className="h-36 animate-pulse bg-canvas" /> : trades.length ? <div className="divide-y divide-line">{trades.slice(0, 12).map((trade, index) => { const side = (trade.side || 'trade').toUpperCase(); return <div key={trade.id || trade.trade_id || index} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_44px] items-center gap-2 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_110px_64px]"><span className="truncate font-medium">{trade.outcome || 'Outcome'}</span><span className={`truncate text-right font-mono text-xs sm:text-sm ${side === 'SELL' ? 'text-pink-2' : 'text-green-2'}`}>{side} <span className="text-ink-2">{quantity(trade.size)}</span></span><span className="text-right font-mono text-xs sm:text-sm">{number(trade.price) == null ? '—' : `${Math.round(Number(trade.price) * 100)}¢`}</span></div>; })}</div> : <p className="px-4 py-8 text-center text-sm text-ink-3">No recent trades reported.</p>}</section>;
+function RecentTrades({ trades, loading, live }: { trades: Trade[]; loading: boolean; live: boolean }) {
+  return <section className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface"><div className="flex items-center justify-between border-b border-line px-4 py-3"><h2 className="font-semibold">Recent trades</h2><span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ink-3"><span className={`h-1.5 w-1.5 rounded-full ${live ? 'animate-pulse bg-green-2' : 'bg-ink-3'}`} />{live ? 'Live' : 'Syncing'}</span></div>{loading && trades.length === 0 ? <div className="h-36 animate-pulse bg-canvas" /> : trades.length ? <div className="divide-y divide-line">{trades.slice(0, 12).map((trade, index) => { const side = (trade.side || 'trade').toUpperCase(); return <div key={trade.id || trade.trade_id || index} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_44px] items-center gap-2 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_110px_64px]"><span className="truncate font-medium">{trade.outcome || 'Outcome'}</span><span className={`truncate text-right font-mono text-xs sm:text-sm ${side === 'SELL' ? 'text-pink-2' : 'text-green-2'}`}>{side} <span className="text-ink-2">{quantity(trade.size)}</span></span><span className="text-right font-mono text-xs sm:text-sm">{number(trade.price) == null ? '—' : `${Math.round(Number(trade.price) * 100)}¢`}</span></div>; })}</div> : <p className="px-4 py-8 text-center text-sm text-ink-3">No recent trades reported.</p>}</section>;
+}
+
+function mergeTrades(live: Trade[], snapshot: Trade[]): Trade[] {
+  const seen = new Set<string>();
+  return [...live, ...snapshot].filter((trade) => {
+    const key = trade.id || trade.trade_id || [trade.token_id, trade.created_at, trade.side, trade.price, trade.size].join(':');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 40);
 }
 
 function MarketRules({ market }: { market: DetailMarket }) { return <section className="mt-4 rounded-2xl border border-line bg-surface p-5"><h2 className="text-lg font-semibold">Rules and resolution</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-2">{market.description || 'Gate has not published additional market rules for this market.'}</p><div className="mt-4 border-t border-line pt-4 text-sm"><span className="text-ink-3">Resolution source: </span>{market.resolutionSource ? <a href={market.resolutionSource} target="_blank" rel="noreferrer" className="break-all text-brand-2">{market.resolutionSource}</a> : <span>Provided in Gate market metadata</span>}</div>{market.winningOutcome && <div className="mt-2 text-sm"><span className="text-ink-3">Winning outcome: </span><strong>{market.winningOutcome}</strong></div>}</section>; }
