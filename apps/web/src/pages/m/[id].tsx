@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -103,7 +103,13 @@ export default function MarketDetail() {
           </div>
 
           <OutcomeSelector market={market} live={live} selected={selectedOutcome?.externalId} onSelect={setSelectedToken} />
-          <ProbabilityChart points={history} outcome={selectedOutcome?.label || 'Outcome'} loading={dataQuery.isLoading} />
+          <ProbabilityChart
+            key={selectedOutcome?.externalId || 'outcome'}
+            points={history}
+            outcome={selectedOutcome?.label || 'Outcome'}
+            livePrice={selectedOutcome ? live[selectedOutcome.externalId] : null}
+            loading={dataQuery.isLoading}
+          />
           <MarketRules market={market} />
           <RecentTrades trades={dataQuery.data?.trades || []} loading={dataQuery.isLoading} />
         </div>
@@ -146,21 +152,36 @@ function OutcomeSelector({ market, live, selected, onSelect }: { market: DetailM
   );
 }
 
-function ProbabilityChart({ points, outcome, loading }: { points: HistoryPoint[]; outcome: string; loading: boolean }) {
-  const clean = points.map((point) => {
+function ProbabilityChart({ points, outcome, livePrice, loading }: { points: HistoryPoint[]; outcome: string; livePrice?: number | null; loading: boolean }) {
+  const historical = useMemo(() => points.map((point) => {
     const timestamp = number(point.t);
     return { x: timestamp != null && timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp, y: number(point.p) };
-  }).filter((point): point is { x: number; y: number } => point.x != null && point.y != null).sort((a, b) => a.x - b.x);
+  }).filter((point): point is { x: number; y: number } => point.x != null && point.y != null)
+    .sort((a, b) => a.x - b.x), [points]);
+  const [livePoints, setLivePoints] = useState<Array<{ x: number; y: number }>>([]);
+
+  useEffect(() => {
+    if (livePrice == null || !Number.isFinite(livePrice)) return;
+    const next = { x: Date.now(), y: Math.max(0, Math.min(1, livePrice)) };
+    setLivePoints((current) => {
+      const previous = current[current.length - 1];
+      if (previous?.y === next.y) return current;
+      return [...current, next].slice(-240);
+    });
+  }, [livePrice]);
+
+  const clean = useMemo(() => [...historical, ...livePoints]
+    .sort((a, b) => a.x - b.x), [historical, livePoints]);
   const path = useMemo(() => {
     if (clean.length < 2) return '';
     const min = clean[0].x; const max = clean[clean.length - 1].x || min + 1;
     return clean.map((point, index) => `${index ? 'L' : 'M'} ${((point.x - min) / (max - min)) * 1000} ${240 - point.y * 240}`).join(' ');
-  }, [points]);
+  }, [clean]);
   const latest = clean.length ? clean[clean.length - 1].y : null;
   const firstDate = clean.length ? new Date(clean[0].x).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
   const lastDate = clean.length ? new Date(clean[clean.length - 1].x).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
   return <section className="mt-4 rounded-2xl border border-line bg-surface p-4 sm:p-5">
-    <div className="mb-4 flex items-start justify-between gap-4"><div><div className="text-xs font-mono uppercase tracking-wider text-ink-3">Probability</div><h2 className="mt-1 text-lg font-semibold">{outcome}</h2></div><div className="text-right"><div className="text-3xl font-bold tracking-tight text-brand-2">{latest == null ? '—' : `${Math.round(latest * 100)}%`}</div><span className="text-[11px] font-mono text-ink-3">Live via Gate</span></div></div>
+    <div className="mb-4 flex items-start justify-between gap-4"><div><div className="text-xs font-mono uppercase tracking-wider text-ink-3">Probability</div><h2 className="mt-1 text-lg font-semibold">{outcome}</h2></div><div className="text-right"><div className="text-3xl font-bold tracking-tight text-brand-2">{latest == null ? '—' : `${Math.round(latest * 100)}%`}</div><span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-ink-3"><span className={`h-1.5 w-1.5 rounded-full ${livePrice == null ? 'bg-ink-3' : 'animate-pulse bg-green-2'}`} />{livePrice == null ? 'Connecting to Gate' : 'Live via Gate'}</span></div></div>
     <div className="relative h-56 overflow-hidden rounded-xl border border-line bg-canvas p-3">
       <div className="pointer-events-none absolute inset-x-3 top-1/4 border-t border-line/70"/><div className="pointer-events-none absolute inset-x-3 top-1/2 border-t border-line/70"/><div className="pointer-events-none absolute inset-x-3 top-3/4 border-t border-line/70"/>
       {loading ? <div className="h-full animate-pulse rounded-lg bg-white/[0.03]" /> : path ? <svg viewBox="0 0 1000 240" preserveAspectRatio="none" className="relative h-full w-full"><defs><linearGradient id="gateArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7B4CFF" stopOpacity=".42"/><stop offset="1" stopColor="#7B4CFF" stopOpacity="0"/></linearGradient></defs><path d={`${path} L 1000 240 L 0 240 Z`} fill="url(#gateArea)"/><path d={path} fill="none" stroke="#7B4CFF" strokeWidth="4" vectorEffect="non-scaling-stroke"/></svg> : <div className="flex h-full items-center justify-center px-6 text-center text-sm text-ink-3">Gate has not published enough price history to draw this chart yet.</div>}
