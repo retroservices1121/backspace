@@ -9,7 +9,7 @@ type Conversation = {
   createdAt: string;
   author: { username: string; name: string; verified: boolean };
   engagement: { likes: number; comments: number; reposts: number };
-  marketId: string;
+  marketId: string | null;
   market: { question: string; imageUrl: string | null; status: string } | null;
 };
 
@@ -93,12 +93,12 @@ function ConversationCard({ post, duplicate }: { post: Conversation; duplicate: 
       <Link href={`/post/${post.uuid}`}>
         <a tabIndex={duplicate ? -1 : 0} className="mt-3 block line-clamp-3 text-sm leading-relaxed text-ink-2 hover:text-ink">{post.text}</a>
       </Link>
-      <Link href={`/m/${post.marketId}`}>
+      {post.marketId ? <Link href={`/m/${post.marketId}`}>
         <a tabIndex={duplicate ? -1 : 0} className="mt-3 flex items-center gap-2 border-t border-line pt-3 text-xs font-medium text-brand-2">
           {post.market?.imageUrl && <img src={post.market.imageUrl} alt="" className="h-6 w-6 rounded-md object-cover" />}
           <span className="truncate">{post.market?.question || 'View live market'}</span>
         </a>
-      </Link>
+      </Link> : <div className="mt-3 border-t border-line pt-3 text-xs font-medium text-ink-3">Market conversation</div>}
     </article>
   );
 }

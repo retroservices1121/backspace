@@ -28,14 +28,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const posts = await (prisma.post as any).findMany({
     where: {
-      gateMarketId: { not: null },
       OR: [
         { profileId: { not: null } },
         { message: { channel: { readPermission: Permissions.EVERYONE } } },
       ],
     },
     orderBy: { createdAt: 'desc' },
-    take: 12,
+    take: 60,
     select: {
       uuid: true,
       text: true,
@@ -47,30 +46,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   const adapter = new GatePredictionAdapter();
-  const ids = Array.from(new Set(posts.map((post: any) => post.gateMarketId))) as string[];
-  const markets = await Promise.all(ids.map(async (id) => {
-    try {
-      return [id, await adapter.getMarket({ venue: 'GATE', externalId: id })] as const;
-    } catch {
-      return [id, null] as const;
-    }
-  }));
-  const byId = new Map(markets);
+  const catalog = await adapter.listMarkets({ limit: 100 });
+  const stop = new Set(['will', 'what', 'when', 'where', 'with', 'from', 'this', 'that', 'have', 'market', 'price', 'before', 'after']);
+  const terms = (value: string) => (value.toLowerCase().match(/[a-z0-9]+/g) || []).filter((word) => word.length >= 4 && !stop.has(word));
+  const topical = /\b(prediction|odds|election|president|bitcoin|ethereum|crypto|sports|nba|nfl|market|rate|inflation|fed)\b/i;
 
-  return res.json(posts.map((post: any) => {
-    const market = byId.get(post.gateMarketId);
+  const matches = posts.flatMap((post: any) => {
+    const text = plainText(post.text);
+    const lower = text.toLowerCase();
+    const attached = post.gateMarketId
+      ? catalog.markets.find((market) => market.externalId === post.gateMarketId)
+      : null;
+    const ranked = catalog.markets
+      .map((market) => ({ market, score: terms(`${market.question} ${market.category || ''}`).filter((term) => lower.includes(term)).length }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+    const market = attached || ranked[0]?.market || null;
+    if (!market && !topical.test(text)) return [];
     return {
       uuid: post.uuid,
       text: plainText(post.text).slice(0, 220),
       createdAt: post.createdAt,
       author: post.author,
       engagement: post._count,
-      marketId: post.gateMarketId,
+      marketId: market?.externalId || null,
       market: market ? {
         question: market.question,
         imageUrl: market.imageUrl,
         status: market.status,
       } : null,
     };
-  }));
+  }).slice(0, 12);
+
+  return res.json(matches);
 }

@@ -44,6 +44,14 @@ function money(value?: string | null) {
   if (amount == null) return '—';
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', notation: amount >= 10000 ? 'compact' : 'standard', maximumFractionDigits: amount >= 100 ? 0 : 2 }).format(amount);
 }
+function quantity(value?: string | null) {
+  const amount = number(value);
+  if (amount == null) return '—';
+  return new Intl.NumberFormat(undefined, {
+    notation: Math.abs(amount) >= 10_000 ? 'compact' : 'standard',
+    maximumFractionDigits: Math.abs(amount) < 10 ? 2 : 0,
+  }).format(amount);
+}
 function date(value: Date | string) {
   return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
@@ -139,17 +147,25 @@ function OutcomeSelector({ market, live, selected, onSelect }: { market: DetailM
 }
 
 function ProbabilityChart({ points, outcome, loading }: { points: HistoryPoint[]; outcome: string; loading: boolean }) {
-  const clean = points.map((point) => ({ x: number(point.t), y: number(point.p) })).filter((point): point is { x: number; y: number } => point.x != null && point.y != null).sort((a, b) => a.x - b.x);
+  const clean = points.map((point) => {
+    const timestamp = number(point.t);
+    return { x: timestamp != null && timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp, y: number(point.p) };
+  }).filter((point): point is { x: number; y: number } => point.x != null && point.y != null).sort((a, b) => a.x - b.x);
   const path = useMemo(() => {
     if (clean.length < 2) return '';
     const min = clean[0].x; const max = clean[clean.length - 1].x || min + 1;
     return clean.map((point, index) => `${index ? 'L' : 'M'} ${((point.x - min) / (max - min)) * 1000} ${240 - point.y * 240}`).join(' ');
   }, [points]);
-  return <section className="mt-4 rounded-2xl border border-line bg-surface p-4">
-    <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">{outcome} probability</h2><span className="text-xs font-mono text-ink-3">30 days · Gate</span></div>
-    <div className="h-52 rounded-xl bg-canvas p-2">
-      {loading ? <div className="h-full animate-pulse rounded-lg bg-white/[0.03]" /> : path ? <svg viewBox="0 0 1000 240" preserveAspectRatio="none" className="h-full w-full"><defs><linearGradient id="gateArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7B4CFF" stopOpacity=".42"/><stop offset="1" stopColor="#7B4CFF" stopOpacity="0"/></linearGradient></defs><path d={`${path} L 1000 240 L 0 240 Z`} fill="url(#gateArea)"/><path d={path} fill="none" stroke="#7B4CFF" strokeWidth="4" vectorEffect="non-scaling-stroke"/></svg> : <div className="flex h-full items-center justify-center text-sm text-ink-3">Price history is not available for this outcome yet.</div>}
+  const latest = clean.length ? clean[clean.length - 1].y : null;
+  const firstDate = clean.length ? new Date(clean[0].x).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  const lastDate = clean.length ? new Date(clean[clean.length - 1].x).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  return <section className="mt-4 rounded-2xl border border-line bg-surface p-4 sm:p-5">
+    <div className="mb-4 flex items-start justify-between gap-4"><div><div className="text-xs font-mono uppercase tracking-wider text-ink-3">Probability</div><h2 className="mt-1 text-lg font-semibold">{outcome}</h2></div><div className="text-right"><div className="text-3xl font-bold tracking-tight text-brand-2">{latest == null ? '—' : `${Math.round(latest * 100)}%`}</div><span className="text-[11px] font-mono text-ink-3">Live via Gate</span></div></div>
+    <div className="relative h-56 overflow-hidden rounded-xl border border-line bg-canvas p-3">
+      <div className="pointer-events-none absolute inset-x-3 top-1/4 border-t border-line/70"/><div className="pointer-events-none absolute inset-x-3 top-1/2 border-t border-line/70"/><div className="pointer-events-none absolute inset-x-3 top-3/4 border-t border-line/70"/>
+      {loading ? <div className="h-full animate-pulse rounded-lg bg-white/[0.03]" /> : path ? <svg viewBox="0 0 1000 240" preserveAspectRatio="none" className="relative h-full w-full"><defs><linearGradient id="gateArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7B4CFF" stopOpacity=".42"/><stop offset="1" stopColor="#7B4CFF" stopOpacity="0"/></linearGradient></defs><path d={`${path} L 1000 240 L 0 240 Z`} fill="url(#gateArea)"/><path d={path} fill="none" stroke="#7B4CFF" strokeWidth="4" vectorEffect="non-scaling-stroke"/></svg> : <div className="flex h-full items-center justify-center px-6 text-center text-sm text-ink-3">Gate has not published enough price history to draw this chart yet.</div>}
     </div>
+    {clean.length > 1 && <div className="mt-2 flex justify-between text-[11px] font-mono text-ink-3"><span>{firstDate}</span><span>{lastDate}</span></div>}
   </section>;
 }
 
@@ -165,7 +181,7 @@ function OrderBook({ book, outcome, loading }: { book?: Book; outcome: string; l
 function BookRow({ price, size, ask }: { price: string; size: string; ask?: boolean }) { return <div className="grid grid-cols-2 py-1 text-sm font-mono"><span className={ask ? 'text-pink-2' : 'text-green-2'}>{Math.round(Number(price) * 100)}¢</span><span className="text-right">{Number(size).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>; }
 
 function RecentTrades({ trades, loading }: { trades: Trade[]; loading: boolean }) {
-  return <section className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface"><div className="border-b border-line px-4 py-3"><h2 className="font-semibold">Recent trades</h2></div>{loading && trades.length === 0 ? <div className="h-36 animate-pulse bg-canvas" /> : trades.length ? <div className="divide-y divide-line">{trades.slice(0, 20).map((trade, index) => { const side = (trade.side || 'trade').toUpperCase(); return <div key={trade.id || trade.trade_id || index} className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2.5 text-sm"><span>{trade.outcome || 'Outcome'}</span><span className={side === 'SELL' ? 'text-pink-2' : 'text-green-2'}>{side} {trade.size}</span><span className="font-mono">{number(trade.price) == null ? '—' : `${Math.round(Number(trade.price) * 100)}¢`}</span></div>; })}</div> : <p className="px-4 py-8 text-center text-sm text-ink-3">No recent trades reported.</p>}</section>;
+  return <section className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface"><div className="flex items-center justify-between border-b border-line px-4 py-3"><h2 className="font-semibold">Recent trades</h2><span className="text-[10px] font-mono uppercase tracking-wider text-ink-3">Live</span></div>{loading && trades.length === 0 ? <div className="h-36 animate-pulse bg-canvas" /> : trades.length ? <div className="divide-y divide-line">{trades.slice(0, 12).map((trade, index) => { const side = (trade.side || 'trade').toUpperCase(); return <div key={trade.id || trade.trade_id || index} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_44px] items-center gap-2 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_110px_64px]"><span className="truncate font-medium">{trade.outcome || 'Outcome'}</span><span className={`truncate text-right font-mono text-xs sm:text-sm ${side === 'SELL' ? 'text-pink-2' : 'text-green-2'}`}>{side} <span className="text-ink-2">{quantity(trade.size)}</span></span><span className="text-right font-mono text-xs sm:text-sm">{number(trade.price) == null ? '—' : `${Math.round(Number(trade.price) * 100)}¢`}</span></div>; })}</div> : <p className="px-4 py-8 text-center text-sm text-ink-3">No recent trades reported.</p>}</section>;
 }
 
 function MarketRules({ market }: { market: DetailMarket }) { return <section className="mt-4 rounded-2xl border border-line bg-surface p-5"><h2 className="text-lg font-semibold">Rules and resolution</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-2">{market.description || 'Gate has not published additional market rules for this market.'}</p><div className="mt-4 border-t border-line pt-4 text-sm"><span className="text-ink-3">Resolution source: </span>{market.resolutionSource ? <a href={market.resolutionSource} target="_blank" rel="noreferrer" className="break-all text-brand-2">{market.resolutionSource}</a> : <span>Provided in Gate market metadata</span>}</div>{market.winningOutcome && <div className="mt-2 text-sm"><span className="text-ink-3">Winning outcome: </span><strong>{market.winningOutcome}</strong></div>}</section>; }
