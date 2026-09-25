@@ -51,7 +51,7 @@ export function MarketConversationCarousel() {
         <div className="rounded-2xl border border-dashed border-brand-2/30 bg-brand-soft px-5 py-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
           <div>
             <h3 className="m-0 text-sm font-semibold text-ink">The first market take could be yours.</h3>
-            <p className="mt-1 text-sm text-ink-2">Attach a live Gate market to a Backspace post and it will appear here.</p>
+            <p className="mt-1 text-sm text-ink-2">Post about a live market and relevant conversations will appear here.</p>
           </div>
           <Link href="/auth/login?next=%2Fmarkets">
             <a className="mt-4 inline-flex rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white sm:mt-0">Post a take</a>

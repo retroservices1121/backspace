@@ -3,6 +3,7 @@ import { Permissions } from '@prisma/client';
 
 import prisma from '@src/api2/prisma';
 import { ensureGatePostReference } from '@src/lib/markets/gatePostReference';
+import { matchConversationToMarket } from '@src/lib/markets/matchConversation';
 import { GatePredictionAdapter } from '@backspace/markets';
 
 function plainText(value: string): string {
@@ -47,34 +48,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const adapter = new GatePredictionAdapter();
   const catalog = await adapter.listMarkets({ limit: 100 });
-  const stop = new Set(['will', 'what', 'when', 'where', 'with', 'from', 'this', 'that', 'have', 'market', 'price', 'before', 'after']);
-  const terms = (value: string) => (value.toLowerCase().match(/[a-z0-9]+/g) || []).filter((word) => word.length >= 4 && !stop.has(word));
-  const topical = /\b(prediction|odds|election|president|bitcoin|ethereum|crypto|sports|nba|nfl|market|rate|inflation|fed)\b/i;
+  const liveMarkets = catalog.markets.filter(
+    (market) => market.status === 'ACTIVE' && market.acceptingOrders !== false,
+  );
 
   const matches = posts.flatMap((post: any) => {
     const text = plainText(post.text);
-    const lower = text.toLowerCase();
     const attached = post.gateMarketId
-      ? catalog.markets.find((market) => market.externalId === post.gateMarketId)
+      ? liveMarkets.find((market) => market.externalId === post.gateMarketId)
       : null;
-    const ranked = catalog.markets
-      .map((market) => ({ market, score: terms(`${market.question} ${market.category || ''}`).filter((term) => lower.includes(term)).length }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score);
-    const market = attached || ranked[0]?.market || null;
-    if (!market && !topical.test(text)) return [];
+    const market = attached || matchConversationToMarket(text, liveMarkets);
+    if (!market) return [];
     return {
       uuid: post.uuid,
       text: plainText(post.text).slice(0, 220),
       createdAt: post.createdAt,
       author: post.author,
       engagement: post._count,
-      marketId: market?.externalId || null,
-      market: market ? {
+      marketId: market.externalId,
+      market: {
         question: market.question,
         imageUrl: market.imageUrl,
         status: market.status,
-      } : null,
+      },
     };
   }).slice(0, 12);
 
