@@ -28,9 +28,11 @@ import { setPageTitle } from '@src/store/appSlice';
 import { useAppDispatch } from '@src/store/store';
 
 import { MarketGridCard } from '@src/components/Market/MarketGridCard';
+import { MarketEventCard } from '@src/components/Market/MarketEventCard';
 import { MarketConversationCarousel } from '@src/components/Market/MarketConversationCarousel';
 import { TrendingMarketCard } from '@src/components/Market/TrendingMarketCard';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
+import { groupMarketsByEvent } from '@src/lib/markets/groupEvents';
 
 const ALL = 'all';
 const SEARCH_MIN = 2;
@@ -160,6 +162,12 @@ const Markets: React.FC = () => {
     );
   }, [isSearching, search.data, catalog.data, category]);
 
+  const visibleEvents = useMemo(() => groupMarketsByEvent(visible), [visible]);
+  const trendingEvents = useMemo(
+    () => groupMarketsByEvent(trending.data ?? []),
+    [trending.data],
+  );
+
   const activeSortLabel = SORTS.find((s) => s.key === sort)?.label ?? 'Trending';
   const activeCategoryLabel =
     categories.find((c) => c.key === category)?.label ?? 'All categories';
@@ -255,9 +263,14 @@ const Markets: React.FC = () => {
                       className="flex-none w-[260px] h-[160px] rounded-[16px] border border-line bg-surface animate-pulse"
                     />
                   ))
-                  : (trending.data ?? []).map((m) => (
-                    <div key={`${m.venue}:${m.externalId}`} className="snap-start">
-                      <TrendingMarketCard market={m} />
+                  : trendingEvents.map((event) => (
+                    <div key={event.key} className="snap-start">
+                      <TrendingMarketCard
+                        market={{
+                          ...event.markets[0],
+                          question: event.title,
+                        }}
+                      />
                     </div>
                   ))}
               </div>
@@ -426,13 +439,12 @@ const Markets: React.FC = () => {
             {isSearching ? (
               search.isLoading ? (
                 <GridSkeleton count={6} />
-              ) : visible.length > 0 ? (
+              ) : visibleEvents.length > 0 ? (
                 <Grid>
-                  {visible.map((m) => (
-                    <MarketGridCard
-                      key={`${m.venue}:${m.externalId}`}
-                      market={m}
-                    />
+                  {visibleEvents.map((event) => event.markets.length > 1 ? (
+                    <MarketEventCard key={event.key} event={event} />
+                  ) : (
+                    <MarketGridCard key={event.key} market={event.markets[0]} />
                   ))}
                 </Grid>
               ) : (
@@ -448,13 +460,12 @@ const Markets: React.FC = () => {
               />
             ) : catalog.isLoading ? (
               <GridSkeleton count={9} />
-            ) : visible.length > 0 ? (
+            ) : visibleEvents.length > 0 ? (
               <Grid>
-                {visible.map((m) => (
-                  <MarketGridCard
-                    key={`${m.venue}:${m.externalId}`}
-                    market={m}
-                  />
+                {visibleEvents.map((event) => event.markets.length > 1 ? (
+                  <MarketEventCard key={event.key} event={event} />
+                ) : (
+                  <MarketGridCard key={event.key} market={event.markets[0]} />
                 ))}
               </Grid>
             ) : (

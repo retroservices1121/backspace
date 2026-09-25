@@ -23,6 +23,10 @@ export type VenueOutcome = {
 };
 
 export type VenueMarket = VenueMarketRef & {
+  // Gate groups related contracts under one event. Keep these identifiers in
+  // the live response so catalog clients can present the event hierarchy.
+  eventId?: string | null;
+  eventTitle?: string | null;
   question: string;
   description: string;
   category: string | null;

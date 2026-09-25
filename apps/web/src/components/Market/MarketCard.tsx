@@ -37,6 +37,8 @@ export type MarketCardData = {
   id: string;
   venue: 'GATE' | 'AZURO' | 'INTERNAL';
   externalId: string;
+  eventId?: string | null;
+  eventTitle?: string | null;
   question: string;
   category: string | null;
   imageUrl: string | null;

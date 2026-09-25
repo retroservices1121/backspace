@@ -36,7 +36,7 @@ type GateMarket = {
   end_time?: number;
   event_icon_url?: string;
   event_id?: string;
-  event_title?: string;
+  event_title?: Localized;
   icon?: string;
   image?: string;
   last_trade_price?: string;
@@ -65,6 +65,15 @@ type GateMarketPage = {
   total?: number;
 };
 
+type GateEvent = {
+  event_id?: string;
+  title?: Localized;
+};
+
+type GateEventPage = {
+  items?: GateEvent[];
+};
+
 /** Public Prediction Markets adapter for Gate DexBuilder. */
 export class GatePredictionAdapter implements MarketVenue {
   readonly id = 'GATE' as const;
@@ -84,9 +93,23 @@ export class GatePredictionAdapter implements MarketVenue {
     if (args.cursor) qs.set('cursor', args.cursor);
     if (args.category) qs.set('tag_slug', args.category);
 
-    const page = await this.fetchJson<GateMarketPage>(`/markets?${qs.toString()}`);
+    const [page, eventPage] = await Promise.all([
+      this.fetchJson<GateMarketPage>(`/markets?${qs.toString()}`),
+      this.fetchJson<GateEventPage>('/events?limit=200&active=true&closed=false')
+        .catch(() => ({ items: [] })),
+    ]);
+    const eventTitles = new Map(
+      (eventPage.items ?? []).flatMap((event) => {
+        const title = localizedText(event.title);
+        return event.event_id && title ? [[event.event_id, title] as const] : [];
+      }),
+    );
     const markets = (page.items ?? [])
-      .map(mapMarket)
+      .map((market) => mapMarket({
+        ...market,
+        event_title: localizedText(market.event_title)
+          || (market.event_id ? eventTitles.get(market.event_id) : null),
+      }))
       .filter((market): market is VenueMarket => market !== null)
       .filter((market) => market.status === 'ACTIVE')
       .filter((market) =>
@@ -143,7 +166,7 @@ export class GatePredictionAdapter implements MarketVenue {
 
 function mapMarket(raw: GateMarket): VenueMarket | null {
   if (!raw.market_id) return null;
-  const question = localizedText(raw.question) || raw.title || raw.event_title;
+  const question = localizedText(raw.question) || raw.title || localizedText(raw.event_title);
   const closesAt = unixDate(raw.end_date ?? raw.end_time);
   if (!question || !closesAt) return null;
 
@@ -165,6 +188,8 @@ function mapMarket(raw: GateMarket): VenueMarket | null {
   return {
     venue: 'GATE',
     externalId: raw.market_id,
+    eventId: raw.event_id || null,
+    eventTitle: localizedText(raw.event_title),
     question,
     description: localizedText(raw.description) || '',
     category: raw.category || firstTag(raw.tags),
