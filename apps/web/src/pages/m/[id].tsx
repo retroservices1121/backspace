@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery } from 'react-query';
 
 import axios from '@src/lib/axios';
+import { useLiveOrderBook } from '@src/hooks/useLiveOrderBook';
 import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
@@ -69,7 +70,9 @@ export default function MarketDetail() {
 
   const selectedOutcome = market?.outcomes.find((outcome) => outcome.externalId === selectedToken)
     || market?.outcomes[0];
-  const book = dataQuery.data?.books.find((item) => item.tokenId === selectedOutcome?.externalId)?.book;
+  const liveDepth = useLiveOrderBook(selectedOutcome?.externalId);
+  const restBook = dataQuery.data?.books.find((item) => item.tokenId === selectedOutcome?.externalId)?.book;
+  const book = liveDepth.book || restBook;
   const rawHistory = dataQuery.data?.histories.find((item) => item.tokenId === selectedOutcome?.externalId)?.history;
   const history = Array.isArray(rawHistory) ? rawHistory : rawHistory?.history || [];
 
@@ -116,7 +119,12 @@ export default function MarketDetail() {
 
         <aside className="min-w-0">
           <div className="sticky top-20 space-y-4">
-            <OrderBook book={book} outcome={selectedOutcome?.label || 'Outcome'} loading={dataQuery.isLoading} />
+            <OrderBook
+              book={book}
+              outcome={selectedOutcome?.label || 'Outcome'}
+              loading={dataQuery.isLoading && !liveDepth.book}
+              live={liveDepth.connected && Boolean(liveDepth.book)}
+            />
             <section className="rounded-2xl border border-line bg-surface p-5">
               <h2 className="text-lg font-semibold">Trading through Gate</h2>
               <p className="mt-2 text-sm leading-relaxed text-ink-3">
@@ -190,11 +198,11 @@ function ProbabilityChart({ points, outcome, livePrice, loading }: { points: His
   </section>;
 }
 
-function OrderBook({ book, outcome, loading }: { book?: Book; outcome: string; loading: boolean }) {
+function OrderBook({ book, outcome, loading, live }: { book?: Book; outcome: string; loading: boolean; live: boolean }) {
   const rows = (levels?: Level[]) => (levels || []).slice(0, 8).map((level) => Array.isArray(level) ? level : [level.price || '0', level.size || '0']);
   const asks = rows(book?.asks).reverse(); const bids = rows(book?.bids);
   return <section className="rounded-2xl border border-line bg-surface p-4">
-    <div className="mb-3 flex justify-between"><h2 className="font-semibold">Order book</h2><span className="text-xs text-ink-3">{outcome}</span></div>
+    <div className="mb-3 flex items-start justify-between gap-3"><div><h2 className="font-semibold">Order book</h2><span className="text-xs text-ink-3">{outcome}</span></div><span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ink-3"><span className={`h-1.5 w-1.5 rounded-full ${live ? 'animate-pulse bg-green-2' : 'bg-ink-3'}`} />{live ? 'Live' : 'Syncing'}</span></div>
     <div className="grid grid-cols-2 pb-2 text-[10px] font-mono uppercase text-ink-3"><span>Price</span><span className="text-right">Shares</span></div>
     {loading && !book ? <div className="h-48 animate-pulse rounded-lg bg-canvas" /> : <>{asks.map(([price, size], index) => <BookRow key={`a-${index}`} price={price} size={size} ask />)}{asks.length > 0 && bids.length > 0 && <div className="my-2 border-t border-line" />}{bids.map(([price, size], index) => <BookRow key={`b-${index}`} price={price} size={size} />)}{asks.length + bids.length === 0 && <p className="py-8 text-center text-sm text-ink-3">No resting orders.</p>}</>}
   </section>;
