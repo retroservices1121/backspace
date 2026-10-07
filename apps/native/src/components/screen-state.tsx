@@ -1,0 +1,6 @@
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors } from '@/constants/theme';
+import { RefreshIcon } from './icons';
+export function LoadingState({ label = 'Loading live data' }: { label?: string }) { return <View style={styles.root}><ActivityIndicator color={colors.brand2} size="large" /><Text style={styles.copy}>{label}</Text></View>; }
+export function EmptyState({ title, message, onRetry }: { title: string; message: string; onRetry?: () => void }) { return <View style={styles.root}><Text style={styles.title}>{title}</Text><Text style={styles.copy}>{message}</Text>{onRetry ? <Pressable onPress={onRetry} style={styles.button}><RefreshIcon color={colors.ink} width={18} height={18} /><Text style={styles.buttonText}>Try again</Text></Pressable> : null}</View>; }
+const styles = StyleSheet.create({ root: { flex: 1, minHeight: 260, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }, title: { color: colors.ink, fontSize: 20, fontWeight: '800', textAlign: 'center' }, copy: { color: colors.ink3, fontSize: 14, lineHeight: 21, textAlign: 'center' }, button: { marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 999, backgroundColor: colors.brand, paddingHorizontal: 16, paddingVertical: 11 }, buttonText: { color: colors.ink, fontWeight: '700' } });

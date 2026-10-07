@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Backspace",
+    "slug": "backspace-native",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/backspace-icon.png",
+    "scheme": "backspace",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#08070D",
+    "ios": {
+      "bundleIdentifier": "to.backspace.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#08070D",
+        "foregroundImage": "./assets/images/backspace-icon.png"
+      },
+      "package": "to.backspace.app",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/backspace-icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#08070D",
+          "image": "./assets/images/backspace-icon.png",
+          "imageWidth": 96
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
