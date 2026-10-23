@@ -13,8 +13,7 @@
 //
 // Solana stays cdp-hooks-only because wagmi is EVM-only. CDP exposes
 // arbitrary Solana transaction signing through `useSignSolanaTransaction`
-// + `useSendSolanaTransaction`, which is enough for Dflow swaps and
-// future Phoenix orders.
+// + `useSendSolanaTransaction`, which is enough for Dflow swaps.
 //
 // Sharp edges:
 //   - `getEthersSigner()` returns an ethers v5 JsonRpcSigner wrapping

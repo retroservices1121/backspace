@@ -4,12 +4,12 @@
 # (apps/web/src/pages/api/cron/import-dflow.ts) does the work and owns
 # the DATABASE_URL. This workflow is just the scheduler.
 #
-# Setup (one-time, same as cron-import.yml):
+# Setup (one-time, in Settings -> Secrets and variables -> Actions):
 #   - Secret  CRON_SECRET     — same value as the web service env var.
 #   - Variable CRON_BASE_URL   — Railway origin (e.g. *.up.railway.app).
 #
-# Cadence: Dflow's tradeable-mint set doesn't churn the way Polymarket
-# markets do — once an hour is more than enough.
+# Cadence: Dflow's tradeable-mint set doesn't churn quickly — once an
+# hour is more than enough.
 name: Dflow token catalog import
 
 on:

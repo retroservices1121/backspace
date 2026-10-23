@@ -73,7 +73,7 @@ export type SolanaWallet = {
    *  themselves. Matches the @solana/web3.js wallet-adapter convention. */
   signTransaction: <T = unknown>(transaction: T) => Promise<T>;
   /** Sign + broadcast. Returns the txid (base58 signature). Used by
-   *  Dflow / Phoenix where the SDK hands us a fully-built tx and we
+   *  Dflow where the SDK hands us a fully-built tx and we
    *  want to delegate broadcast to the provider's RPC. */
   signAndSendTransaction?: <T = unknown>(transaction: T) => Promise<string>;
   /** Sign a UTF-8 message. Used for SIWS-style auth. */

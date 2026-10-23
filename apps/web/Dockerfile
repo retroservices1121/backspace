@@ -27,7 +27,7 @@ COPY . .
 
 # Scope the install to @backspace/web and its workspace + npm deps.
 # Skips landing-only deps like resend, and avoids reinstalling deps for
-# apps/admin or apps/mobile that this service does not run.
+# apps/admin that this service does not run.
 RUN pnpm install --frozen-lockfile --filter @backspace/web...
 
 # Next 12's verifyTypeScriptSetup pre-flight calls require.resolve(
@@ -46,8 +46,7 @@ RUN pnpm --filter @backspace/db generate
 # service variables to a Dockerfile build only when declared as ARG, so
 # without these the bundle bakes `undefined` — PrivyProvider never
 # mounts, usePrivy() stays ready:false, the Solana RPC falls back to
-# the public mainnet-beta endpoint (403s), and the Phoenix Flight
-# config has no builder authority. Promote each ARG to ENV so
+# the public mainnet-beta endpoint (403s). Promote each ARG to ENV so
 # `next build` sees it.
 #
 # Adding an ARG also invalidates the downstream Docker layer cache
@@ -66,18 +65,11 @@ ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
 ARG NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 ARG NEXT_PUBLIC_FIREBASE_APP_ID
-# Solana — shared RPC URL for Dflow, Phoenix, and the wallet spike.
+# Solana — shared RPC URL for Dflow and the wallet code.
 ARG NEXT_PUBLIC_SOLANA_RPC_URL
-# EVM wallet RPC
-ARG NEXT_PUBLIC_POLYGON_RPC_URL
 # Dflow spot trading (browser-side display values; the API key
 # itself is server-only via the /api/dflow/* proxy, not declared here).
 ARG NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS
-# Phoenix Rise perpetuals — Flight builder config
-ARG NEXT_PUBLIC_PHOENIX_BUILDER_AUTHORITY
-ARG NEXT_PUBLIC_PHOENIX_BUILDER_PDA_INDEX
-ARG NEXT_PUBLIC_PHOENIX_BUILDER_SUBACCOUNT_INDEX
-ARG NEXT_PUBLIC_PHOENIX_BUILDER_FEE_BPS
 ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID \
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY \
     NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
@@ -92,12 +84,7 @@ ENV NEXT_PUBLIC_PRIVY_APP_ID=$NEXT_PUBLIC_PRIVY_APP_ID \
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID \
     NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID \
     NEXT_PUBLIC_SOLANA_RPC_URL=$NEXT_PUBLIC_SOLANA_RPC_URL \
-    NEXT_PUBLIC_POLYGON_RPC_URL=$NEXT_PUBLIC_POLYGON_RPC_URL \
-    NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS=$NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS \
-    NEXT_PUBLIC_PHOENIX_BUILDER_AUTHORITY=$NEXT_PUBLIC_PHOENIX_BUILDER_AUTHORITY \
-    NEXT_PUBLIC_PHOENIX_BUILDER_PDA_INDEX=$NEXT_PUBLIC_PHOENIX_BUILDER_PDA_INDEX \
-    NEXT_PUBLIC_PHOENIX_BUILDER_SUBACCOUNT_INDEX=$NEXT_PUBLIC_PHOENIX_BUILDER_SUBACCOUNT_INDEX \
-    NEXT_PUBLIC_PHOENIX_BUILDER_FEE_BPS=$NEXT_PUBLIC_PHOENIX_BUILDER_FEE_BPS
+    NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS=$NEXT_PUBLIC_DFLOW_PLATFORM_FEE_BPS
 
 RUN pnpm --filter @backspace/web build
 
