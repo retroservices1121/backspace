@@ -48,7 +48,7 @@ All Gate and market UI lives in `src/features/markets/` (screens, cards, chart, 
 
 In the app, `src/lib/api/client.ts` builds the singleton client from `EXPO_PUBLIC_BACKSPACE_API_URL` (default `https://backspace.to/api`) and `expo/fetch`. `ApiSessionBridge` supplies the session's access token. Query keys are in `src/lib/api/query-keys.ts`. `useMe()` (`src/hooks/use-me.ts`) loads the signed-in user under the key `['me']`. `null` means the person is signed in but has not created a Backspace profile yet.
 
-Metro resolves both packages through the pnpm workspace with the default Expo SDK 57 monorepo support. `metro.config.js` only keeps a small custom `resolveRequest` for `isows`, `zustand` and `jose`.
+Metro resolves both packages through the pnpm workspace with the default Expo SDK 57 monorepo support. `metro.config.js` keeps a small custom `resolveRequest` for `isows`, `zustand` and `jose`. It also adds the markets flag to Metro's `cacheVersion`, because Metro's transform cache does not otherwise notice `EXPO_PUBLIC_*` changes and would reuse modules built with the old flag value. If you add another build-time flag, add it there too.
 
 ## Run locally
 
