@@ -75,15 +75,17 @@ Submit (`completeOnboarding()` in `@backspace/api-client`, in this order):
 2. Avatar, now that the User row exists (`/media/upload-url` looks the caller up):
    - Photo picked: `POST /api/media/upload-url` with `{ type: 'AVATAR', id: uuid, fileName, contentType }`, then a `PUT` of the bytes to the returned presigned R2 URL with only `Content-Type` set (no Bearer token, not through the API client; `src/lib/media/avatar-upload.ts`), then `POST /api/media` with `{ type: 'AVATAR', host: 'R2', path, fileExtension, avatarUser: { connect: { authId } } }`.
    - No photo: `POST /api/media` with `path: default/user/<1–16>.png` and `fileExtension: 'PNG'` (web `defaultAvatar()`), with no upload.
-   - **Deliberate difference from web:** if any step of the photo upload fails, native writes the default avatar row instead and shows "Photo not uploaded". Web writes no Media row in that case.
+   - **Deliberate difference from web:** if any step of the photo upload fails, native writes the default avatar row instead and, once that write succeeds, shows "Photo not uploaded". Web writes no Media row in that case.
+   - If no Media row could be written at all (photo and default both failed), nothing else runs and the screen stays on onboarding (step 5).
 3. `POST /api/private` (first token of the display name as `firstName`, the rest as `lastName`, email, and `dobYear`/`dobMonth`/`dobDay` only when a date was picked; the server defaults to 1/1/1900 otherwise) and `POST /api/userstate` (`onboarded: true`) in parallel.
-4. Only then seeds and refetches `['me']` and replaces to Communities. Once `['me']` is non-null the auth gate leaves onboarding, so nothing touches it until the avatar row has been written.
+4. Only once a Media row exists and `/private` succeeded does it seed and refetch `['me']` and replace to Communities. Once `['me']` is non-null the auth gate leaves onboarding, so nothing touches it before then. A failed `/userstate` alone is best effort.
+5. Retry: if the Media row or `/private` failed after `POST /api/user` succeeded, the screen keeps the created user, shows the failure inline, locks the username and display name, and turns the button into "Try again", which calls `runOnboardingFollowUps()` with only the outstanding writes (media first). `POST /api/user` is never repeated. When only `/private` is outstanding, "Continue without saving these details" leaves without it.
 
 The server decides whether a profile can be created. If `POST /api/user` fails, the server's `message` is shown inline as-is; the client does not special-case error codes. "Use a different account" signs out and returns to sign-in.
 
 Known gaps compared with web:
 
-- Media, `/private` and `/userstate` failures after the User row exists are not retried, and only a failed photo upload is shown, because the profile is already usable and retrying `POST /api/user` would collide with the new row.
+- A failed `/userstate` is not retried or shown.
 - The photo picker and date picker are native modules (`expo-image-picker`, `@expo/ui`), so they need a development build, not Expo Go.
 
 ### Permissions

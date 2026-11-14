@@ -42,13 +42,13 @@ export interface AvatarUpload {
   put(uploadUrl: string, contentType: string): Promise<void>;
 }
 
-export interface CompleteOnboardingInput {
+/** Everything the writes after POST /user need. `uuid` and `authId` belong to the User row. */
+export interface OnboardingFollowUpInput {
   /** Privy user id (DID). */
   authId: string;
-  username: string;
-  displayName: string;
-  /** Freshly generated v4 UUID for the new User row; also the avatar owner id. */
+  /** UUID of the User row; also the avatar owner id. */
   uuid: string;
+  displayName: string;
   email?: string | null;
   /** Picked profile photo. Omitted or null → a random stock default avatar, like web. */
   avatar?: AvatarUpload | null;
@@ -56,14 +56,32 @@ export interface CompleteOnboardingInput {
   dateOfBirth?: SimpleDate | null;
 }
 
+export interface CompleteOnboardingInput extends OnboardingFollowUpInput {
+  username: string;
+  /** Freshly generated v4 UUID for the new User row; also the avatar owner id. */
+  uuid: string;
+}
+
 export type OnboardingFollowUp = 'media' | 'private' | 'userstate';
 
-export interface CompleteOnboardingResult {
-  user: User;
-  /** True when a picked photo could not be uploaded or saved and the default avatar was used instead. */
+/** Every write that follows POST /user, in the order they run. */
+export const ONBOARDING_FOLLOW_UPS: readonly OnboardingFollowUp[] = ['media', 'private', 'userstate'];
+
+export interface OnboardingFollowUpResult {
+  /**
+   * True only when a picked photo could not be uploaded or saved and the stock default avatar row was then
+   * written instead. Always false when no Media row was written.
+   */
   photoUploadFailed: boolean;
-  /** Follow-up writes that failed after the User row was created. `'media'` means no avatar row at all. */
+  /**
+   * Follow-ups still outstanding. If `'media'` is present no avatar row exists and nothing after it was
+   * attempted: the whole remaining list comes back, media first, so it can be retried as-is.
+   */
   failedFollowUps: OnboardingFollowUp[];
+}
+
+export interface CompleteOnboardingResult extends OnboardingFollowUpResult {
+  user: User;
 }
 
 /** Splits a display name into first name (first token) and last name (the remainder, possibly empty). */
@@ -80,37 +98,40 @@ async function uploadAvatar(client: ApiClient, avatar: AvatarUpload, ownerId: st
   await createAvatarMedia(client, { type: 'AVATAR', host: MEDIA_HOST, path, fileExtension: avatar.fileExtension, avatarUser: { connect: { authId } } });
 }
 
-/**
- * Mirrors the web onboarding submit (apps/web/src/hooks/useOnboarding.ts): POST /user, then the avatar
- * Media row, then POST /private and POST /userstate in parallel.
- *
- * The avatar is attached before returning so the caller can wait for it before leaving onboarding.
- * Unlike web (which writes no Media row when an upload fails), a failed photo falls back to the stock
- * default avatar and sets `photoUploadFailed`.
- *
- * Once the User row exists the profile is usable, so every follow-up is best effort. Failures are
- * reported in `failedFollowUps` instead of thrown: retrying POST /user would only collide with the row
- * that was just created.
- */
-export async function completeOnboarding(client: ApiClient, input: CompleteOnboardingInput): Promise<CompleteOnboardingResult> {
-  const user = await createUser(client, { username: input.username, name: input.displayName, authId: input.authId, uuid: input.uuid });
-  const failedFollowUps: OnboardingFollowUp[] = [];
-
-  let photoUploadFailed = false;
-  let hasAvatar = false;
+/** Writes the avatar Media row: the picked photo, else (or if that fails) the stock default. Throws if neither is written. */
+async function attachAvatar(client: ApiClient, input: OnboardingFollowUpInput): Promise<{ photoUploadFailed: boolean }> {
   if (input.avatar) {
     try {
       await uploadAvatar(client, input.avatar, input.uuid, input.authId);
-      hasAvatar = true;
+      return { photoUploadFailed: false };
     } catch {
-      photoUploadFailed = true;
+      // Fall through to the default avatar.
     }
   }
-  if (!hasAvatar) {
+  await createDefaultAvatarMedia(client, input.authId);
+  return { photoUploadFailed: Boolean(input.avatar) };
+}
+
+/**
+ * Runs the writes that follow POST /user: all of them by default, or only those a previous attempt left
+ * outstanding. The avatar Media row goes first and gates the rest: if neither the picked photo nor the
+ * default avatar can be written, nothing else runs and the full remaining list is returned. After that,
+ * POST /private and POST /userstate run in parallel and failures are reported, not thrown.
+ *
+ * Never calls POST /user, so it is safe to retry once the User row exists.
+ */
+export async function runOnboardingFollowUps(
+  client: ApiClient,
+  input: OnboardingFollowUpInput,
+  followUps: readonly OnboardingFollowUp[] = ONBOARDING_FOLLOW_UPS,
+): Promise<OnboardingFollowUpResult> {
+  const remaining = ONBOARDING_FOLLOW_UPS.filter((step) => followUps.includes(step));
+  let photoUploadFailed = false;
+  if (remaining.includes('media')) {
     try {
-      await createDefaultAvatarMedia(client, input.authId);
+      ({ photoUploadFailed } = await attachAvatar(client, input));
     } catch {
-      failedFollowUps.push('media');
+      return { photoUploadFailed: false, failedFollowUps: remaining };
     }
   }
 
@@ -118,16 +139,35 @@ export async function completeOnboarding(client: ApiClient, input: CompleteOnboa
   const { firstName, lastName } = splitDisplayName(input.displayName);
   const dob = input.dateOfBirth;
   const [privateResult, stateResult] = await Promise.allSettled([
-    createPrivate(client, {
-      user: connect,
-      firstName,
-      lastName,
-      ...(input.email ? { email: input.email } : {}),
-      ...(dob ? { dobYear: dob.year, dobMonth: dob.month, dobDay: dob.day } : {}),
-    }),
-    createUserState(client, { user: connect, onboarded: true }),
+    remaining.includes('private')
+      ? createPrivate(client, {
+          user: connect,
+          firstName,
+          lastName,
+          ...(input.email ? { email: input.email } : {}),
+          ...(dob ? { dobYear: dob.year, dobMonth: dob.month, dobDay: dob.day } : {}),
+        })
+      : Promise.resolve(),
+    remaining.includes('userstate') ? createUserState(client, { user: connect, onboarded: true }) : Promise.resolve(),
   ]);
+  const failedFollowUps: OnboardingFollowUp[] = [];
   if (privateResult.status === 'rejected') failedFollowUps.push('private');
   if (stateResult.status === 'rejected') failedFollowUps.push('userstate');
-  return { user, photoUploadFailed, failedFollowUps };
+  return { photoUploadFailed, failedFollowUps };
+}
+
+/**
+ * Mirrors the web onboarding submit (apps/web/src/hooks/useOnboarding.ts): POST /user, then the avatar
+ * Media row, then POST /private and POST /userstate in parallel (see `runOnboardingFollowUps`).
+ *
+ * Unlike web (which writes no Media row when an upload fails), a failed photo falls back to the stock
+ * default avatar, and `photoUploadFailed` is set once that default row has been written.
+ *
+ * Once the User row exists, follow-up failures are reported in `failedFollowUps` instead of thrown:
+ * retrying POST /user would only collide with the row that was just created. Retry them with
+ * `runOnboardingFollowUps(client, input, failedFollowUps)`.
+ */
+export async function completeOnboarding(client: ApiClient, input: CompleteOnboardingInput): Promise<CompleteOnboardingResult> {
+  const user = await createUser(client, { username: input.username, name: input.displayName, authId: input.authId, uuid: input.uuid });
+  return { user, ...(await runOnboardingFollowUps(client, input)) };
 }
