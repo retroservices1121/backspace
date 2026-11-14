@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { cents, leadingOutcome, money, type EventGroup, type Market } from '@/lib/gate';
 import { colors, radii } from '@/constants/theme';
-import { ChevronRightIcon } from './icons';
+import { ChevronRightIcon } from '@/components/icons';
 
 export function MarketCard({ market }: { market: Market }) {
   const leader = leadingOutcome(market);
