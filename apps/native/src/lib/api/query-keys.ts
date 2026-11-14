@@ -4,6 +4,4 @@
  */
 export const queryKeys = {
   me: ['me'] as const,
-  /** GET /waitlist/me, used by onboarding to prefill a reserved username. */
-  waitlistMe: ['waitlist', 'me'] as const,
 };

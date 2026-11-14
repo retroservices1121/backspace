@@ -81,8 +81,8 @@ export function createApiClient({ baseUrl, getToken, fetch }: ApiClientOptions):
       const details = isRecord(json) ? json : {};
       const serverMessage = stringField(details, 'message');
       const message = serverMessage ?? stringField(details, 'error') ?? `Request failed (${response.status}).`;
-      // Some routes send `{ error: '<code>', message: '<copy>' }` (e.g. 403 not_on_waitlist); when both are
-      // present `error` is the machine-readable code.
+      // Some routes send `{ error: '<code>', message: '<copy>' }`; when both are present `error` is the
+      // machine-readable code.
       const code = stringField(details, 'code') ?? (serverMessage ? stringField(details, 'error') : undefined);
       throw new ApiError(response.status, message, code);
     }

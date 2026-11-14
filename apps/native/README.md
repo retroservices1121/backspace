@@ -62,20 +62,17 @@ The root `Stack` wraps each group of routes in `Stack.Protected` keyed on that s
 
 `src/app/onboarding.tsx` mirrors the web onboarding (`apps/web/src/pages/auth/onboarding.tsx`, `hooks/useOnboarding.ts`) with a minimal form:
 
-1. Prefills the username from `GET /api/waitlist/me` when `found` and a username is present.
-2. Validates locally with `@backspace/usernames` (3–20 characters, starts with a letter, letters/numbers/single underscores, not reserved or trademarked). A handle matching the caller's own waitlist reservation skips the local check, because the server treats it as available. Display name is required (max 50).
-3. Calls `GET /api/waitlist/check?u=` (format, taken, reserved) before submitting.
-4. `POST /api/user` with `{ username, name, authId, uuid }` (`name` is the display name, `authId` the Privy user id, `uuid` from `expo-crypto`), then `POST /api/private` (first token of the display name as `firstName`, the rest as `lastName`, plus email) and `POST /api/userstate` (`onboarded: true`) in parallel. These are `completeOnboarding()` and related helpers in `@backspace/api-client`.
-5. Seeds and refetches `['me']`, then replaces to Communities.
+1. Validates locally with `@backspace/usernames` (3–20 characters, starts with a letter, letters/numbers/single underscores, not on that package's reserved or trademark lists). Display name is required (max 50).
+2. `POST /api/user` with `{ username, name, authId, uuid }` (`name` is the display name, `authId` the Privy user id, `uuid` from `expo-crypto`), then `POST /api/private` (first token of the display name as `firstName`, the rest as `lastName`, plus email) and `POST /api/userstate` (`onboarded: true`) in parallel. These are `completeOnboarding()` and related helpers in `@backspace/api-client`.
+3. Seeds and refetches `['me']`, then replaces to Communities.
 
-Errors are shown inline. The private-beta 403 `not_on_waitlist` shows "Backspace is in private beta — join the waitlist to get access.", and a 409 waitlist reservation conflict shows on the username field. "Use a different account" signs out and returns to sign-in.
+The server decides whether a profile can be created. If `POST /api/user` fails, the server's `message` is shown inline as-is; the client does not special-case error codes. "Use a different account" signs out and returns to sign-in.
 
 Known gaps compared with web:
 
 - No avatar upload, and no default-avatar `POST /api/media` row.
 - No date of birth.
 - `/private` and `/userstate` failures after the User row exists are not retried or shown, because the profile is already usable and retrying `POST /api/user` would collide with the new row.
-- Account creation still depends on the server's waitlist gate.
 
 ## Feature flags
 
@@ -90,7 +87,7 @@ All Gate and market UI lives in `src/features/markets/` (screens, cards, chart, 
 ## Workspace packages
 
 - **`packages/shared` (`@backspace/shared`)**: brand colour, radius and spacing tokens, matching the "new design tokens" in `apps/web/tailwind.config.js`. It is source-only TypeScript and stays TS 4.6 compatible so `apps/web` can use it. `src/constants/theme.ts` re-exports it.
-- **`packages/api-client` (`@backspace/api-client`)**: `createApiClient({ baseUrl, getToken, fetch })` with `request<T>(path, { method, body, schema, auth })`, zod response schemas, and endpoints such as `getSelf` and the onboarding helpers (`getWaitlistMe`, `checkUsername`, `completeOnboarding`). It throws `ApiError(status, message, code?)` (`401` → `unauthorized`) and never logs tokens or bodies. It has no React or Expo imports.
+- **`packages/api-client` (`@backspace/api-client`)**: `createApiClient({ baseUrl, getToken, fetch })` with `request<T>(path, { method, body, schema, auth })`, zod response schemas, and endpoints such as `getSelf` and the onboarding helpers (`completeOnboarding`, `createUser`, `createPrivate`, `createUserState`). It throws `ApiError(status, message, code?)` (`401` → `unauthorized`) and never logs tokens or bodies. It has no React or Expo imports.
 
 In the app, `src/lib/api/client.ts` builds the singleton client from `EXPO_PUBLIC_BACKSPACE_API_URL` (default `https://backspace.to/api`) and `expo/fetch`. `ApiSessionBridge` supplies the session's access token. Query keys are in `src/lib/api/query-keys.ts`. `useMe()` (`src/hooks/use-me.ts`) loads the signed-in user under the key `['me']`. `null` means the person is signed in but has not created a Backspace profile yet (the auth gate routes them to onboarding). Username rules come from the `@backspace/usernames` workspace package.
 

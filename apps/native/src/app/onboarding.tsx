@@ -1,6 +1,6 @@
-import { checkUsername, completeOnboarding, getWaitlistMe, isApiError } from '@backspace/api-client';
-import { normalizeUsername, REJECTION_COPY, USERNAME_MAX_LENGTH, validateUsernameFormat } from '@backspace/usernames';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { completeOnboarding } from '@backspace/api-client';
+import { REJECTION_COPY, USERNAME_MAX_LENGTH, validateUsernameFormat } from '@backspace/usernames';
+import { useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -14,7 +14,6 @@ import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/query-keys';
 
 const DISPLAY_NAME_MAX_LENGTH = 50;
-const NOT_ON_WAITLIST = 'Backspace is in private beta — join the waitlist to get access.';
 
 /**
  * First-run profile setup, mirroring apps/web/src/pages/auth/onboarding.tsx with a minimal form
@@ -23,23 +22,17 @@ const NOT_ON_WAITLIST = 'Backspace is in private beta — join the waitlist to g
  */
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets(); const session = useSession(); const gate = useAuthGate(); const queryClient = useQueryClient();
-  // Same prefill as web: the handle this email reserved on the waitlist, if any.
-  const reservation = useQuery({ queryKey: queryKeys.waitlistMe, queryFn: () => getWaitlistMe(apiClient), enabled: Boolean(session.user), staleTime: Infinity, retry: false });
-  const reservedUsername = reservation.data?.found && reservation.data.username ? reservation.data.username : null;
-
-  const [usernameInput, setUsernameInput] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const username = usernameInput ?? reservedUsername ?? '';
   const busy = submitting || leaving;
 
-  /** Client-side rules from @backspace/usernames. The caller's own waitlist reservation is left to the server (it may predate the rules). */
+  /** Client-side rules from @backspace/usernames (format, length, reserved and trademarked handles). */
   function localUsernameError(value: string): string | null {
-    if (reservedUsername && normalizeUsername(value) === normalizeUsername(reservedUsername)) return null;
     const result = validateUsernameFormat(value);
     return result.ok ? null : REJECTION_COPY[result.reason];
   }
@@ -55,8 +48,6 @@ export default function OnboardingScreen() {
 
     setSubmitting(true);
     try {
-      const availability = await checkUsername(apiClient, handle);
-      if (!availability.available) { setUsernameError(availability.message ?? 'Already taken.'); return; }
       // Private details and the onboarded flag are best effort once the User row exists (see completeOnboarding).
       const { user } = await completeOnboarding(apiClient, { authId: session.user.id, username: handle, displayName: name, uuid: randomUUID(), email: session.user.email });
       // The profile exists now. Seed `['me']` with it (so a failed refetch cannot strand the person here and
@@ -65,9 +56,8 @@ export default function OnboardingScreen() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.me });
       router.replace('/(tabs)/communities');
     } catch (error) {
-      if (isApiError(error) && error.code === 'not_on_waitlist') setSubmitError(NOT_ON_WAITLIST);
-      else if (isApiError(error) && error.status === 409) setUsernameError(error.message);
-      else setSubmitError(error instanceof Error ? error.message : 'Something went wrong. Try again.');
+      // Show the server's message as-is (ApiError carries it); no per-code rewriting.
+      setSubmitError(error instanceof Error ? error.message : 'Something went wrong. Try again.');
     } finally { setSubmitting(false); }
   }
 
@@ -87,7 +77,7 @@ export default function OnboardingScreen() {
       <Text style={styles.label} nativeID="onboarding-username-label">Username</Text>
       <View style={[styles.field, usernameError && styles.fieldInvalid]}>
         <Text style={styles.at}>@</Text>
-        <TextInput accessibilityLabelledBy="onboarding-username-label" accessibilityLabel="Username" autoCapitalize="none" autoComplete="username-new" autoCorrect={false} editable={!busy} maxLength={USERNAME_MAX_LENGTH + 10} onChangeText={(value) => { setUsernameInput(value); setUsernameError(null); }} placeholder="yourname" placeholderTextColor={colors.ink3} returnKeyType="next" style={styles.fieldInput} textContentType="username" value={username} />
+        <TextInput accessibilityLabelledBy="onboarding-username-label" accessibilityLabel="Username" autoCapitalize="none" autoComplete="username-new" autoCorrect={false} editable={!busy} maxLength={USERNAME_MAX_LENGTH + 10} onChangeText={(value) => { setUsername(value); setUsernameError(null); }} placeholder="yourname" placeholderTextColor={colors.ink3} returnKeyType="next" style={styles.fieldInput} textContentType="username" value={username} />
       </View>
       <Text style={usernameError ? styles.fieldError : styles.hint} accessibilityLiveRegion="polite">{usernameError ?? '3–20 characters. Letters, numbers and single underscores; start with a letter.'}</Text>
 

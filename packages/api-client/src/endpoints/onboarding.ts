@@ -1,30 +1,11 @@
 import type { ApiClient } from '../client';
 import { ApiError } from '../errors';
-import {
-  type CreatePrivateBody,
-  type CreateUserBody,
-  type CreateUserStateBody,
-  usernameCheckResponseSchema,
-  type UsernameCheckResponse,
-  waitlistMeResponseSchema,
-  type WaitlistMeResponse,
-} from '../schemas/onboarding';
+import type { CreatePrivateBody, CreateUserBody, CreateUserStateBody } from '../schemas/onboarding';
 import { selfResponseSchema, type User } from '../schemas/user';
 
-/** GET /waitlist/me: the caller's waitlist reservation (used to prefill the username). */
-export function getWaitlistMe(client: ApiClient): Promise<WaitlistMeResponse> {
-  return client.request('/waitlist/me', { schema: waitlistMeResponseSchema });
-}
-
-/** GET /waitlist/check?u=: server-side username availability for the signed-in caller. */
-export function checkUsername(client: ApiClient, username: string): Promise<UsernameCheckResponse> {
-  return client.request(`/waitlist/check?u=${encodeURIComponent(username)}`, { schema: usernameCheckResponseSchema });
-}
-
 /**
- * POST /user: creates the Backspace User row.
- * Returns 403 `not_on_waitlist` during the private beta and 409 `waitlist_reserved` when someone else
- * holds the handle. A JSON `null` body means the row was not created.
+ * POST /user: creates the Backspace User row. Server rejections surface as `ApiError` with the
+ * server's `message`. A JSON `null` body means the row was not created.
  */
 export async function createUser(client: ApiClient, body: CreateUserBody): Promise<User> {
   const user = await client.request('/user', { method: 'POST', body, schema: selfResponseSchema });
