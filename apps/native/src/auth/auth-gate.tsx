@@ -1,4 +1,4 @@
-import { isApiError } from '@backspace/api-client';
+import { hasAvatar, isApiError } from '@backspace/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,10 +11,12 @@ import { useMe } from '@/hooks/use-me';
  *
  * - `loading`: the session is restoring, `useMe` has not answered yet, or an expired session is being cleared.
  * - `signed-out`: no session. Only /sign-in is reachable.
- * - `needs-onboarding`: signed in, and GET /user/self returned JSON `null`. Only /onboarding is reachable.
- * - `ready`: signed in with a Backspace profile. The tabs and other authenticated routes are reachable.
- * - `error`: `useMe` failed with something other than 401 and there is no cached profile (first load, or the
- *   cached answer was `null`). Shows a retry state, never the onboarding form. A cached profile stays `ready`.
+ * - `needs-onboarding`: signed in, and GET /user/self returned JSON `null` (no User row) or a User row with
+ *   no `avatar` (onboarding stopped after POST /user). Only /onboarding is reachable.
+ * - `ready`: signed in with a Backspace profile that has an avatar. The tabs and other authenticated routes are reachable.
+ * - `error`: `useMe` failed with something other than 401 and there is no cached finished profile (first load,
+ *   or the cached answer was `null` or had no avatar). Shows a retry state, never the onboarding form. A cached
+ *   profile with an avatar stays `ready`.
  * - `expired`: `useMe` returned 401 and clearing the session failed. Shows a "sign in again" state.
  */
 export type GateStatus = 'loading' | 'signed-out' | 'needs-onboarding' | 'ready' | 'error' | 'expired';
@@ -78,9 +80,11 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
   else if (!session.user) status = 'signed-out';
   else if (unauthorized) status = endError && !endingSession ? 'expired' : 'loading';
   else if (me.data === undefined) status = me.isError ? 'error' : 'loading';
-  // A cached `null` is not trustworthy once a refetch has failed: show the retry state rather than
-  // the onboarding form. A cached profile, by contrast, stays `ready` through background failures.
-  else if (me.data === null) status = me.isError ? 'error' : 'needs-onboarding';
+  // Onboarding is unfinished with no User row, or with a User row but no avatar Media row (POST /user
+  // succeeded and the avatar write did not, before a restart or re-sign-in). A cached unfinished answer is
+  // not trustworthy once a refetch has failed: show the retry state rather than the onboarding form. A
+  // cached finished profile, by contrast, stays `ready` through background failures.
+  else if (me.data === null || !hasAvatar(me.data)) status = me.isError ? 'error' : 'needs-onboarding';
   else status = 'ready';
 
   const { refetch, isFetching } = me;

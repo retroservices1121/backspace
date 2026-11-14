@@ -6,7 +6,8 @@ import { queryKeys } from '@/lib/api/query-keys';
 
 /**
  * The signed-in user's Backspace profile from GET /user/self.
- * `data === null` means signed in, but no Backspace user row exists yet (needs onboarding).
+ * `data === null` means signed in, but no Backspace user row exists yet (needs onboarding). A row with no
+ * `avatar` also needs onboarding (see `hasAvatar`).
  */
 export function useMe() {
   const session = useSession();

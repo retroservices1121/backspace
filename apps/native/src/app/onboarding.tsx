@@ -1,10 +1,10 @@
-import { completeOnboarding, runOnboardingFollowUps, type OnboardingFollowUp, type OnboardingFollowUpInput, type OnboardingFollowUpResult, type SimpleDate, type User } from '@backspace/api-client';
+import { completeOnboarding, hasAvatar, runOnboardingFollowUps, type OnboardingFollowUp, type OnboardingFollowUpInput, type OnboardingFollowUpResult, type SelfResponse, type SimpleDate, type User } from '@backspace/api-client';
 import { REJECTION_COPY, USERNAME_MAX_LENGTH, validateUsernameFormat } from '@backspace/usernames';
 import { useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthGate } from '@/auth/auth-gate';
@@ -13,18 +13,19 @@ import { Wordmark } from '@/components/brand/wordmark';
 import { AvatarPicker } from '@/components/onboarding/avatar-picker';
 import { DateOfBirthField } from '@/components/onboarding/date-of-birth-field';
 import { colors } from '@/constants/theme';
+import { useMe } from '@/hooks/use-me';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/query-keys';
 import { toAvatarUpload } from '@/lib/media/avatar-upload';
 
 const DISPLAY_NAME_MAX_LENGTH = 50;
 
-/** A created User row whose required follow-up writes (avatar, private details) have not all succeeded. */
+/** An existing User row whose required follow-up writes (avatar, private details) have not all succeeded. */
 interface PendingProfile {
   user: User;
-  /** The identity and name sent with POST /user; reused as-is on retry. */
+  /** The identity and name of the User row; reused as-is on retry. */
   base: Pick<OnboardingFollowUpInput, 'authId' | 'uuid' | 'displayName' | 'email'>;
-  /** Outstanding writes, media first. */
+  /** Outstanding writes, media first. Empty when they all succeeded but the profile could not be reloaded. */
   followUps: OnboardingFollowUp[];
 }
 
@@ -38,9 +39,13 @@ function notice(title: string, message: string): Promise<void> {
  * First-run profile setup, mirroring apps/web/src/pages/auth/onboarding.tsx: profile photo (optional),
  * username, display name and date of birth (optional). Only reachable when the auth gate says
  * `needs-onboarding`; it has no tab bar and no back control.
+ *
+ * If GET /user/self already returns a User row without an avatar (a previous attempt stopped after
+ * POST /user, then the app restarted or the person signed back in), the screen resumes it: the username
+ * and display name come from that row and are locked, and only the outstanding writes run.
  */
 export default function OnboardingScreen() {
-  const insets = useSafeAreaInsets(); const session = useSession(); const gate = useAuthGate(); const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets(); const session = useSession(); const gate = useAuthGate(); const queryClient = useQueryClient(); const me = useMe();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
@@ -50,11 +55,23 @@ export default function OnboardingScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  /** Set once POST /user has succeeded but required follow-ups are outstanding. */
+  /** Set once POST /user has succeeded here but required follow-ups are outstanding. */
   const [pending, setPending] = useState<PendingProfile | null>(null);
+  /** A User row that already exists without an avatar: resume it instead of creating another one. */
+  const resumed = useMemo<PendingProfile | null>(() => {
+    const existing = me.data;
+    if (!existing || hasAvatar(existing) || !session.user) return null;
+    // Media is missing by definition; private details and the onboarded flag only if their rows are.
+    const followUps: OnboardingFollowUp[] = ['media'];
+    if (!existing.private) followUps.push('private');
+    if (!existing.state?.onboarded) followUps.push('userstate');
+    return { user: existing, base: { authId: session.user.id, uuid: existing.uuid, displayName: existing.name, email: session.user.email }, followUps };
+  }, [me.data, session.user]);
+  /** The User row this screen is finishing, if POST /user already succeeded (here or earlier). */
+  const active = pending ?? resumed;
   const busy = submitting || leaving;
-  const mediaPending = !pending || pending.followUps.includes('media');
-  const privatePending = !pending || pending.followUps.includes('private');
+  const mediaPending = !active || active.followUps.includes('media');
+  const privatePending = !active || active.followUps.includes('private');
 
   /** Client-side rules from @backspace/usernames (format, length, reserved and trademarked handles). */
   function localUsernameError(value: string): string | null {
@@ -62,13 +79,18 @@ export default function OnboardingScreen() {
     return result.ok ? null : REJECTION_COPY[result.reason];
   }
 
-  /** Leaves onboarding. Only called once an avatar Media row exists. */
-  async function finish(user: User) {
-    // Seed `['me']` with the created profile (so a failed refetch cannot strand the person here and make
-    // them resubmit a handle they already own), refetch it from the server, then go to Communities.
-    queryClient.setQueryData(queryKeys.me, user);
-    await queryClient.invalidateQueries({ queryKey: queryKeys.me });
-    router.replace('/(tabs)/communities');
+  /**
+   * Leaves onboarding. Only called once an avatar Media row exists. `['me']` is refetched rather than
+   * seeded (the POST /user payload has no avatar, so the gate would send the person straight back here),
+   * and Communities only opens once the gate can see the avatar. Otherwise the person stays here with
+   * nothing outstanding, and "Try again" just reloads the profile.
+   */
+  async function finish(profile: PendingProfile) {
+    await queryClient.refetchQueries({ queryKey: queryKeys.me });
+    const self = queryClient.getQueryData<SelfResponse>(queryKeys.me);
+    if (self && hasAvatar(self)) { router.replace('/(tabs)/communities'); return; }
+    setPending({ ...profile, followUps: [] });
+    setSubmitError('Your profile is saved, but we couldn’t load it. Check your connection and try again.');
   }
 
   /**
@@ -89,19 +111,18 @@ export default function OnboardingScreen() {
       setSubmitError(`We couldn’t save your private details${dateOfBirth ? ', including your date of birth' : ''}. Try again.`);
       return;
     }
-    setPending(null);
-    await finish(user);
+    await finish({ user, base, followUps: [] });
   }
 
   async function submit() {
     setSubmitError(null);
-    if (pending) {
-      // POST /user already succeeded: never repeat it (the username and uuid are taken). Retry only the
-      // outstanding writes, media first.
+    if (active) {
+      // The User row already exists (created here, or by an earlier attempt): never repeat POST /user
+      // (the username is taken). Run only the outstanding writes, media first.
       setSubmitting(true);
       try {
-        const result = await runOnboardingFollowUps(apiClient, { ...pending.base, avatar: photo ? toAvatarUpload(photo) : null, dateOfBirth }, pending.followUps);
-        await settle(pending.user, pending.base, result);
+        const result = await runOnboardingFollowUps(apiClient, { ...active.base, avatar: photo ? toAvatarUpload(photo) : null, dateOfBirth }, active.followUps);
+        await settle(active.user, active.base, result);
       } catch (error) {
         setSubmitError(error instanceof Error ? error.message : 'Something went wrong. Try again.');
       } finally { setSubmitting(false); }
@@ -133,6 +154,13 @@ export default function OnboardingScreen() {
     } finally { setSubmitting(false); }
   }
 
+  /** Leaves with only the private details outstanding (the avatar row exists). */
+  async function skipPrivate(profile: PendingProfile) {
+    setSubmitError(null); setSubmitting(true);
+    try { await finish(profile); }
+    finally { setSubmitting(false); }
+  }
+
   async function switchAccount() {
     setLeaving(true); setSubmitError(null);
     try { await gate.signOut(); router.replace('/sign-in'); }
@@ -144,26 +172,26 @@ export default function OnboardingScreen() {
     <ScrollView contentContainerStyle={[styles.body, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
       <Wordmark width={150} />
       <Text style={styles.title} accessibilityRole="header">Finish setting up</Text>
-      <Text style={styles.copy}>Claim your handle and a few basics. You can refine the rest from settings later.</Text>
+      <Text style={styles.copy}>{resumed && !pending ? `@${resumed.user.username} is yours. Add a profile photo, or keep the default avatar, to finish.` : 'Claim your handle and a few basics. You can refine the rest from settings later.'}</Text>
 
       <AvatarPicker disabled={busy || !mediaPending} onChange={setPhoto} value={photo} />
 
       <Text style={styles.label} nativeID="onboarding-username-label">Username</Text>
       <View style={[styles.field, usernameError && styles.fieldInvalid]}>
         <Text style={styles.at}>@</Text>
-        <TextInput accessibilityLabelledBy="onboarding-username-label" accessibilityLabel="Username" autoCapitalize="none" autoComplete="username-new" autoCorrect={false} editable={!busy && !pending} maxLength={USERNAME_MAX_LENGTH + 10} onChangeText={(value) => { setUsername(value); setUsernameError(null); }} placeholder="yourname" placeholderTextColor={colors.ink3} returnKeyType="next" style={styles.fieldInput} textContentType="username" value={username} />
+        <TextInput accessibilityLabelledBy="onboarding-username-label" accessibilityLabel="Username" autoCapitalize="none" autoComplete="username-new" autoCorrect={false} editable={!busy && !active} maxLength={USERNAME_MAX_LENGTH + 10} onChangeText={(value) => { setUsername(value); setUsernameError(null); }} placeholder="yourname" placeholderTextColor={colors.ink3} returnKeyType="next" style={styles.fieldInput} textContentType="username" value={active ? active.user.username : username} />
       </View>
       <Text style={usernameError ? styles.fieldError : styles.hint} accessibilityLiveRegion="polite">{usernameError ?? '3–20 characters. Letters, numbers and single underscores; start with a letter.'}</Text>
 
       <Text style={styles.label} nativeID="onboarding-name-label">Display name</Text>
-      <TextInput accessibilityLabelledBy="onboarding-name-label" accessibilityLabel="Display name" autoCapitalize="words" autoComplete="name" editable={!busy && !pending} maxLength={DISPLAY_NAME_MAX_LENGTH + 10} onChangeText={(value) => { setDisplayName(value); setNameError(null); }} onSubmitEditing={submit} placeholder="Your name" placeholderTextColor={colors.ink3} returnKeyType="done" style={[styles.input, nameError && styles.fieldInvalid]} textContentType="name" value={displayName} />
+      <TextInput accessibilityLabelledBy="onboarding-name-label" accessibilityLabel="Display name" autoCapitalize="words" autoComplete="name" editable={!busy && !active} maxLength={DISPLAY_NAME_MAX_LENGTH + 10} onChangeText={(value) => { setDisplayName(value); setNameError(null); }} onSubmitEditing={submit} placeholder="Your name" placeholderTextColor={colors.ink3} returnKeyType="done" style={[styles.input, nameError && styles.fieldInvalid]} textContentType="name" value={active ? active.base.displayName : displayName} />
       {nameError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{nameError}</Text> : <Text style={styles.hint}>How your name appears to others.</Text>}
 
       <DateOfBirthField disabled={busy || !privatePending} onChange={setDateOfBirth} value={dateOfBirth} />
 
-      <Pressable accessibilityRole="button" disabled={busy} onPress={submit} style={({ pressed }) => [styles.button, pressed && styles.pressed, busy && styles.disabled]}>{submitting ? <ActivityIndicator color={colors.ink} /> : <Text style={styles.buttonText}>{pending ? 'Try again' : 'Create profile'}</Text>}</Pressable>
+      <Pressable accessibilityRole="button" disabled={busy} onPress={submit} style={({ pressed }) => [styles.button, pressed && styles.pressed, busy && styles.disabled]}>{submitting ? <ActivityIndicator color={colors.ink} /> : <Text style={styles.buttonText}>{pending ? 'Try again' : resumed ? 'Finish setup' : 'Create profile'}</Text>}</Pressable>
       {submitError ? <Text style={styles.error} accessibilityRole="alert">{submitError}</Text> : null}
-      {pending && !mediaPending ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => { const { user } = pending; setPending(null); setSubmitError(null); void finish(user); }} style={styles.skip}><Text style={styles.link}>Continue without saving these details</Text></Pressable> : null}
+      {active && !mediaPending && privatePending ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => { void skipPrivate(active); }} style={styles.skip}><Text style={styles.link}>Continue without saving these details</Text></Pressable> : null}
 
       <View style={styles.escape}>
         {session.user?.email ? <Text style={styles.signedInAs}>Signed in as {session.user.email}</Text> : null}
