@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useSession } from '@/auth/session';
 import { colors } from '@/constants/theme';
 import { cents, type Outcome } from '@/lib/gate';
-import { placeOrder } from '@/lib/backspace-api';
+import { placeOrder } from './api';
 
 export function TradeTicket({ outcomes, acceptingOrders }: { outcomes: Outcome[]; acceptingOrders: boolean }) {
   const session = useSession(); const [selectedId, setSelectedId] = useState(outcomes[0]?.id); const [amount, setAmount] = useState('10'); const [reviewing, setReviewing] = useState(false); const [submitting, setSubmitting] = useState(false); const [message, setMessage] = useState<string | null>(null);
