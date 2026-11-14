@@ -79,8 +79,12 @@ export function createApiClient({ baseUrl, getToken, fetch }: ApiClientOptions):
     if (!response.ok) {
       if (response.status === 401) throw new ApiError(401, 'Sign in to continue.', 'unauthorized');
       const details = isRecord(json) ? json : {};
-      const message = stringField(details, 'message') ?? stringField(details, 'error') ?? `Request failed (${response.status}).`;
-      throw new ApiError(response.status, message, stringField(details, 'code'));
+      const serverMessage = stringField(details, 'message');
+      const message = serverMessage ?? stringField(details, 'error') ?? `Request failed (${response.status}).`;
+      // Some routes send `{ error: '<code>', message: '<copy>' }` (e.g. 403 not_on_waitlist); when both are
+      // present `error` is the machine-readable code.
+      const code = stringField(details, 'code') ?? (serverMessage ? stringField(details, 'error') : undefined);
+      throw new ApiError(response.status, message, code);
     }
 
     if (!schema) return json as T;

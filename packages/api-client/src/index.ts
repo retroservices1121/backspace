@@ -5,3 +5,7 @@ export type { ApiErrorCode } from './errors';
 export { idSchema, selfResponseSchema, userSchema } from './schemas/user';
 export type { SelfResponse, User } from './schemas/user';
 export { getSelf } from './endpoints/user';
+export { usernameCheckResponseSchema, waitlistMeResponseSchema } from './schemas/onboarding';
+export type { CreatePrivateBody, CreateUserBody, CreateUserStateBody, UsernameCheckResponse, WaitlistMeResponse } from './schemas/onboarding';
+export { checkUsername, completeOnboarding, createPrivate, createUser, createUserState, getWaitlistMe, splitDisplayName } from './endpoints/onboarding';
+export type { CompleteOnboardingInput, CompleteOnboardingResult } from './endpoints/onboarding';
