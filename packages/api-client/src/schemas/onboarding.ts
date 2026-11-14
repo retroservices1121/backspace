@@ -10,12 +10,26 @@ export interface CreateUserBody {
   uuid: string;
 }
 
-/** Body of POST /api/private. `lastName` may be empty (the Prisma column has a default). */
+/**
+ * Body of POST /api/private. `lastName` may be empty (the Prisma column has a default). The date of
+ * birth is optional and sent only when picked, like web; the Prisma columns default to 1/1/1900.
+ */
 export interface CreatePrivateBody {
   user: { connect: { authId: string } };
   firstName: string;
   lastName: string;
   email?: string;
+  dobYear?: number;
+  /** 1–12. */
+  dobMonth?: number;
+  dobDay?: number;
+}
+
+/** A calendar date with a 1-based month, like web's `SimpleDate`. */
+export interface SimpleDate {
+  year: number;
+  month: number;
+  day: number;
 }
 
 /** Body of POST /api/userstate. */
