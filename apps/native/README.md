@@ -29,7 +29,11 @@ Routes live in `src/app/` (Expo Router):
 | `(tabs)/profile/` | Profile tab (own Stack): name, @username, sign out |
 | `(tabs)/markets.tsx`, `(tabs)/portfolio.tsx`, `market/[id].tsx` | Thin routes for the markets feature; redirect to `/` when the flag is off |
 
-The tab bar is **Communities · Messages · Profile**. With the markets flag on it is **Communities · Messages · Markets · Portfolio · Profile**. Tab bar height and padding follow the device safe-area insets. Android hardware back uses the default Expo Router behaviour: it pops the current stack, and at a tab root it exits the app.
+The tab bar is **Communities · Messages · Profile**. With the markets flag on it is **Communities · Messages · Markets · Portfolio · Profile**. Tab bar height and padding follow the device safe-area insets. Android hardware back uses the default tab `backBehavior` (`firstRoute`; `(tabs)/_layout.tsx` does not override it):
+
+- Inside a tab, back first pops that tab's own stack.
+- At the root of Messages or Profile (or Markets/Portfolio with the flag on), back switches to the Communities tab instead of exiting.
+- At the root of Communities, back exits the app.
 
 ## Feature flags
 
