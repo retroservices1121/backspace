@@ -67,7 +67,13 @@ export function createApiClient({ baseUrl, getToken, fetch }: ApiClientOptions):
       throw new ApiError(0, 'Network request failed.', 'network_error');
     }
 
-    const text = await response.text().catch(() => '');
+    // A body that cannot be read (e.g. an interrupted stream) is a failed request, never an empty success.
+    let text: string;
+    try {
+      text = await response.text();
+    } catch {
+      throw new ApiError(0, 'Network request failed.', 'network_error');
+    }
     const json = parseJson(text);
 
     if (!response.ok) {
@@ -86,8 +92,12 @@ export function createApiClient({ baseUrl, getToken, fetch }: ApiClientOptions):
   return { baseUrl: root, request };
 }
 
+/**
+ * Parses a response body. An empty or non-JSON body yields `undefined`, so only a literal JSON `null`
+ * can satisfy a nullable schema (an empty 200 is rejected as `invalid_response`).
+ */
 function parseJson(text: string): unknown {
-  if (!text) return null;
+  if (!text) return undefined;
   try {
     return JSON.parse(text) as unknown;
   } catch {
