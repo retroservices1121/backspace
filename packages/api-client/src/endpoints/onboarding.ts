@@ -15,9 +15,15 @@ export async function createUser(client: ApiClient, body: CreateUserBody): Promi
   return user;
 }
 
-/** POST /private: private details (first/last name, email, optional date of birth). */
-export function createPrivate(client: ApiClient, body: CreatePrivateBody): Promise<unknown> {
-  return client.request('/private', { method: 'POST', body });
+/**
+ * POST /private: private details (first/last name, email, optional date of birth). The route answers
+ * 200 `{ user: undefined }` (serialised as `{}`) when Prisma rejects the row, so a response without a
+ * non-null `user` object is treated as a failure.
+ */
+export async function createPrivate(client: ApiClient, body: CreatePrivateBody): Promise<void> {
+  const response: unknown = await client.request('/private', { method: 'POST', body });
+  const row = typeof response === 'object' && response !== null ? (response as { user?: unknown }).user : undefined;
+  if (typeof row !== 'object' || row === null) throw new ApiError(500, 'Your private details could not be saved.', 'private_not_created');
 }
 
 /** POST /userstate: marks the user as onboarded. */
