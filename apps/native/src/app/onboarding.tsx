@@ -1,29 +1,41 @@
-import { completeOnboarding } from '@backspace/api-client';
+import { completeOnboarding, type SimpleDate } from '@backspace/api-client';
 import { REJECTION_COPY, USERNAME_MAX_LENGTH, validateUsernameFormat } from '@backspace/usernames';
 import { useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
+import type { ImagePickerAsset } from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthGate } from '@/auth/auth-gate';
 import { useSession } from '@/auth/session';
 import { Wordmark } from '@/components/brand/wordmark';
+import { AvatarPicker } from '@/components/onboarding/avatar-picker';
+import { DateOfBirthField } from '@/components/onboarding/date-of-birth-field';
 import { colors } from '@/constants/theme';
 import { apiClient } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/query-keys';
+import { toAvatarUpload } from '@/lib/media/avatar-upload';
 
 const DISPLAY_NAME_MAX_LENGTH = 50;
 
+/** Shows a one-button notice and resolves once it is dismissed (immediately on web, where Alert is a no-op). */
+function notice(title: string, message: string): Promise<void> {
+  if (Platform.OS === 'web') return Promise.resolve();
+  return new Promise((resolve) => Alert.alert(title, message, [{ text: 'OK', onPress: () => resolve() }], { cancelable: true, onDismiss: () => resolve() }));
+}
+
 /**
- * First-run profile setup, mirroring apps/web/src/pages/auth/onboarding.tsx with a minimal form
- * (username + display name; no avatar or date of birth yet). Only reachable when the auth gate says
+ * First-run profile setup, mirroring apps/web/src/pages/auth/onboarding.tsx: profile photo (optional),
+ * username, display name and date of birth (optional). Only reachable when the auth gate says
  * `needs-onboarding`; it has no tab bar and no back control.
  */
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets(); const session = useSession(); const gate = useAuthGate(); const queryClient = useQueryClient();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
+  const [dateOfBirth, setDateOfBirth] = useState<SimpleDate | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -48,8 +60,19 @@ export default function OnboardingScreen() {
 
     setSubmitting(true);
     try {
-      // Private details and the onboarded flag are best effort once the User row exists (see completeOnboarding).
-      const { user } = await completeOnboarding(apiClient, { authId: session.user.id, username: handle, displayName: name, uuid: randomUUID(), email: session.user.email });
+      // POST /user, then the avatar Media row (picked photo, or a default one), then private details and
+      // the onboarded flag. Everything after POST /user is best effort (see completeOnboarding).
+      const { user, photoUploadFailed } = await completeOnboarding(apiClient, {
+        authId: session.user.id,
+        username: handle,
+        displayName: name,
+        uuid: randomUUID(),
+        email: session.user.email,
+        avatar: photo ? toAvatarUpload(photo) : null,
+        dateOfBirth,
+      });
+      // completeOnboarding has already written the avatar row, so leaving onboarding is safe from here on.
+      if (photoUploadFailed) await notice('Photo not uploaded', 'We couldn’t upload your photo, so your profile has a default avatar for now.');
       // The profile exists now. Seed `['me']` with it (so a failed refetch cannot strand the person here and
       // make them resubmit a handle they already own), refetch it from the server, then go to Communities.
       queryClient.setQueryData(queryKeys.me, user);
@@ -74,6 +97,8 @@ export default function OnboardingScreen() {
       <Text style={styles.title} accessibilityRole="header">Finish setting up</Text>
       <Text style={styles.copy}>Claim your handle and a few basics. You can refine the rest from settings later.</Text>
 
+      <AvatarPicker disabled={busy} onChange={setPhoto} value={photo} />
+
       <Text style={styles.label} nativeID="onboarding-username-label">Username</Text>
       <View style={[styles.field, usernameError && styles.fieldInvalid]}>
         <Text style={styles.at}>@</Text>
@@ -84,6 +109,8 @@ export default function OnboardingScreen() {
       <Text style={styles.label} nativeID="onboarding-name-label">Display name</Text>
       <TextInput accessibilityLabelledBy="onboarding-name-label" accessibilityLabel="Display name" autoCapitalize="words" autoComplete="name" editable={!busy} maxLength={DISPLAY_NAME_MAX_LENGTH + 10} onChangeText={(value) => { setDisplayName(value); setNameError(null); }} onSubmitEditing={submit} placeholder="Your name" placeholderTextColor={colors.ink3} returnKeyType="done" style={[styles.input, nameError && styles.fieldInvalid]} textContentType="name" value={displayName} />
       {nameError ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{nameError}</Text> : <Text style={styles.hint}>How your name appears to others.</Text>}
+
+      <DateOfBirthField disabled={busy} onChange={setDateOfBirth} value={dateOfBirth} />
 
       <Pressable accessibilityRole="button" disabled={busy} onPress={submit} style={({ pressed }) => [styles.button, pressed && styles.pressed, busy && styles.disabled]}>{submitting ? <ActivityIndicator color={colors.ink} /> : <Text style={styles.buttonText}>Create profile</Text>}</Pressable>
       {submitError ? <Text style={styles.error} accessibilityRole="alert">{submitError}</Text> : null}
