@@ -1,4 +1,4 @@
-import type { ZodType, ZodTypeDef } from 'zod';
+import type { ZodType } from 'zod';
 import { ApiError } from './errors';
 
 /** Minimal response shape the client needs; satisfied by WHATWG fetch and `expo/fetch`. */
@@ -31,7 +31,7 @@ export interface RequestOptions<T> {
   /** Serialised as JSON when present. */
   body?: unknown;
   /** Validates (and may transform) the parsed JSON response. */
-  schema?: ZodType<T, ZodTypeDef, unknown>;
+  schema?: ZodType<T, unknown>;
   /** Sends `Authorization: Bearer <token>`. Defaults to true. */
   auth?: boolean;
 }

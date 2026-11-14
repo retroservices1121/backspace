@@ -19,7 +19,7 @@ export const userSchema = z
     createdAt: z.string().optional(),
     featuredCommunityId: idSchema.nullable().optional(),
   })
-  .passthrough();
+  .loose();
 
 /** `null` means signed in with Privy but no Backspace User row yet (needs onboarding). */
 export const selfResponseSchema = userSchema.nullable();
