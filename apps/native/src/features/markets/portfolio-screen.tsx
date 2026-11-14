@@ -7,11 +7,12 @@ import { BrandHeader } from '@/components/brand-header';
 import { BagIcon } from '@/components/icons';
 import { LoadingState } from '@/components/screen-state';
 import { colors } from '@/constants/theme';
+import { queryKeys } from '@/lib/api/query-keys';
 import { ApiError, getPortfolio, type PortfolioPosition } from './api';
 
 export function PortfolioScreen() {
   const insets = useSafeAreaInsets(); const session = useSession();
-  const query = useQuery({ queryKey: ['gate-portfolio', session.user?.id], queryFn: () => getPortfolio(session.getAccessToken), enabled: Boolean(session.user), refetchInterval: 20_000, retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 2 });
+  const query = useQuery({ queryKey: queryKeys.portfolio(session.user?.id), queryFn: getPortfolio, enabled: Boolean(session.user), refetchInterval: 20_000, retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 2 });
   if (!session.ready) return <Shell top={insets.top}><LoadingState label="Restoring your account" /></Shell>;
   if (!session.user) return <Shell top={insets.top}><View style={styles.center}><View style={styles.icon}><BagIcon color={colors.brand2} /></View><Text style={styles.title}>Your positions, in one place</Text><Text style={styles.copy}>Sign in to see live Gate balances, positions, open orders, trades, and claims.</Text><Pressable onPress={() => router.push('/sign-in' as never)} style={styles.button}><Text style={styles.buttonText}>Sign in to continue</Text></Pressable></View></Shell>;
   if (query.isLoading) return <Shell top={insets.top}><LoadingState label="Loading your live Gate account" /></Shell>;
