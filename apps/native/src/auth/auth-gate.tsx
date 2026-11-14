@@ -13,7 +13,8 @@ import { useMe } from '@/hooks/use-me';
  * - `signed-out`: no session. Only /sign-in is reachable.
  * - `needs-onboarding`: signed in, and GET /user/self returned JSON `null`. Only /onboarding is reachable.
  * - `ready`: signed in with a Backspace profile. The tabs and other authenticated routes are reachable.
- * - `error`: `useMe` failed with something other than 401. Shows a retry state, never the onboarding form.
+ * - `error`: `useMe` failed with something other than 401 and there is no cached profile (first load, or the
+ *   cached answer was `null`). Shows a retry state, never the onboarding form. A cached profile stays `ready`.
  * - `expired`: `useMe` returned 401 and clearing the session failed. Shows a "sign in again" state.
  */
 export type GateStatus = 'loading' | 'signed-out' | 'needs-onboarding' | 'ready' | 'error' | 'expired';
@@ -76,9 +77,10 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
   if (!session.ready) status = 'loading';
   else if (!session.user) status = 'signed-out';
   else if (unauthorized) status = endError && !endingSession ? 'expired' : 'loading';
-  // Keep the last good answer during background refetches; only a first load can be pending or failed.
   else if (me.data === undefined) status = me.isError ? 'error' : 'loading';
-  else if (me.data === null) status = 'needs-onboarding';
+  // A cached `null` is not trustworthy once a refetch has failed: show the retry state rather than
+  // the onboarding form. A cached profile, by contrast, stays `ready` through background failures.
+  else if (me.data === null) status = me.isError ? 'error' : 'needs-onboarding';
   else status = 'ready';
 
   const { refetch, isFetching } = me;
