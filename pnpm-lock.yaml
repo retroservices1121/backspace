@@ -115,6 +115,9 @@ importers:
       '@backspace/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@backspace/usernames':
+        specifier: workspace:*
+        version: link:../../packages/usernames
       '@ethersproject/shims':
         specifier: ^5.8.0
         version: 5.8.0

@@ -5,6 +5,7 @@
   "dependencies": {
     "@backspace/api-client": "workspace:*",
     "@backspace/shared": "workspace:*",
+    "@backspace/usernames": "workspace:*",
     "@ethersproject/shims": "^5.8.0",
     "@expo/metro-runtime": "~57.0.18",
     "@expo/ui": "~57.0.26",
