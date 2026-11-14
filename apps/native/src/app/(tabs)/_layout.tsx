@@ -1,14 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BagIcon, CommunitiesIcon, MarketsIcon, MessagesIcon, UserIcon } from '@/components/icons';
 import { colors } from '@/constants/theme';
+import { useTabBarHeight } from '@/hooks/use-tab-bar-height';
 import { FEATURE_MARKETS } from '@/lib/flags';
-
-/** Height of the tab bar above the bottom safe-area inset (icons + labels + top padding). */
-const TAB_BAR_CONTENT_HEIGHT = 56;
-/** Bottom padding on devices without a home indicator / gesture bar inset. */
-const MIN_BOTTOM_PADDING = 8;
 
 function iconColor(focused: boolean) { return focused ? colors.brand2 : colors.ink3; }
 
@@ -26,12 +21,11 @@ function a11yLabel(title: string) {
 }
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const bottom = Math.max(insets.bottom, MIN_BOTTOM_PADDING);
+  const { height, bottom } = useTabBarHeight();
   // With the flag off the routes still exist (and redirect to "/"), but href: null removes the tab
   // button and no title or label is provided, so nothing market-related is shown.
   const hidden = { href: null } as const;
-  return <Tabs screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.canvas }, tabBarActiveTintColor: colors.ink, tabBarInactiveTintColor: colors.ink3, tabBarLabelStyle: styles.label, tabBarStyle: [styles.bar, { height: TAB_BAR_CONTENT_HEIGHT + bottom, paddingBottom: bottom }] }}>
+  return <Tabs screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.canvas }, tabBarActiveTintColor: colors.ink, tabBarInactiveTintColor: colors.ink3, tabBarLabelStyle: styles.label, tabBarStyle: [styles.bar, { height, paddingBottom: bottom }] }}>
     <Tabs.Screen name="communities" options={{ title: 'Communities', tabBarAccessibilityLabel: a11yLabel('Communities'), tabBarIcon: ({ focused }) => <CommunitiesIcon color={iconColor(focused)} /> }} />
     <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarAccessibilityLabel: a11yLabel('Messages'), tabBarIcon: ({ focused }) => <MessagesIcon color={iconColor(focused)} /> }} />
     <Tabs.Screen name="markets" options={FEATURE_MARKETS ? { title: 'Markets', tabBarAccessibilityLabel: a11yLabel('Markets'), tabBarIcon: ({ focused }) => <MarketsIcon color={iconColor(focused)} /> } : hidden} />
