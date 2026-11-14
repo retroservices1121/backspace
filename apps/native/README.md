@@ -12,7 +12,7 @@ It does not wrap the existing website. Screens are built with React Native compo
 
 - Native email-code sign-in (Privy) with encrypted session persistence
 - Sign-in is required: every tab and screen sits behind one auth gate
-- Minimal onboarding (username + display name) for people without a Backspace profile
+- Onboarding (profile photo, username, display name, date of birth) for people without a Backspace profile
 - Communities, Messages and Profile tabs
 - Profile reads the Backspace user from `GET /api/user/self`
 - Shared brand tokens (`@backspace/shared`) and typed API client (`@backspace/api-client`)
@@ -26,7 +26,7 @@ Routes live in `src/app/` (Expo Router):
 | --- | --- |
 | `index.tsx` | Gate entry and fallback (never protected). Forwards to `/sign-in`, `/onboarding` or `/(tabs)/communities`; otherwise shows the branded loading state or a retry state |
 | `sign-in.tsx` | Email + one-time code sign-in. Heading is the Backspace wordmark with "Sign in to Backspace". Shows a setup notice when the Privy IDs are missing. No close/back control |
-| `onboarding.tsx` | First-run profile setup (username + display name). No tab bar, no back control |
+| `onboarding.tsx` | First-run profile setup (photo, username, display name, date of birth). No tab bar, no back control |
 | `(tabs)/communities/` | Communities tab (own Stack) |
 | `(tabs)/messages/` | Messages tab (own Stack) |
 | `(tabs)/profile/` | Profile tab (own Stack): name, @username, sign out |
@@ -60,19 +60,36 @@ The root `Stack` wraps each group of routes in `Stack.Protected` keyed on that s
 
 ## Onboarding
 
-`src/app/onboarding.tsx` mirrors the web onboarding (`apps/web/src/pages/auth/onboarding.tsx`, `hooks/useOnboarding.ts`) with a minimal form:
+`src/app/onboarding.tsx` mirrors the web onboarding (`apps/web/src/pages/auth/onboarding.tsx`, `hooks/useOnboarding.ts`, `components/Auth/OnboardingForm.tsx`).
 
-1. Validates locally with `@backspace/usernames` (3–20 characters, starts with a letter, letters/numbers/single underscores, not on that package's reserved or trademark lists). Display name is required (max 50).
-2. `POST /api/user` with `{ username, name, authId, uuid }` (`name` is the display name, `authId` the Privy user id, `uuid` from `expo-crypto`), then `POST /api/private` (first token of the display name as `firstName`, the rest as `lastName`, plus email) and `POST /api/userstate` (`onboarded: true`) in parallel. These are `completeOnboarding()` and related helpers in `@backspace/api-client`.
-3. Seeds and refetches `['me']`, then replaces to Communities.
+Form:
+
+- **Profile photo** (optional, `src/components/onboarding/avatar-picker.tsx`): picked from the photo library with `expo-image-picker` (square crop, no camera), previewed, and removable so the default avatar is still available. Files over 10 MB (web `MAX_BYTES`) are rejected.
+- **Username**: validated locally with `@backspace/usernames` (3–20 characters, starts with a letter, letters/numbers/single underscores, not on that package's reserved or trademark lists).
+- **Display name**: required, max 50.
+- **Date of Birth** (optional, `src/components/onboarding/date-of-birth-field.tsx`): the SDK 57 `@expo/ui/community/datetime-picker` drop-in (inline wheel on iOS, Material 3 dialog on Android; hidden on web). No future dates, earliest year 121 years back (web `DatePicker` shows 122 years). Like web, there is no minimum-age rule.
+
+Submit (`completeOnboarding()` in `@backspace/api-client`, in this order):
+
+1. `POST /api/user` with `{ username, name, authId, uuid }` (`name` is the display name, `authId` the Privy user id, `uuid` from `expo-crypto`).
+2. Avatar, now that the User row exists (`/media/upload-url` looks the caller up):
+   - Photo picked: `POST /api/media/upload-url` with `{ type: 'AVATAR', id: uuid, fileName, contentType }`, then a `PUT` of the bytes to the returned presigned R2 URL with only `Content-Type` set (no Bearer token, not through the API client; `src/lib/media/avatar-upload.ts`), then `POST /api/media` with `{ type: 'AVATAR', host: 'R2', path, fileExtension, avatarUser: { connect: { authId } } }`.
+   - No photo: `POST /api/media` with `path: default/user/<1–16>.png` and `fileExtension: 'PNG'` (web `defaultAvatar()`), with no upload.
+   - **Deliberate difference from web:** if any step of the photo upload fails, native writes the default avatar row instead and shows "Photo not uploaded". Web writes no Media row in that case.
+3. `POST /api/private` (first token of the display name as `firstName`, the rest as `lastName`, email, and `dobYear`/`dobMonth`/`dobDay` only when a date was picked; the server defaults to 1/1/1900 otherwise) and `POST /api/userstate` (`onboarded: true`) in parallel.
+4. Only then seeds and refetches `['me']` and replaces to Communities. Once `['me']` is non-null the auth gate leaves onboarding, so nothing touches it until the avatar row has been written.
 
 The server decides whether a profile can be created. If `POST /api/user` fails, the server's `message` is shown inline as-is; the client does not special-case error codes. "Use a different account" signs out and returns to sign-in.
 
 Known gaps compared with web:
 
-- No avatar upload, and no default-avatar `POST /api/media` row.
-- No date of birth.
-- `/private` and `/userstate` failures after the User row exists are not retried or shown, because the profile is already usable and retrying `POST /api/user` would collide with the new row.
+- Media, `/private` and `/userstate` failures after the User row exists are not retried, and only a failed photo upload is shown, because the profile is already usable and retrying `POST /api/user` would collide with the new row.
+- The photo picker and date picker are native modules (`expo-image-picker`, `@expo/ui`), so they need a development build, not Expo Go.
+
+### Permissions
+
+- iOS: only `NSPhotoLibraryUsageDescription` ("Backspace uses your photo library so you can choose a profile photo."), set by the `expo-image-picker` plugin in `app.json`. Camera and microphone are disabled in the plugin, so no camera or microphone strings are added.
+- Android: no new permissions. `blockedPermissions` keeps `RECORD_AUDIO` and also blocks `CAMERA` and the legacy `READ_EXTERNAL_STORAGE`/`WRITE_EXTERNAL_STORAGE` that the image-picker library manifest adds. The system photo picker needs none of them, and the app never calls `requestMediaLibraryPermissionsAsync`.
 
 ## Feature flags
 
@@ -87,7 +104,7 @@ All Gate and market UI lives in `src/features/markets/` (screens, cards, chart, 
 ## Workspace packages
 
 - **`packages/shared` (`@backspace/shared`)**: brand colour, radius and spacing tokens, matching the "new design tokens" in `apps/web/tailwind.config.js`. It is source-only TypeScript and stays TS 4.6 compatible so `apps/web` can use it. `src/constants/theme.ts` re-exports it.
-- **`packages/api-client` (`@backspace/api-client`)**: `createApiClient({ baseUrl, getToken, fetch })` with `request<T>(path, { method, body, schema, auth })`, zod response schemas, and endpoints such as `getSelf` and the onboarding helpers (`completeOnboarding`, `createUser`, `createPrivate`, `createUserState`). It throws `ApiError(status, message, code?)` (`401` → `unauthorized`) and never logs tokens or bodies. It has no React or Expo imports.
+- **`packages/api-client` (`@backspace/api-client`)**: `createApiClient({ baseUrl, getToken, fetch })` with `request<T>(path, { method, body, schema, auth })`, zod response schemas, and endpoints such as `getSelf` and the onboarding helpers (`completeOnboarding`, `createUser`, `createPrivate`, `createUserState`) and avatar media helpers (`createUploadUrl`, `createAvatarMedia`, `createDefaultAvatarMedia`, `MAX_AVATAR_BYTES`). It throws `ApiError(status, message, code?)` (`401` → `unauthorized`) and never logs tokens or bodies. It has no React or Expo imports.
 
 In the app, `src/lib/api/client.ts` builds the singleton client from `EXPO_PUBLIC_BACKSPACE_API_URL` (default `https://backspace.to/api`) and `expo/fetch`. `ApiSessionBridge` supplies the session's access token. Query keys are in `src/lib/api/query-keys.ts`. `useMe()` (`src/hooks/use-me.ts`) loads the signed-in user under the key `['me']`. `null` means the person is signed in but has not created a Backspace profile yet (the auth gate routes them to onboarding). Username rules come from the `@backspace/usernames` workspace package.
 
