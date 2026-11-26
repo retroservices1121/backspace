@@ -19,6 +19,9 @@ export function useMarketLive(tokenId?: string, conditionId?: string) {
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(String(event.data)) as { ch?: string; result?: Record<string, unknown> }; const result = message.result; if (!result) return;
+        // Subscribe acks arrive on the same channel as `{ status: 'success' }`
+        // with no prices. Applying them would clear live bid/ask/last.
+        if (isAck(result)) return;
         if (message.ch === 'pred.bbo') setState((current) => ({ ...current, bid: toNumber(result.bid_px), ask: toNumber(result.ask_px), last: toNumber(result.last_px) }));
         if (message.ch === 'pred.depth') setState((current) => ({ ...current, bids: levels(result.bids), asks: levels(result.asks) }));
         if (message.ch === 'pred.trades') {
@@ -33,6 +36,10 @@ export function useMarketLive(tokenId?: string, conditionId?: string) {
     return () => { active = false; socket.close(); setState(initial); };
   }, [conditionId, tokenId]);
   return state;
+}
+function isAck(result: Record<string, unknown>): boolean {
+  if (result.status === 'success') return true;
+  return result.token_id === undefined && result.bid_px === undefined && result.bids === undefined && result.px === undefined;
 }
 function toNumber(value: unknown): number | null { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 function levels(value: unknown): BookLevel[] { if (!Array.isArray(value)) return []; return value.flatMap((row) => Array.isArray(row) && row.length >= 2 && toNumber(row[0]) !== null && toNumber(row[1]) !== null ? [{ price: Number(row[0]), size: Number(row[1]) }] : []); }

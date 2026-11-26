@@ -11,7 +11,7 @@ import { colors } from '@/constants/theme';
 import { groupMarkets, listMarkets, type EventGroup } from '@/lib/gate';
 
 export default function MarketsScreen() {
-  const insets = useSafeAreaInsets(); const [query, setQuery] = useState(''); const marketQuery = useQuery({ queryKey: ['gate-markets'], queryFn: listMarkets, refetchInterval: 60_000 });
+  const insets = useSafeAreaInsets(); const [query, setQuery] = useState(''); const marketQuery = useQuery({ queryKey: ['gate-markets'], queryFn: () => listMarkets(), refetchInterval: 60_000 });
   const groups = useMemo(() => { const needle = query.trim().toLowerCase(); return groupMarkets((marketQuery.data ?? []).filter((market) => !needle || `${market.question} ${market.eventTitle ?? ''} ${market.category}`.toLowerCase().includes(needle))); }, [marketQuery.data, query]);
   if (marketQuery.isLoading) return <View style={[styles.screen, { paddingTop: insets.top }]}><BrandHeader section="Markets" /><LoadingState label="Loading Gate markets" /></View>;
   if (marketQuery.isError) return <View style={[styles.screen, { paddingTop: insets.top }]}><BrandHeader section="Markets" /><EmptyState title="Markets are unavailable" message="We couldn't reach Gate's live catalog." onRetry={() => marketQuery.refetch()} /></View>;

@@ -18,7 +18,7 @@ export default function MarketDetailScreen() {
   const token = market.data?.outcomes[0]; const live = useMarketLive(token?.id, market.data?.conditionId ?? undefined);
   const history = useQuery({ queryKey: ['gate-history', token?.id], queryFn: () => getPriceHistory(token!.id), enabled: Boolean(token?.id), refetchInterval: 60_000 });
   const book = useQuery({ queryKey: ['gate-book', token?.id], queryFn: () => getOrderBook(token!.id), enabled: Boolean(token?.id), refetchInterval: 15_000 });
-  const trades = useQuery({ queryKey: ['gate-trades', id], queryFn: () => getMarketTrades(id), enabled: Boolean(id), refetchInterval: 15_000 });
+  const trades = useQuery({ queryKey: ['gate-trades', id], queryFn: () => getMarketTrades(id, market.data?.outcomes), enabled: Boolean(id && market.data), refetchInterval: 15_000 });
   const visibleBook = { bids: live.bids.length ? live.bids : book.data?.bids ?? [], asks: live.asks.length ? live.asks : book.data?.asks ?? [] };
   const visibleTrades = useMemo(() => mergeTrades(live.trades, trades.data ?? []), [live.trades, trades.data]);
   if (market.isLoading) return <View style={[styles.screen, { paddingTop: insets.top }]}><BackHeader connected={false} /><LoadingState label="Loading live market" /></View>;

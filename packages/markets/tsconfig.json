@@ -1,9 +1,24 @@
 {
-  "extends": "../../tsconfig.base.json",
+  // Standalone on purpose: apps/web compiles this package with TypeScript
+  // 4.6, which rejects the root base config's "Bundler" resolution even when
+  // overridden. Mirrors tsconfig.base.json otherwise.
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "test"]
 }
