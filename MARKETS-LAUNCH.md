@@ -13,7 +13,12 @@ positions, balances and fills. Backspace stores none of them.
   - Every market has a `product` field (`prediction` or `event_contracts`).
   - Gate list calls use at most `limit=100` and follow `next_cursor`.
 - `/api/markets/{market_id}` requests the live Gate market definition (`?product=` optional; without it Prediction is tried first, then Event Contracts).
-- `/api/markets/{market_id}/data` returns recent trades (`{ items, next_cursor }` envelope, ms timestamps), order books and 14-day price history.
+- `/api/markets/{market_id}/data` returns `{ product, trades, books, histories, fetchedAt }`:
+  - Upstream, it reads Gate's public `GET /markets/{market_id}/trades`, which returns a
+    `{ items, next_cursor }` page.
+  - Backspace returns those as a plain `trades` array (no cursor), each with `id`, `trade_id`,
+    `token_id`, `outcome`, `side`, `price`, `size` and `created_at` in Unix milliseconds.
+  - `books` holds the order book per outcome token and `histories` holds 14-day price history per token.
 - Outcome ids come from `outcomes[].token_id`. Prices come from batch `GET /tokens/prices`, then the market `best_bid`/`best_ask` midpoint or `last_trade_price`, and live from the public `pred.bbo` WebSocket channel.
 - Responses use `Cache-Control: private, no-store`.
 - The previous prediction-market provider, its import jobs, SDKs, wallet setup,
