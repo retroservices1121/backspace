@@ -145,6 +145,12 @@ export class GateCatalogAdapter implements MarketVenue {
    * Collect up to `args.limit` live markets, paging `/markets` with
    * `next_cursor` at no more than 100 rows per request.
    *
+   * Each page is enriched (event titles/images, including titles looked up
+   * from `/events`) and normalized BEFORE the search predicate and status
+   * check run, so a row whose displayed question comes from its event title
+   * is matched exactly as it will be shown. Only eligible (ACTIVE, matching)
+   * markets count toward the limit.
+   *
    * Cursor contract: each upstream request asks only for the rows still
    * needed (`min(100, remaining)`), and every row of every fetched page is
    * consumed — kept or filtered out — before its `next_cursor` is returned.
@@ -154,13 +160,16 @@ export class GateCatalogAdapter implements MarketVenue {
   async listMarkets(args: ListMarketsArgs): Promise<ListMarketsResult> {
     const target = clampCollect(args.limit);
     const search = args.search ? args.search.toLowerCase() : null;
-    const collected: GateRawMarket[] = [];
+    const noPrices = new Map<string, GateTokenLastPrice>();
+    const events = new Map<string, { title: string | null; image?: string }>();
+    const looked = new Set<string>();
+    const kept: GateRawMarket[] = [];
     let cursor: string | null = args.cursor || null;
     let pages = 0;
 
-    while (collected.length < target && pages < MAX_MARKET_PAGES) {
+    while (kept.length < target && pages < MAX_MARKET_PAGES) {
       const qs = new URLSearchParams({
-        limit: String(Math.min(GATE_PAGE_LIMIT, target - collected.length)),
+        limit: String(Math.min(GATE_PAGE_LIMIT, target - kept.length)),
         active: 'true',
         closed: 'false',
       });
@@ -169,44 +178,43 @@ export class GateCatalogAdapter implements MarketVenue {
 
       const page = await this.fetchJson<Page<GateRawMarket>>(`/markets?${qs.toString()}`);
       pages += 1;
+      const rows = (page.items || []).filter((row) => row.closed !== true);
+
+      // Resolve missing event titles for this page (once per event id).
+      const missing = rows.flatMap((row) =>
+        row.event_id && !localizedText(row.event_title) && !looked.has(row.event_id) ? [row.event_id] : [],
+      );
+      if (missing.length > 0) {
+        missing.forEach((id) => looked.add(id));
+        (await this.eventInfo(missing)).forEach((value, key) => events.set(key, value));
+      }
+
       // No early break: stopping mid-page and then returning this page's
       // next_cursor would skip the unconsumed rows. If Gate ever returns more
       // rows than requested, we overshoot `target` rather than drop markets.
-      for (const row of page.items || []) {
-        // Cheap pre-filter on the raw row; full status check happens below.
-        if (row.closed === true) continue;
-        if (search) {
-          const question = localizedText(row.question) || row.title || '';
-          if (!question.toLowerCase().includes(search)) continue;
-        }
-        collected.push(row);
+      for (const row of rows) {
+        const event = row.event_id ? events.get(row.event_id) : undefined;
+        const enriched: GateRawMarket = {
+          ...row,
+          event_title: localizedText(row.event_title) || (event ? event.title : null),
+          event_icon_url: row.event_icon_url || (event ? event.image : undefined),
+        };
+        const market = mapMarket(enriched, this.product, noPrices);
+        if (!market || market.status !== 'ACTIVE') continue;
+        if (search && !matchesSearch(market, search)) continue;
+        kept.push(enriched);
       }
       cursor = page.next_cursor || null;
       if (!cursor) break;
     }
 
-    const eventInfo = await this.eventInfo(
-      collected.flatMap((row) => (row.event_id && !localizedText(row.event_title) ? [row.event_id] : [])),
-    );
-    const prices = await this.tokenPrices(collected.flatMap(outcomeTokenIds)).catch(
+    // Prices never change eligibility, so fetch them only for kept rows.
+    const prices = await this.tokenPrices(kept.flatMap(outcomeTokenIds)).catch(
       () => new Map<string, GateTokenLastPrice>(),
     );
-
-    const markets = collected
-      .map((row) => {
-        const event = row.event_id ? eventInfo.get(row.event_id) : undefined;
-        return mapMarket(
-          {
-            ...row,
-            event_title: localizedText(row.event_title) || (event ? event.title : null),
-            event_icon_url: row.event_icon_url || (event ? event.image : undefined),
-          },
-          this.product,
-          prices,
-        );
-      })
-      .filter((market): market is VenueMarket => market !== null)
-      .filter((market) => market.status === 'ACTIVE');
+    const markets = kept
+      .map((row) => mapMarket(row, this.product, prices))
+      .filter((market): market is VenueMarket => market !== null);
 
     return { markets, cursor };
   }
@@ -476,6 +484,14 @@ function mapMarket(
     liquidityUsd: positiveDecimal(raw.liquidity),
     outcomes,
   };
+}
+
+/**
+ * Case-insensitive match on the displayed question, i.e. the normalized
+ * `question`, which already falls back to `title` and then the event title.
+ */
+function matchesSearch(market: VenueMarket, search: string): boolean {
+  return market.question.toLowerCase().includes(search);
 }
 
 function bookLevels(rows: { price?: string; size?: string }[] | undefined): GateBookLevel[] {
