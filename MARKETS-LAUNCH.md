@@ -45,7 +45,7 @@ positions, balances and fills. Backspace stores none of them.
 
 ## Runtime configuration
 
-- `GATE_DEXBUILDER_API_URL` (optional) overrides `https://api.dexbuilder.com` for a Gate sandbox.
+- `GATE_DEXBUILDER_API_URL` (optional) overrides `https://api.dexbuilder.com` for a Gate sandbox. Must be a bare `https://` origin; plain `http://` is accepted only for `localhost` / `127.0.0.1` stubs.
 - `GATE_BROKER_API_KEY`, `GATE_BROKER_API_SECRET`: server-only Broker credentials. Not set yet.
 
 ## Verification

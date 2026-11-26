@@ -96,7 +96,7 @@ Gate DexBuilder is the exclusive market provider and the authority for all finan
 
 | Variable | Scope | Purpose |
 |---|---|---|
-| `GATE_DEXBUILDER_API_URL` | Server-only, optional | Base URL override for a Gate sandbox. Defaults to `https://api.dexbuilder.com`. |
+| `GATE_DEXBUILDER_API_URL` | Server-only, optional | Base URL override for a Gate sandbox. Defaults to `https://api.dexbuilder.com`. Must be a bare `https://` origin (no path); `http://` only for localhost stubs. |
 | `GATE_BROKER_API_KEY` | **Server-only secret** | Gate DexBuilder Broker API Key, sent as the `KEY` header on private (Broker-signed) requests. |
 | `GATE_BROKER_API_SECRET` | **Server-only secret** | Broker Secret Key used to compute the HMAC-SHA512 `SIGN` header. Never sent to Gate or to clients. |
 
