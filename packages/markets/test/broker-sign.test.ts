@@ -174,16 +174,23 @@ test('signed fetches never follow redirects', async () => {
   assert.deepEqual(seen, [{ url: 'https://example.invalid/api/v4/broker/prediction/orders', redirect: 'error' }]);
 });
 
-test('Broker origin must be https unless it is an explicit loopback override', () => {
+test('Broker origin must be https, with no loopback exception', () => {
   const env = { GATE_BROKER_API_KEY: 'k', GATE_BROKER_API_SECRET: SECRET };
   assert.equal(readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'https://api.example.com/' }).baseUrl, 'https://api.example.com');
-  assert.equal(readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'http://localhost:4010' }).baseUrl, 'http://localhost:4010');
+  for (const plain of ['http://localhost:4010', 'http://127.0.0.1:4010', 'http://[::1]:4010', 'http://localhost']) {
+    assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: plain }), /https/);
+    assert.throws(() => brokerOrigin(plain), /https/);
+  }
   assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'http://api.example.com' }), /https/);
   assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'https://api.example.com/proxy' }), /bare origin/);
   assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'https://u:p@api.example.com' }), /bare origin/);
   assert.equal(brokerOrigin(DEFAULT_DEXBUILDER_API_URL), 'https://api.dexbuilder.com');
   assert.throws(() => new GateBrokerClient({
     config: { apiKey: 'k', apiSecret: SECRET, baseUrl: 'http://example.invalid' },
+  }), /https/);
+  assert.throws(() => new GateBrokerClient({
+    config: { apiKey: 'k', apiSecret: SECRET, baseUrl: 'http://127.0.0.1:4010' },
+    fetch: async () => ({ ok: true, status: 200, text: async () => '{}' }),
   }), /https/);
 });
 

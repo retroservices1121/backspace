@@ -218,12 +218,11 @@ export function readBrokerConfig(env: Env = processEnv()): BrokerConfig {
   return { apiKey, apiSecret, baseUrl };
 }
 
-const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
-
 /**
  * Validate and normalize the Broker origin. Must be `https:` with no
- * credentials, path, query or fragment. Plain `http:` is allowed only for an
- * explicit loopback override (local development / test stubs).
+ * credentials, path, query or fragment. There is no plaintext exception, not
+ * even for loopback: every Broker request is signed, so it never leaves over
+ * `http:`. Tests stub the transport through the injected `fetch` instead.
  */
 export function brokerOrigin(raw: string): string {
   let url: URL;
@@ -232,8 +231,7 @@ export function brokerOrigin(raw: string): string {
   } catch {
     throw new Error('Gate DexBuilder API URL is not a valid URL.');
   }
-  const loopback = LOOPBACK_HOSTS.indexOf(url.hostname) !== -1;
-  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) {
+  if (url.protocol !== 'https:') {
     throw new Error('Gate DexBuilder API URL must use https.');
   }
   if (url.username || url.password || url.search || url.hash || (url.pathname !== '/' && url.pathname !== '')) {
