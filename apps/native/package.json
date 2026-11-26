@@ -50,6 +50,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "node -e \"require('fs').rmSync('dist/test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --test test/gate-core.test.cjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true

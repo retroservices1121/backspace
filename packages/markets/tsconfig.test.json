@@ -1,0 +1,17 @@
+{
+  // Test build: compiles src + test to CommonJS JS so `node --test` runs on
+  // the monorepo's declared Node range (>=18) without type stripping or any
+  // extra runtime dependency. Output lives under dist/ (gitignored).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "CommonJS",
+    "declaration": false,
+    "sourceMap": false,
+    "incremental": false,
+    "rootDir": ".",
+    "outDir": "dist/test-build"
+  },
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "dist"]
+}

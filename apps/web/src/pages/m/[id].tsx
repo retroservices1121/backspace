@@ -9,6 +9,7 @@ import { useLiveMarketTrades } from '@src/hooks/useLiveMarketTrades';
 import { useLiveOrderBook } from '@src/hooks/useLiveOrderBook';
 import { useLivePrices } from '@src/hooks/useLivePrices';
 import { useMarket } from '@src/hooks/useMarket';
+import { detailProduct, productQuery } from '@src/lib/gate/product';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
 
 type DetailMarket = MarketCardData & {
@@ -33,8 +34,8 @@ type MarketData = {
   fetchedAt: number;
 };
 
-async function fetchMarketData(id: string): Promise<MarketData> {
-  const { data } = await axios().get<MarketData>(`/markets/${encodeURIComponent(id)}/data`);
+async function fetchMarketData(id: string, product: 'prediction' | 'event_contracts'): Promise<MarketData> {
+  const { data } = await axios().get<MarketData>(`/markets/${encodeURIComponent(id)}/data${productQuery(product)}`);
   return data;
 }
 
@@ -62,18 +63,26 @@ function date(value: Date | string) {
 export default function MarketDetail() {
   const router = useRouter();
   const id = typeof router.query.id === 'string' ? router.query.id : '';
-  const marketQuery = useMarket(id || null);
+  // `?product=event_contracts` comes from catalog links. Older `/m/<id>`
+  // links omit it; the detail API then resolves the product and the data
+  // request waits for it so trades, books and history use the same product.
+  const linkProduct = detailProduct(router.query.product);
+  const marketQuery = useMarket(id || null, linkProduct);
   const market = marketQuery.data as DetailMarket | undefined;
-  const dataQuery = useQuery(['gate-market-data', id], () => fetchMarketData(id), {
-    enabled: Boolean(id), refetchInterval: 10_000, staleTime: 5_000,
+  const product = linkProduct || (market ? market.product || 'prediction' : undefined);
+  const dataQuery = useQuery(['gate-market-data', id, product], () => fetchMarketData(id, product || 'prediction'), {
+    enabled: Boolean(id && product), refetchInterval: 10_000, staleTime: 5_000,
   });
-  const live = useLivePrices(market?.outcomes.map((outcome) => outcome.externalId) || []);
+  // The live WebSocket hooks use the Prediction Markets stream; Event
+  // Contracts rely on the polled REST snapshot above.
+  const liveStream = product === 'prediction';
+  const live = useLivePrices(liveStream ? market?.outcomes.map((outcome) => outcome.externalId) || [] : []);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
 
   const selectedOutcome = market?.outcomes.find((outcome) => outcome.externalId === selectedToken)
     || market?.outcomes[0];
-  const liveDepth = useLiveOrderBook(selectedOutcome?.externalId);
-  const liveTrades = useLiveMarketTrades(market?.contractAddress);
+  const liveDepth = useLiveOrderBook(liveStream ? selectedOutcome?.externalId : undefined);
+  const liveTrades = useLiveMarketTrades(liveStream ? market?.contractAddress : undefined);
   const restBook = dataQuery.data?.books.find((item) => item.tokenId === selectedOutcome?.externalId)?.book;
   const book = liveDepth.book || restBook;
   const trades = useMemo(() => mergeTrades(liveTrades.trades, dataQuery.data?.trades || []), [liveTrades.trades, dataQuery.data?.trades]);
@@ -88,7 +97,7 @@ export default function MarketDetail() {
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-5 text-ink sm:px-6">
       <Head><title>{market.question} · Backspace Markets</title></Head>
       <div className="mb-5 flex items-center justify-between gap-3">
-        <Link href="/markets"><a className="text-sm text-brand-2">← Markets</a></Link>
+        <Link href={`/markets${productQuery(product)}`}><a className="text-sm text-brand-2">← {product === 'event_contracts' ? 'Event Contracts' : 'Markets'}</a></Link>
         <StatusBadge status={status} accepting={market.acceptingOrders} />
       </div>
 

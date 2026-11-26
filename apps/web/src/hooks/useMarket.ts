@@ -17,8 +17,13 @@ type ApiMarket = Omit<MarketCardData, 'closesAt' | 'outcomes'> & {
   >;
 };
 
-async function fetchMarket(id: string): Promise<MarketCardData> {
-  const { data } = await axios().get<ApiMarket>(`/markets/${id}`);
+type GateProduct = 'prediction' | 'event_contracts';
+
+async function fetchMarket(id: string, product?: GateProduct): Promise<MarketCardData> {
+  // Without a product the API tries Prediction Markets, then Event Contracts.
+  const { data } = await axios().get<ApiMarket>(
+    `/markets/${encodeURIComponent(id)}${product ? `?product=${product}` : ''}`,
+  );
   return {
     ...data,
     closesAt: new Date(data.closesAt),
@@ -29,11 +34,11 @@ async function fetchMarket(id: string): Promise<MarketCardData> {
   };
 }
 
-export function useMarket(marketId: string | bigint | null | undefined) {
+export function useMarket(marketId: string | bigint | null | undefined, product?: GateProduct) {
   const id = marketId == null ? null : marketId.toString();
   return useQuery(
-    ['market', id],
-    () => fetchMarket(id as string),
+    ['market', id, product || null],
+    () => fetchMarket(id as string, product),
     {
       enabled: !!id,
       refetchInterval: 30_000,

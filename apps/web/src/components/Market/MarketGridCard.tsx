@@ -13,6 +13,7 @@ import React from 'react';
 import { useRouter } from 'next/router';
 
 import type { MarketCardData } from './MarketCard';
+import { marketHref } from '@src/lib/gate/product';
 
 type Props = {
   market: MarketCardData;
@@ -71,7 +72,7 @@ export function MarketGridCard({ market }: Props) {
   return (
     <button
       type="button"
-      onClick={() => router.push(`/m/${market.id}`)}
+      onClick={() => router.push(marketHref(market))}
       className="
         flex flex-col w-full
         rounded-[16px] overflow-hidden

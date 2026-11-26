@@ -1,10 +1,24 @@
 // Live Gate DexBuilder catalog gateway. No market data is persisted.
+//
+// Query params:
+//   limit   1–200 rows returned (default 50)
+//   q       case-insensitive question search
+//   sort    closing | trending | volume | volume_asc
+//   product prediction (default) | event_contracts | all
+//
+// Every market carries `product` so clients can tell Prediction Markets from
+// Event Contracts. Gate list calls are paged at 100 rows per request.
 
-import { GatePredictionAdapter } from '@backspace/markets';
+import { gateCatalogAdapter, type VenueMarket } from '@backspace/markets';
 
+import { parseGateProduct, productsFor } from '@src/lib/gate/product';
 import createHandler from '@src/lib/nextconnect';
 
 type SortKey = 'closing' | 'trending' | 'volume' | 'volume_asc';
+
+// Rows collected per product before local sorting. Gate does not document
+// sort values for market lists, so a wider window keeps sorts meaningful.
+const SORT_WINDOW = 200;
 
 const handler = createHandler();
 
@@ -15,14 +29,15 @@ handler.get(async (req, res) => {
     : 50;
   const search = typeof req.query.q === 'string' ? req.query.q.trim() : undefined;
   const sort = parseSort(req.query.sort);
+  const products = productsFor(parseGateProduct(req.query.product));
 
-  // Request enough live rows to sort locally because the documented Gate
-  // sort enum values are not yet specified.
-  const adapter = new GatePredictionAdapter({
-    apiUrl: process.env.GATE_DEXBUILDER_API_URL,
-  });
-  const result = await adapter.listMarkets({ limit: 200, search });
-  const markets = result.markets
+  const results = await Promise.all(products.map(async (product) => {
+    const adapter = gateCatalogAdapter(product, process.env.GATE_DEXBUILDER_API_URL);
+    const result = await adapter.listMarkets({ limit: Math.max(limit, SORT_WINDOW), search });
+    return result.markets;
+  }));
+
+  const markets = ([] as VenueMarket[]).concat(...results)
     .sort(comparator(sort))
     .slice(0, limit)
     .map((market) => ({
@@ -51,4 +66,3 @@ function comparator(sort: SortKey) {
 }
 
 export default handler;
-

@@ -1,0 +1,16 @@
+{
+  // Test build: compiles only the pure Gate client (no Expo / React Native
+  // imports) to CommonJS so `node --test` runs on Node >=18 without extra
+  // dependencies. Output lives under dist/ (gitignored).
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
+    "types": [],
+    "rootDir": "src",
+    "outDir": "dist/test-build"
+  },
+  "files": ["src/lib/gate-core.ts"]
+}

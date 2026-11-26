@@ -1,13 +1,22 @@
-import { GateAccountGatewayError, gateAccountRequest } from '@src/lib/gate/accountGateway';
+// Signed-in user's Gate account summary and positions via the Broker API.
+//   prediction (default):  GET /api/v4/broker/prediction/assets + /positions
+//   event_contracts:       GET /api/v4/broker/event_contracts/assets
+//                          + /positions (+ /balance for available funds)
+// Served live from Gate; nothing is persisted.
+
+import { gateAccountRequest, parseAccountProduct, sendGateAccountError } from '@src/lib/gate/brokerAccount';
 import createHandler, { requireAuthMiddleware } from '@src/lib/nextconnect';
 
 type Assets = {
   daily_pnl?: string;
+  daily_pnl_rate?: string;
   fund_total?: string;
+  prediction_market_asset?: string;
   prediction_position_value?: string;
   spot_usdt_balance?: string;
   unclaimed_amount?: string;
 };
+type Balance = { available?: string; currency?: string; locked?: string; total?: string };
 type Position = {
   available_size?: string;
   avg_open_price?: string;
@@ -20,22 +29,31 @@ type Position = {
   settlement_status?: string;
   size?: string;
   token_id?: string;
+  updated_at?: number;
   won?: boolean;
 };
-type Positions = { items?: Position[] };
+type Positions = { items?: Position[]; next_cursor?: string | null };
 const handler = createHandler();
 
 handler.use(requireAuthMiddleware).get(async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  const product = parseAccountProduct(req.query.product);
   try {
-    const [assets, positions] = await Promise.all([
-      gateAccountRequest<Assets>(req.authId, '/api/v4/prediction/assets'),
-      gateAccountRequest<Positions>(req.authId, '/api/v4/prediction/positions'),
+    const [assets, positions, balance] = await Promise.all([
+      gateAccountRequest<Assets>(req.authId, product, 'assets'),
+      gateAccountRequest<Positions>(req.authId, product, 'positions'),
+      product === 'event_contracts'
+        ? gateAccountRequest<Balance>(req.authId, product, 'balance').catch((): Balance | null => null)
+        : Promise.resolve(null as Balance | null),
     ]);
     res.status(200).json({
+      product,
       total: num(assets.fund_total),
       dailyPnl: num(assets.daily_pnl),
+      dailyPnlRate: num(assets.daily_pnl_rate),
       positionValue: num(assets.prediction_position_value),
-      available: num(assets.spot_usdt_balance),
+      marketAsset: num(assets.prediction_market_asset),
+      available: balance && balance.available !== undefined ? num(balance.available) : num(assets.spot_usdt_balance),
       unclaimed: num(assets.unclaimed_amount),
       positions: (positions.items ?? []).map((position) => ({
         positionId: position.position_id ?? '',
@@ -50,12 +68,11 @@ handler.use(requireAuthMiddleware).get(async (req, res) => {
         claimableAmount: num(position.claimable_amount),
         settlementStatus: position.settlement_status ?? 'UNSETTLED',
         won: Boolean(position.won),
+        updatedAt: position.updated_at ?? null,
       })),
     });
   } catch (error) {
-    if (error instanceof GateAccountGatewayError) {
-      return res.status(error.status).json({ error: error.message });
-    }
+    if (sendGateAccountError(res, error)) return;
     throw error;
   }
 });

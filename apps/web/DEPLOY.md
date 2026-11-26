@@ -90,15 +90,29 @@ Required only if `Media` rows with `host=FIREBASE` or `host=SUPABASE` still exis
 | `CRON_SECRET` | **Server-only.** Bearer token used by Railway cron services. Generate with `openssl rand -hex 32`. |
 | `ADMIN_BOOTSTRAP_SECRET` | **Server-only.** One-shot token for `POST /api/admin/bootstrap` (promotes the first signed-in caller to ADMIN), sent in the `X-Bootstrap-Secret` header (the Authorization slot already carries the Privy session token). The route refuses 409 once any admin exists; **unset this var after first admin is set** so the endpoint hard-disables. Generate with `openssl rand -hex 32`. |
 
-## Gate DexBuilder prediction markets
+## Gate DexBuilder markets
 
-Gate DexBuilder is the exclusive prediction-market provider. Market data is requested live from `https://api.dexbuilder.com/api/v4/prediction` and is not stored in Backspace's database.
+Gate DexBuilder is the exclusive market provider and the authority for all financial state. Public market data is requested live from Prediction Markets (`/api/v4/prediction`) and Event Contracts (`/api/v4/event_contracts`) on `https://api.dexbuilder.com` and is never stored in Backspace's database. `/api/markets` returns Prediction Markets by default; pass `?product=event_contracts` or `?product=all` for Event Contracts. Each market carries a `product` field.
 
-| Variable | Purpose |
-|---|---|
-| `GATE_DEXBUILDER_API_URL` | Optional server-side base URL override for Gate sandbox or production. Defaults to `https://api.dexbuilder.com`. |
+| Variable | Scope | Purpose |
+|---|---|---|
+| `GATE_DEXBUILDER_API_URL` | Server-only, optional | Base URL override for a Gate sandbox. Defaults to `https://api.dexbuilder.com`. Must be a bare `https://` origin (no path). Plain `http://` is always rejected, including `localhost` / `127.0.0.1`, because every Broker request is signed. |
+| `GATE_BROKER_API_KEY` | **Server-only secret** | Gate DexBuilder Broker API Key, sent as the `KEY` header on private (Broker-signed) requests. |
+| `GATE_BROKER_API_SECRET` | **Server-only secret** | Broker Secret Key used to compute the HMAC-SHA512 `SIGN` header. Never sent to Gate or to clients. |
 
-No catalog-import cron is required. Gate remains the market-data authority.
+Rules for the Broker credentials:
+
+- Set them only on the web service. Never prefix them with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`, never log them, and never put them in support tickets.
+- They are read only by `@backspace/markets/server`, which is imported only from API routes and server modules (`src/lib/gate/brokerAccount.ts`).
+- If either is missing, private routes (`/api/native/markets/orders`, `/api/native/markets/portfolio`) fail closed with HTTP 503 and a generic message. Public market routes keep working.
+- The key needs Prediction Markets (and Event Contracts, if used) read-write permission, plus `dex_builder` permission for Platform calls. If Gate applies an IP allowlist, the web service's egress IP must be on it.
+- Gate requires `Timestamp` within 60 seconds of its clock; the client corrects skew with `GET /api/v4/prediction/time`.
+
+**Not in this release:** Gate wallet registration, deposits, withdrawals and any funding flow. Until registration ships, private routes return HTTP 409 (`gate_registration_not_enabled`) even with Broker keys set, because no Backspace user has a registered Gate wallet yet.
+
+**Deprecated:** `GATE_ACCOUNT_GATEWAY_URL` and `GATE_ACCOUNT_GATEWAY_TOKEN` (the old account-gateway placeholder) are no longer read and can be removed from the environment.
+
+No catalog-import or snapshot cron is required.
 
 ## Dflow spot trading
 

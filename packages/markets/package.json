@@ -4,7 +4,22 @@
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server/index.ts",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "server": ["./src/server/index.ts"]
+    }
+  },
+  "scripts": {
+    "test": "node -e \"require('fs').rmSync('dist/test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --test dist/test-build/test/broker-sign.test.js dist/test-build/test/gate-catalog.test.js",
+    "typecheck": "tsc --noEmit -p ."
+  },
   "devDependencies": {
+    "@types/node": "^17.0.23",
     "typescript": "^5.4.0"
   }
 }

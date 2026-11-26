@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import type { MarketEventGroup } from '@src/lib/markets/groupEvents';
 
 import type { MarketCardData } from './MarketCard';
+import { marketHref } from '@src/lib/gate/product';
 
 type Props = {
   event: MarketEventGroup<MarketCardData>;
@@ -72,7 +73,7 @@ export function MarketEventCard({ event }: Props) {
               <button
                 key={market.id}
                 type="button"
-                onClick={() => router.push(`/m/${market.id}`)}
+                onClick={() => router.push(marketHref(market))}
                 className="group/row flex w-full items-center gap-3 rounded-[10px] border border-line bg-canvas/35 px-3 py-2.5 text-left transition-colors hover:border-brand-2/45 hover:bg-brand-soft"
               >
                 <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-ink-2 line-clamp-2 group-hover/row:text-ink">

@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSession } from '@/auth/session';
 import { colors } from '@/constants/theme';
-import { cents, type Outcome } from '@/lib/gate';
+import { cents, type GateProduct, type Outcome } from '@/lib/gate';
 import { placeOrder } from '@/lib/backspace-api';
 
-export function TradeTicket({ outcomes, acceptingOrders }: { outcomes: Outcome[]; acceptingOrders: boolean }) {
+export function TradeTicket({ outcomes, acceptingOrders, product = 'prediction' }: { outcomes: Outcome[]; acceptingOrders: boolean; product?: GateProduct }) {
   const session = useSession(); const [selectedId, setSelectedId] = useState(outcomes[0]?.id); const [amount, setAmount] = useState('10'); const [reviewing, setReviewing] = useState(false); const [submitting, setSubmitting] = useState(false); const [message, setMessage] = useState<string | null>(null);
   const selected = outcomes.find((outcome) => outcome.id === selectedId) ?? outcomes[0];
   const dollars = Number(amount); const estimatedShares = useMemo(() => selected?.price && dollars > 0 ? dollars / selected.price : null, [dollars, selected?.price]);
@@ -17,7 +17,7 @@ export function TradeTicket({ outcomes, acceptingOrders }: { outcomes: Outcome[]
     if (!selected || !Number.isFinite(dollars) || dollars <= 0) return;
     setSubmitting(true); setMessage(null);
     try {
-      const result = await placeOrder({ tokenId: selected.id, side: 'BUY', totalCost: dollars.toFixed(2), orderType: 'MARKET', clientOrderId: randomUUID() }, session.getAccessToken);
+      const result = await placeOrder({ tokenId: selected.id, side: 'BUY', totalCost: dollars.toFixed(2), orderMode: 'MARKET', orderType: 'FOK', clientOrderId: randomUUID(), product }, session.getAccessToken);
       setMessage(`Order ${result.status.toLowerCase()}.`); setReviewing(false);
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Order could not be submitted.'); }
     finally { setSubmitting(false); }

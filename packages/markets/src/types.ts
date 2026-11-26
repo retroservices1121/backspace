@@ -10,6 +10,11 @@ export type SharesStr = string;        // arbitrary precision
 
 export type VenueId = 'GATE' | 'AZURO' | 'INTERNAL';
 
+// Gate DexBuilder runs two catalog products with the same public schema:
+// Prediction Markets (`/api/v4/prediction`) and Event Contracts
+// (`/api/v4/event_contracts`). Results are tagged so clients can tell them apart.
+export type GateProduct = 'prediction' | 'event_contracts';
+
 export type VenueMarketRef = {
   venue: VenueId;
   externalId: string;
@@ -23,6 +28,8 @@ export type VenueOutcome = {
 };
 
 export type VenueMarket = VenueMarketRef & {
+  // Which Gate product this market belongs to. Absent for non-Gate venues.
+  product?: GateProduct;
   // Gate groups related contracts under one event. Keep these identifiers in
   // the live response so catalog clients can present the event hierarchy.
   eventId?: string | null;
@@ -44,6 +51,9 @@ export type VenueMarket = VenueMarketRef & {
   winningOutcome?: string | null;
   acceptingOrders?: boolean;
   tickSize?: string | null;
+  // Market-level top of book from the Gate summary (first outcome token).
+  bestBid?: ProbabilityStr | null;
+  bestAsk?: ProbabilityStr | null;
   // Venue-reported volume + book depth, in USD. Strings to preserve
   // precision over the wire (parsed to Decimal at the DB boundary).
   // Nullable: not every venue exposes these, and not every market
