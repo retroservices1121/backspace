@@ -3,6 +3,19 @@ import { fetch } from 'expo/fetch';
 export const GATE_API = process.env.EXPO_PUBLIC_GATE_API_URL ?? 'https://api.dexbuilder.com/api/v4/prediction';
 export const GATE_WS = process.env.EXPO_PUBLIC_GATE_WS_URL ?? 'wss://broker.dexbuilder.com/ws/dex-builder/prediction';
 
+/** Gate public product. Prediction Markets is the default everywhere. */
+export type GateProduct = 'prediction' | 'event_contracts';
+export const GATE_PRODUCTS: { key: GateProduct; label: string }[] = [
+  { key: 'prediction', label: 'Prediction' },
+  { key: 'event_contracts', label: 'Event Contracts' },
+];
+// Event Contracts share the public schema under /api/v4/event_contracts.
+const GATE_EC_API = /\/prediction\/?$/.test(GATE_API)
+  ? GATE_API.replace(/\/prediction\/?$/, '/event_contracts')
+  : 'https://api.dexbuilder.com/api/v4/event_contracts';
+const GATE_API_BY_PRODUCT: Record<GateProduct, string> = { prediction: GATE_API, event_contracts: GATE_EC_API };
+export function parseProduct(value: unknown): GateProduct { return (Array.isArray(value) ? value[0] : value) === 'event_contracts' ? 'event_contracts' : 'prediction'; }
+
 type Localized = string | Record<string, unknown> | null;
 // Published OutcomeRef is { outcome, token_id }. clob_token_id is a defensive fallback only.
 export type GateOutcome = { outcome?: Localized; token_id?: string; clob_token_id?: string };
@@ -20,7 +33,7 @@ export type Outcome = { id: string; label: string; price: number | null };
 export type Market = {
   id: string; eventId: string | null; eventTitle: string | null; conditionId: string | null; question: string; description: string;
   category: string; imageUrl: string | null; closesAt: Date | null; volume: number; volume24h: number; liquidity: number;
-  bestBid: number | null; bestAsk: number | null; acceptingOrders: boolean; outcomes: Outcome[];
+  bestBid: number | null; bestAsk: number | null; acceptingOrders: boolean; outcomes: Outcome[]; product: GateProduct;
 };
 export type EventGroup = { id: string; title: string; category: string; imageUrl: string | null; markets: Market[]; volume24h: number };
 export type Trade = { id: string; outcome: string; side: string; price: number; size: number; timestamp: number };
@@ -32,18 +45,18 @@ const PRICE_BATCH = 100; // documented /tokens/prices maximum
 const MAX_PAGES = 10;
 const DEFAULT_MARKETS = 200;
 
-async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${GATE_API}${path}`, { headers: { Accept: 'application/json' } });
+async function getJson<T>(path: string, product: GateProduct = 'prediction'): Promise<T> {
+  const response = await fetch(`${GATE_API_BY_PRODUCT[product]}${path}`, { headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error(`Gate returned ${response.status}`);
   return response.json() as Promise<T>;
 }
 
 /** Page a Gate list route with next_cursor until `target` rows or the cursor ends. */
-async function collect<T>(path: string, target: number, until?: (rows: T[]) => boolean): Promise<T[]> {
+async function collect<T>(path: string, target: number, product: GateProduct, until?: (rows: T[]) => boolean): Promise<T[]> {
   const rows: T[] = []; let cursor: string | null = null;
   for (let page = 0; page < MAX_PAGES && rows.length < target; page += 1) {
     const separator = path.includes('?') ? '&' : '?';
-    const body: Page<T> = await getJson<Page<T>>(`${path}${separator}limit=${Math.min(PAGE_LIMIT, target - rows.length)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+    const body: Page<T> = await getJson<Page<T>>(`${path}${separator}limit=${Math.min(PAGE_LIMIT, target - rows.length)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, product);
     rows.push(...(body.items ?? []));
     cursor = body.next_cursor || null;
     if (!cursor || until?.(rows)) break;
@@ -52,38 +65,38 @@ async function collect<T>(path: string, target: number, until?: (rows: T[]) => b
 }
 
 /** Latest trade price per token via batch /tokens/prices (≤100 ids per call). */
-async function tokenPrices(tokenIds: string[]): Promise<Map<string, number>> {
+async function tokenPrices(tokenIds: string[], product: GateProduct): Promise<Map<string, number>> {
   const unique = [...new Set(tokenIds.filter(Boolean))]; const prices = new Map<string, number>();
   for (let index = 0; index < unique.length; index += PRICE_BATCH) {
     const ids = unique.slice(index, index + PRICE_BATCH).map(encodeURIComponent).join(',');
-    const body = await getJson<{ items?: { token_id?: string; price?: string | null }[] }>(`/tokens/prices?token_ids=${ids}`);
+    const body = await getJson<{ items?: { token_id?: string; price?: string | null }[] }>(`/tokens/prices?token_ids=${ids}`, product);
     for (const item of body.items ?? []) { const price = number(item.price); if (item.token_id && price !== null && item.price !== '') prices.set(item.token_id, price); }
   }
   return prices;
 }
 
-export async function listMarkets(limit = DEFAULT_MARKETS): Promise<Market[]> {
-  const raws = await collect<GateMarket>('/markets?active=true&closed=false', limit);
+export async function listMarkets(limit = DEFAULT_MARKETS, product: GateProduct = 'prediction'): Promise<Market[]> {
+  const raws = await collect<GateMarket>('/markets?active=true&closed=false', limit, product);
   const missing = new Set(raws.flatMap((raw) => raw.event_id && !text(raw.event_title) ? [raw.event_id] : []));
   const [events, prices] = await Promise.all([
-    missing.size ? collect<GateEvent>('/events?active=true&closed=false', PAGE_LIMIT * MAX_PAGES, (rows) => rows.filter((event) => event.event_id && missing.has(event.event_id)).length >= missing.size).catch(() => [] as GateEvent[]) : Promise.resolve([] as GateEvent[]),
-    tokenPrices(raws.flatMap(tokenIdsOf)).catch(() => new Map<string, number>()),
+    missing.size ? collect<GateEvent>('/events?active=true&closed=false', PAGE_LIMIT * MAX_PAGES, product, (rows) => rows.filter((event) => event.event_id && missing.has(event.event_id)).length >= missing.size).catch(() => [] as GateEvent[]) : Promise.resolve([] as GateEvent[]),
+    tokenPrices(raws.flatMap(tokenIdsOf), product).catch(() => new Map<string, number>()),
   ]);
   const titles = new Map(events.flatMap((event) => event.event_id ? [[event.event_id, text(event.title)] as const] : []));
-  return raws.map((raw) => normalizeMarket(raw, titles, prices)).filter((value): value is Market => value !== null);
+  return raws.map((raw) => normalizeMarket(raw, titles, prices, product)).filter((value): value is Market => value !== null);
 }
 
-export async function getMarket(id: string): Promise<Market> {
-  const raw = await getJson<GateMarket>(`/markets/${encodeURIComponent(id)}`);
-  const prices = await tokenPrices(tokenIdsOf(raw)).catch(() => new Map<string, number>());
-  const market = normalizeMarket(raw, new Map(), prices);
+export async function getMarket(id: string, product: GateProduct = 'prediction'): Promise<Market> {
+  const raw = await getJson<GateMarket>(`/markets/${encodeURIComponent(id)}`, product);
+  const prices = await tokenPrices(tokenIdsOf(raw), product).catch(() => new Map<string, number>());
+  const market = normalizeMarket(raw, new Map(), prices, product);
   if (!market) throw new Error('Market data is incomplete');
   return market;
 }
 
 /** Public trades: documented page `{ items, next_cursor }`, `trade_id`, `timestamp` in ms. */
-export async function getMarketTrades(id: string, outcomes: Outcome[] = []): Promise<Trade[]> {
-  const page = await getJson<Page<Record<string, unknown>>>(`/markets/${encodeURIComponent(id)}/trades?limit=30`);
+export async function getMarketTrades(id: string, outcomes: Outcome[] = [], product: GateProduct = 'prediction'): Promise<Trade[]> {
+  const page = await getJson<Page<Record<string, unknown>>>(`/markets/${encodeURIComponent(id)}/trades?limit=30`, product);
   const labels = new Map(outcomes.map((outcome) => [outcome.id, outcome.label]));
   return (page.items ?? []).flatMap((row, index) => {
     const price = number(row.price); const size = number(row.size); const timestamp = number(row.timestamp);
@@ -93,8 +106,8 @@ export async function getMarketTrades(id: string, outcomes: Outcome[] = []): Pro
   });
 }
 
-export async function getOrderBook(tokenId: string): Promise<{ bids: BookLevel[]; asks: BookLevel[] }> {
-  const raw = await getJson<{ bids?: {price?: string; size?: string}[]; asks?: {price?: string; size?: string}[] }>(`/tokens/${encodeURIComponent(tokenId)}/order_book?depth=20`);
+export async function getOrderBook(tokenId: string, product: GateProduct = 'prediction'): Promise<{ bids: BookLevel[]; asks: BookLevel[] }> {
+  const raw = await getJson<{ bids?: {price?: string; size?: string}[]; asks?: {price?: string; size?: string}[] }>(`/tokens/${encodeURIComponent(tokenId)}/order_book?depth=20`, product);
   const map = (rows: {price?: string; size?: string}[] = []) => rows.flatMap((row) => {
     const price = number(row.price); const size = number(row.size); return price === null || size === null ? [] : [{ price, size }];
   });
@@ -102,9 +115,9 @@ export async function getOrderBook(tokenId: string): Promise<{ bids: BookLevel[]
 }
 
 /** Price history: `from` / `to` and point `t` are Unix milliseconds; max range 14 days. */
-export async function getPriceHistory(tokenId: string): Promise<PricePoint[]> {
+export async function getPriceHistory(tokenId: string, product: GateProduct = 'prediction'): Promise<PricePoint[]> {
   const to = Date.now(); const from = to - 7 * 86_400_000;
-  const raw = await getJson<{ history?: {p?: string; t?: number}[] }>(`/tokens/${encodeURIComponent(tokenId)}/price_history?interval=1h&from=${from}&to=${to}`);
+  const raw = await getJson<{ history?: {p?: string; t?: number}[] }>(`/tokens/${encodeURIComponent(tokenId)}/price_history?interval=1h&from=${from}&to=${to}`, product);
   return (raw.history ?? []).flatMap((point) => { const price = number(point.p); return price === null || !point.t ? [] : [{ price, timestamp: point.t < 10_000_000_000 ? point.t * 1000 : point.t }]; });
 }
 
@@ -136,7 +149,7 @@ function outcomePrices(raw: GateMarket, ids: string[], prices: Map<string, numbe
   return filled;
 }
 
-function normalizeMarket(raw: GateMarket, eventTitles: Map<string, string>, prices: Map<string, number>): Market | null {
+function normalizeMarket(raw: GateMarket, eventTitles: Map<string, string>, prices: Map<string, number>, product: GateProduct): Market | null {
   const id = raw.market_id; const question = text(raw.question) || raw.title || text(raw.event_title);
   if (!id || !question) return null;
   const rows = (raw.outcomes ?? []).flatMap((outcome) => {
@@ -146,7 +159,7 @@ function normalizeMarket(raw: GateMarket, eventTitles: Map<string, string>, pric
   if (!rows.length) return null;
   const filled = outcomePrices(raw, rows.map((row) => row.id), prices);
   const outcomes = rows.map((row, index) => ({ ...row, price: filled[index] ?? null }));
-  return { id, eventId: raw.event_id ?? null, eventTitle: text(raw.event_title) || (raw.event_id ? eventTitles.get(raw.event_id) ?? null : null), conditionId: raw.condition_id ?? null, question, description: text(raw.description), category: raw.category || firstTag(raw.tags) || 'Markets', imageUrl: raw.image || raw.icon || raw.event_icon_url || null, closesAt: date(raw.end_date ?? raw.end_time), volume: number(raw.volume) ?? 0, volume24h: number(raw.volume_24hr) ?? 0, liquidity: number(raw.liquidity) ?? 0, bestBid: number(raw.best_bid), bestAsk: number(raw.best_ask), acceptingOrders: raw.accepting_orders !== false && !raw.closed, outcomes };
+  return { id, eventId: raw.event_id ?? null, eventTitle: text(raw.event_title) || (raw.event_id ? eventTitles.get(raw.event_id) ?? null : null), conditionId: raw.condition_id ?? null, question, description: text(raw.description), category: raw.category || firstTag(raw.tags) || 'Markets', imageUrl: raw.image || raw.icon || raw.event_icon_url || null, closesAt: date(raw.end_date ?? raw.end_time), volume: number(raw.volume) ?? 0, volume24h: number(raw.volume_24hr) ?? 0, liquidity: number(raw.liquidity) ?? 0, bestBid: number(raw.best_bid), bestAsk: number(raw.best_ask), acceptingOrders: raw.accepting_orders !== false && !raw.closed, outcomes, product };
 }
 
 export function text(value: Localized | undefined): string {
