@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/broker-sign.test.ts",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/broker-sign.test.ts test/gate-catalog.test.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "devDependencies": {

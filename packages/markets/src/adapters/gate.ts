@@ -144,6 +144,12 @@ export class GateCatalogAdapter implements MarketVenue {
   /**
    * Collect up to `args.limit` live markets, paging `/markets` with
    * `next_cursor` at no more than 100 rows per request.
+   *
+   * Cursor contract: each upstream request asks only for the rows still
+   * needed (`min(100, remaining)`), and every row of every fetched page is
+   * consumed — kept or filtered out — before its `next_cursor` is returned.
+   * So the returned cursor never jumps past rows the caller has not seen.
+   * Filtering only shortens a page; the loop then keeps paging.
    */
   async listMarkets(args: ListMarketsArgs): Promise<ListMarketsResult> {
     const target = clampCollect(args.limit);
@@ -154,7 +160,7 @@ export class GateCatalogAdapter implements MarketVenue {
 
     while (collected.length < target && pages < MAX_MARKET_PAGES) {
       const qs = new URLSearchParams({
-        limit: String(GATE_PAGE_LIMIT),
+        limit: String(Math.min(GATE_PAGE_LIMIT, target - collected.length)),
         active: 'true',
         closed: 'false',
       });
@@ -163,8 +169,10 @@ export class GateCatalogAdapter implements MarketVenue {
 
       const page = await this.fetchJson<Page<GateRawMarket>>(`/markets?${qs.toString()}`);
       pages += 1;
+      // No early break: stopping mid-page and then returning this page's
+      // next_cursor would skip the unconsumed rows. If Gate ever returns more
+      // rows than requested, we overshoot `target` rather than drop markets.
       for (const row of page.items || []) {
-        if (collected.length >= target) break;
         // Cheap pre-filter on the raw row; full status check happens below.
         if (row.closed === true) continue;
         if (search) {

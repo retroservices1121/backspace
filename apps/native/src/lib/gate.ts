@@ -43,7 +43,7 @@ async function collect<T>(path: string, target: number, until?: (rows: T[]) => b
   const rows: T[] = []; let cursor: string | null = null;
   for (let page = 0; page < MAX_PAGES && rows.length < target; page += 1) {
     const separator = path.includes('?') ? '&' : '?';
-    const body: Page<T> = await getJson<Page<T>>(`${path}${separator}limit=${PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+    const body: Page<T> = await getJson<Page<T>>(`${path}${separator}limit=${Math.min(PAGE_LIMIT, target - rows.length)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
     rows.push(...(body.items ?? []));
     cursor = body.next_cursor || null;
     if (!cursor || until?.(rows)) break;
