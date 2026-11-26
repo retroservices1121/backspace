@@ -1,5 +1,5 @@
 // Broker signing tests. Run with `pnpm --filter @backspace/markets test`
-// (node:test with built-in TypeScript type stripping, Node >= 22.18).
+// (compiled to CommonJS by tsconfig.test.json, then run with node:test; Node >= 18).
 //
 // Uses ONLY the dummy secret "test-broker-secret". Expected SIGN values are
 // fixtures computed from the documented algorithm; do not regenerate them
@@ -22,7 +22,7 @@ import {
   sha512Hex,
   signBrokerRequest,
   signingQueryString,
-} from '../src/server/broker.ts';
+} from '../src/server/broker';
 
 const SECRET = 'test-broker-secret';
 const TS = '1700000000';

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
-import { GateCatalogAdapter } from '../src/adapters/gate.ts';
+import { GateCatalogAdapter } from '../src/adapters/gate';
 
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });

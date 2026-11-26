@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/broker-sign.test.ts test/gate-catalog.test.ts",
+    "test": "node -e \"require('fs').rmSync('dist/test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --test dist/test-build/test/broker-sign.test.js dist/test-build/test/gate-catalog.test.js",
     "typecheck": "tsc --noEmit -p ."
   },
   "devDependencies": {
