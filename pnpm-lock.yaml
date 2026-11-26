@@ -548,6 +548,9 @@ importers:
 
   packages/markets:
     devDependencies:
+      '@types/node':
+        specifier: ^17.0.23
+        version: 17.0.45
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
@@ -8209,6 +8212,7 @@ packages:
   image-size@0.6.3:
     resolution: {integrity: sha512-47xSUiQioGaB96nqtp5/q55m0aBQSQdyIloMOc/x+QVTDZLNmXE892IIDrJ0hM1A5vcNUDD5tDffkSP5lCaIIA==}
     engines: {node: '>=4.0'}
+    deprecated: Please migrate to image-size@2.x
     hasBin: true
 
   immer@9.0.21:
