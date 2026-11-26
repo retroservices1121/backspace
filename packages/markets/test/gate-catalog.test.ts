@@ -72,7 +72,7 @@ test('filtered pages keep paging and never skip matching rows', async () => {
 });
 
 // Rows whose displayed question comes only from the event title: either a
-// localized `event_title` on the row, or a title fetched from `/events`.
+// localized `event_title` on the row, or a title fetched from `/events/{event_id}`.
 const EVENT_ROWS = Array.from({ length: 30 }, (_, i) => {
   const base = {
     market_id: `e${i + 1}`,
@@ -82,11 +82,31 @@ const EVENT_ROWS = Array.from({ length: 30 }, (_, i) => {
   if (i % 3 === 0) return { ...base, question: `Alpha question ${i + 1}` };
   if (i % 3 === 1) {
     return i % 2 === 0
-      ? { ...base, event_id: 'ev-alpha' } // title only via /events
+      ? { ...base, event_id: 'ev-alpha' } // title only via /events/{event_id}
       : { ...base, event_title: { en: 'Alpha localized event' } }; // localized only
   }
   return { ...base, question: `Beta question ${i + 1}`, event_title: 'Beta event' };
 });
+
+// Event records served by GET /events/{event_id}. `ev-closed` is a closed
+// parent event: the active/closed-filtered `/events` list never returns it.
+const EVENTS: Record<string, { event_id: string; title: unknown; active: boolean; closed: boolean }> = {
+  'ev-other': { event_id: 'ev-other', title: 'Other', active: true, closed: false },
+  'ev-alpha': { event_id: 'ev-alpha', title: { en: 'Alpha fetched event' }, active: true, closed: false },
+  'ev-closed': { event_id: 'ev-closed', title: { en: 'Closed parent event' }, active: false, closed: true },
+};
+
+/** Serve `/events` (active only) and `/events/{id}` (unfiltered); null for other paths. */
+function eventResponse(path: string, search: string): Response | null {
+  if (path.endsWith('/events')) {
+    return new Response(JSON.stringify({ items: Object.values(EVENTS).filter((e) => e.active), next_cursor: null }));
+  }
+  const match = /\/events\/([^/]+)$/.exec(path);
+  if (!match) return null;
+  assert.equal(search, '', 'event-title lookup must not carry active/closed filters');
+  const event = EVENTS[decodeURIComponent(match[1] || '')];
+  return event ? new Response(JSON.stringify(event)) : new Response('{}', { status: 404 });
+}
 
 function mockEventGate() {
   const calls: string[] = [];
@@ -94,12 +114,8 @@ function mockEventGate() {
     const url = new URL(input);
     calls.push(url.pathname);
     if (url.pathname.endsWith('/tokens/prices')) return new Response(JSON.stringify({ items: [] }));
-    if (url.pathname.endsWith('/events')) {
-      return new Response(JSON.stringify({
-        items: [{ event_id: 'ev-other', title: 'Other' }, { event_id: 'ev-alpha', title: { en: 'Alpha fetched event' } }],
-        next_cursor: null,
-      }));
-    }
+    const event = eventResponse(url.pathname, url.search);
+    if (event) return event;
     const limit = Number(url.searchParams.get('limit'));
     const offset = Number(url.searchParams.get('cursor') || '0');
     const items = EVENT_ROWS.slice(offset, offset + limit);
@@ -127,11 +143,11 @@ test('search matches markets whose question comes only from event_title, without
   const byId = new Map(seen.map((m) => [m.externalId, m.question]));
   assert.equal(byId.get('e2'), 'Alpha localized event');
   assert.equal(byId.get('e5'), 'Alpha fetched event');
-  assert.ok(calls.some((path) => path.endsWith('/events')));
+  assert.ok(calls.some((path) => path.endsWith('/events/ev-alpha')));
 });
 
 /** Catalog + detail stub for one product prefix; the detail omits question/title/event_title. */
-function mockProductGate(prefix: string) {
+function mockProductGate(prefix: string, rows: typeof EVENT_ROWS = EVENT_ROWS) {
   const calls: string[] = [];
   globalThis.fetch = (async (input: string) => {
     const url = new URL(input);
@@ -139,21 +155,23 @@ function mockProductGate(prefix: string) {
     assert.ok(url.pathname.startsWith(`${prefix}/`), `unexpected product path ${url.pathname}`);
     const path = url.pathname.slice(prefix.length);
     if (path === '/tokens/prices') return new Response(JSON.stringify({ items: [] }));
-    if (path === '/events') {
-      return new Response(JSON.stringify({
-        items: [{ event_id: 'ev-alpha', title: { en: 'Alpha fetched event' } }],
-        next_cursor: null,
-      }));
-    }
+    const event = eventResponse(path, url.search);
+    if (event) return event;
     const detail = /^\/markets\/([^/]+)$/.exec(path);
     if (detail) {
-      const row = EVENT_ROWS.find((r) => r.market_id === decodeURIComponent(detail[1] || ''));
+      const row = rows.find((r) => r.market_id === decodeURIComponent(detail[1] || ''));
       return row ? new Response(JSON.stringify(row)) : new Response('{}', { status: 404 });
     }
-    return new Response(JSON.stringify({ items: EVENT_ROWS, next_cursor: null }));
+    return new Response(JSON.stringify({ items: rows, next_cursor: null }));
   }) as typeof fetch;
   return calls;
 }
+
+// Active markets whose only title is on a closed parent event.
+const CLOSED_EVENT_ROWS = [
+  { market_id: 'c1', event_id: 'ev-closed', end_date: FUTURE, outcomes: [{ outcome: 'Yes', token_id: 'cy1' }, { outcome: 'No', token_id: 'cn1' }] },
+  { market_id: 'c2', question: 'Own question', end_date: FUTURE, outcomes: [{ outcome: 'Yes', token_id: 'cy2' }, { outcome: 'No', token_id: 'cn2' }] },
+] as unknown as typeof EVENT_ROWS;
 
 for (const [product, prefix] of [
   ['prediction', '/api/v4/prediction'],
@@ -171,7 +189,24 @@ for (const [product, prefix] of [
       assert.ok(opened, `${market.externalId} should open`);
       assert.equal(opened.question, 'Alpha fetched event');
       assert.equal(opened.question, market.question);
-      assert.ok(calls.some((path) => path.endsWith('/events')));
+      assert.ok(calls.some((path) => path.endsWith('/events/ev-alpha')));
     }
+  });
+
+  test(`${product}: a market titled only by a closed event lists and opens via getMarket`, async () => {
+    const calls = mockProductGate(prefix, CLOSED_EVENT_ROWS);
+    const adapter = new GateCatalogAdapter({ apiUrl: 'https://gate.test', product });
+    const listed = await adapter.listMarkets({ limit: 100 });
+    assert.deepEqual(listed.markets.map((m) => [m.externalId, m.question]), [
+      ['c1', 'Closed parent event'],
+      ['c2', 'Own question'],
+    ]);
+
+    calls.length = 0;
+    const opened = await adapter.getMarket({ venue: 'GATE', externalId: 'c1' });
+    assert.ok(opened, 'c1 should open');
+    assert.equal(opened.question, 'Closed parent event');
+    assert.ok(calls.some((path) => path.endsWith('/events/ev-closed')));
+    assert.ok(!calls.some((path) => path.endsWith('/events')), 'detail does not page the active event catalog');
   });
 }

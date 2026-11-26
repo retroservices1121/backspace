@@ -34,7 +34,7 @@ export const GATE_PRICE_HISTORY_MAX_MS = 14 * 24 * 60 * 60 * 1000;
 // number of pages walked, so a misbehaving cursor cannot loop forever.
 const MAX_COLLECT = 1000;
 const MAX_MARKET_PAGES = 20;
-const MAX_EVENT_PAGES = 10;
+const EVENT_LOOKUP_CONCURRENCY = 8; // parallel GET /events/{event_id} lookups
 
 type Localized = string | Record<string, unknown> | null;
 
@@ -339,26 +339,24 @@ export class GateCatalogAdapter implements MarketVenue {
     });
   }
 
-  /** Page `/events` to resolve titles and images for the given event ids. */
+  /**
+   * Resolve titles and images for the given event ids via GET
+   * `/events/{event_id}`. No active/closed filters: those belong to market
+   * discovery only, and `/markets/{id}` can still return a market whose
+   * parent event has closed. Event info is decorative, so a failed or missing
+   * lookup leaves that event unresolved rather than dropping markets.
+   */
   private async eventInfo(eventIds: string[]): Promise<Map<string, { title: string | null; image?: string }>> {
-    const wanted = new Set(eventIds);
+    const unique = Array.from(new Set(eventIds.filter(Boolean)));
     const info = new Map<string, { title: string | null; image?: string }>();
-    if (wanted.size === 0) return info;
-    let cursor: string | null = null;
-    try {
-      for (let pages = 0; pages < MAX_EVENT_PAGES; pages += 1) {
-        const qs = new URLSearchParams({ limit: String(GATE_PAGE_LIMIT), active: 'true', closed: 'false' });
-        if (cursor) qs.set('cursor', cursor);
-        const page: Page<GateEvent> = await this.fetchJson<Page<GateEvent>>(`/events?${qs.toString()}`);
-        for (const event of page.items || []) {
-          if (!event.event_id || !wanted.has(event.event_id)) continue;
-          info.set(event.event_id, { title: localizedText(event.title), image: event.image || event.icon });
-        }
-        cursor = page.next_cursor || null;
-        if (!cursor || info.size >= wanted.size) break;
-      }
-    } catch {
-      // Event titles are decorative. A failed lookup must not drop markets.
+    for (let i = 0; i < unique.length; i += EVENT_LOOKUP_CONCURRENCY) {
+      await Promise.all(unique.slice(i, i + EVENT_LOOKUP_CONCURRENCY).map(async (eventId) => {
+        const event = await this.fetchJson<GateEvent | null>(
+          `/events/${encodeURIComponent(eventId)}`,
+          { allow404: true },
+        ).catch(() => null);
+        if (event) info.set(eventId, { title: localizedText(event.title), image: event.image || event.icon });
+      }));
     }
     return info;
   }

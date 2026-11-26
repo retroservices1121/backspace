@@ -41,6 +41,7 @@ const PAGE_LIMIT = 100; // documented Gate list maximum (1–100)
 const PRICE_BATCH = 100; // documented /tokens/prices maximum
 const MAX_PAGES = 10;
 const DEFAULT_MARKETS = 200;
+const EVENT_CONCURRENCY = 8; // parallel GET /events/{event_id} title lookups
 
 export function createGateClient(fetchImpl: GateFetch, bases: Record<GateProduct, string>) {
   async function getJson<T>(path: string, product: GateProduct = 'prediction'): Promise<T> {
@@ -74,18 +75,25 @@ export function createGateClient(fetchImpl: GateFetch, bases: Record<GateProduct
   }
 
   /**
-   * Titles from `/events` for rows that have an `event_id` but no title of
-   * their own. Shared by list and detail so a market whose only displayable
-   * question is its event title both lists and opens. Decorative lookups:
-   * a failure yields an empty map rather than dropping markets.
+   * Titles for rows that have an `event_id` but no title of their own,
+   * looked up one event at a time via GET `/events/{event_id}`. Shared by
+   * list and detail so a market whose only displayable question is its event
+   * title both lists and opens. No active/closed filters: those belong to
+   * market discovery only, and a market can still be served after its parent
+   * event closes. Decorative lookups: a failure leaves that title unresolved
+   * rather than dropping markets.
    */
   async function eventTitles(raws: GateMarket[], product: GateProduct): Promise<Map<string, string>> {
-    const missing = new Set(raws.flatMap((raw) => raw.event_id && !text(raw.event_title) ? [raw.event_id] : []));
-    if (!missing.size) return new Map();
-    const events = await collect<GateEvent>('/events?active=true&closed=false', PAGE_LIMIT * MAX_PAGES, product,
-      (rows) => rows.filter((event) => event.event_id && missing.has(event.event_id)).length >= missing.size,
-    ).catch(() => [] as GateEvent[]);
-    return new Map(events.flatMap((event) => event.event_id && missing.has(event.event_id) && text(event.title) ? [[event.event_id, text(event.title)] as const] : []));
+    const missing = [...new Set(raws.flatMap((raw) => raw.event_id && !text(raw.event_title) ? [raw.event_id] : []))];
+    const titles = new Map<string, string>();
+    for (let index = 0; index < missing.length; index += EVENT_CONCURRENCY) {
+      await Promise.all(missing.slice(index, index + EVENT_CONCURRENCY).map(async (eventId) => {
+        const event = await getJson<GateEvent>(`/events/${encodeURIComponent(eventId)}`, product).catch(() => null);
+        const title = text(event?.title);
+        if (title) titles.set(eventId, title);
+      }));
+    }
+    return titles;
   }
 
   async function listMarkets(limit = DEFAULT_MARKETS, product: GateProduct = 'prediction'): Promise<Market[]> {
