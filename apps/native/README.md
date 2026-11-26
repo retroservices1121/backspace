@@ -29,7 +29,7 @@ pnpm dev:native
 
 Copy `.env.example` to `.env.local`. Create a mobile app client for the new bundle `to.backspace.app` in the Backspace identity project, then set `EXPO_PUBLIC_PRIVY_APP_ID` and `EXPO_PUBLIC_PRIVY_CLIENT_ID`.
 
-Private Gate access is deliberately routed through the web API. Configure `GATE_ACCOUNT_GATEWAY_URL` and `GATE_ACCOUNT_GATEWAY_TOKEN` on the server after Gate enables Builder user-account provisioning. The gateway must map the verified `X-Backspace-User` identity to that user's Gate account and sign Gate requests without returning API secrets to the app.
+Private Gate access is deliberately routed through the web API (`/api/native/markets/*`). The web server signs Gate DexBuilder Broker requests with the server-only `GATE_BROKER_API_KEY` and `GATE_BROKER_API_SECRET`; the app never receives a Gate key, secret or signature, and those names must never be added as `EXPO_PUBLIC_*` variables. The old `GATE_ACCOUNT_GATEWAY_URL` / `GATE_ACCOUNT_GATEWAY_TOKEN` gateway is deprecated and no longer read. Balances and trading stay unavailable until Gate wallet registration ships; deposits and withdrawals are not built yet.
 
 ## Build
 

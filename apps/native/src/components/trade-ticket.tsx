@@ -17,7 +17,7 @@ export function TradeTicket({ outcomes, acceptingOrders }: { outcomes: Outcome[]
     if (!selected || !Number.isFinite(dollars) || dollars <= 0) return;
     setSubmitting(true); setMessage(null);
     try {
-      const result = await placeOrder({ tokenId: selected.id, side: 'BUY', totalCost: dollars.toFixed(2), orderType: 'MARKET', clientOrderId: randomUUID() }, session.getAccessToken);
+      const result = await placeOrder({ tokenId: selected.id, side: 'BUY', totalCost: dollars.toFixed(2), orderMode: 'MARKET', orderType: 'FOK', clientOrderId: randomUUID() }, session.getAccessToken);
       setMessage(`Order ${result.status.toLowerCase()}.`); setReviewing(false);
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Order could not be submitted.'); }
     finally { setSubmitting(false); }
