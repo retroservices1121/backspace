@@ -112,11 +112,12 @@ function mapGateError(error: unknown): GateAccountError {
   if (error.status >= 400 && error.status < 500) {
     // Only recognised Gate labels reach the client, each with a fixed
     // message from KNOWN_GATE_LABELS. Raw upstream text is never forwarded.
-    const label = error.label && Object.prototype.hasOwnProperty.call(KNOWN_GATE_LABELS, error.label) ? error.label : null;
+    const label = error.label;
+    const known = label && Object.prototype.hasOwnProperty.call(KNOWN_GATE_LABELS, label) ? KNOWN_GATE_LABELS[label] : undefined;
     return new GateAccountError(
       error.status,
-      label ? `gate_${label.toLowerCase()}` : 'gate_rejected',
-      label ? KNOWN_GATE_LABELS[label] : 'Gate rejected the request.',
+      label && known ? `gate_${label.toLowerCase()}` : 'gate_rejected',
+      known || 'Gate rejected the request.',
     );
   }
   return new GateAccountError(502, 'gate_unavailable', 'Gate is unavailable right now. Try again shortly.');

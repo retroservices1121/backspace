@@ -174,9 +174,9 @@ function statusMessage(status: number): string {
 /** Build a GateBrokerError from untrusted upstream fields, keeping only safe values. */
 export function sanitizedGateError(status: number, rawLabel: unknown, rawCode: unknown): GateBrokerError {
   const candidate = typeof rawLabel === 'string' ? rawLabel.trim().toUpperCase() : '';
-  const label = Object.prototype.hasOwnProperty.call(KNOWN_GATE_LABELS, candidate) ? candidate : null;
+  const known = Object.prototype.hasOwnProperty.call(KNOWN_GATE_LABELS, candidate) ? KNOWN_GATE_LABELS[candidate] : undefined;
   const gateCode = typeof rawCode === 'number' && Number.isSafeInteger(rawCode) ? rawCode : null;
-  return new GateBrokerError(status, label, label ? KNOWN_GATE_LABELS[label] : statusMessage(status), gateCode);
+  return new GateBrokerError(status, known ? candidate : null, known || statusMessage(status), gateCode);
 }
 
 export function isGateBrokerError(error: unknown): error is GateBrokerError {
