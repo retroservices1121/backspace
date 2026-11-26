@@ -37,6 +37,8 @@ export type MarketCardData = {
   id: string;
   venue: 'GATE' | 'AZURO' | 'INTERNAL';
   externalId: string;
+  // Gate product. Missing means Prediction Markets (older payloads).
+  product?: 'prediction' | 'event_contracts' | null;
   eventId?: string | null;
   eventTitle?: string | null;
   question: string;

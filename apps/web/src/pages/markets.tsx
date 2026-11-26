@@ -21,6 +21,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useQuery } from 'react-query';
 
 import axios from '@src/lib/axios';
@@ -33,6 +34,7 @@ import { MarketConversationCarousel } from '@src/components/Market/MarketConvers
 import { TrendingMarketCard } from '@src/components/Market/TrendingMarketCard';
 import type { MarketCardData } from '@src/components/Market/MarketCard';
 import { groupMarketsByEvent } from '@src/lib/markets/groupEvents';
+import { parseGateProduct, type GateProductSelection } from '@src/lib/gate/product';
 
 const ALL = 'all';
 const SEARCH_MIN = 2;
@@ -47,23 +49,31 @@ const SORTS: Array<{ key: SortKey; label: string; sub: string }> = [
   { key: 'closing',    label: 'Soonest closing',  sub: 'Resolving first' },
 ];
 
-async function fetchCatalog(sort: SortKey): Promise<MarketCardData[]> {
+// Gate product tabs. Prediction Markets stays the default so existing
+// /markets links are unchanged; ?product= selects the others.
+const PRODUCTS: Array<{ key: GateProductSelection; label: string }> = [
+  { key: 'prediction',      label: 'Prediction' },
+  { key: 'event_contracts', label: 'Event Contracts' },
+  { key: 'all',             label: 'All' },
+];
+
+async function fetchCatalog(sort: SortKey, product: GateProductSelection): Promise<MarketCardData[]> {
   const { data } = await axios().get<MarketCardData[]>(
-    `/markets?limit=100&sort=${sort}`,
+    `/markets?limit=100&sort=${sort}&product=${product}`,
   );
   return data ?? [];
 }
 
-async function fetchTrending(): Promise<MarketCardData[]> {
+async function fetchTrending(product: GateProductSelection): Promise<MarketCardData[]> {
   const { data } = await axios().get<MarketCardData[]>(
-    `/markets?limit=${TRENDING_COUNT}&sort=trending`,
+    `/markets?limit=${TRENDING_COUNT}&sort=trending&product=${product}`,
   );
   return data ?? [];
 }
 
-async function fetchSearch(q: string): Promise<MarketCardData[]> {
+async function fetchSearch(q: string, product: GateProductSelection): Promise<MarketCardData[]> {
   const { data } = await axios().get<MarketCardData[]>(
-    `/markets?q=${encodeURIComponent(q)}&limit=50`,
+    `/markets?q=${encodeURIComponent(q)}&limit=50&product=${product}`,
   );
   return data ?? [];
 }
@@ -79,6 +89,8 @@ function useDebounced<T>(value: T, ms: number): T {
 
 const Markets: React.FC = () => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const product = parseGateProduct(router.query.product);
   const [category, setCategory] = useState<string>(ALL);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sort, setSort] = useState<SortKey>('trending');
@@ -104,9 +116,20 @@ const Markets: React.FC = () => {
     return () => document.removeEventListener('mousedown', onDown);
   }, [sortOpen, categoryOpen]);
 
+  const selectProduct = (next: GateProductSelection) => {
+    if (next === product) return;
+    setCategory(ALL);
+    setCategoryOpen(false);
+    setSortOpen(false);
+    const query = { ...router.query };
+    if (next === 'prediction') delete query.product;
+    else query.product = next;
+    router.replace({ pathname: router.pathname, query }, undefined, { shallow: true, scroll: false });
+  };
+
   const catalog = useQuery(
-    ['markets-catalog', sort],
-    () => fetchCatalog(sort),
+    ['markets-catalog', sort, product],
+    () => fetchCatalog(sort, product),
     {
       refetchInterval: 60_000,
       staleTime: 30_000,
@@ -115,8 +138,8 @@ const Markets: React.FC = () => {
   );
 
   const trending = useQuery(
-    ['markets-trending'],
-    fetchTrending,
+    ['markets-trending', product],
+    () => fetchTrending(product),
     {
       refetchInterval: 60_000,
       staleTime: 30_000,
@@ -124,8 +147,8 @@ const Markets: React.FC = () => {
   );
 
   const search = useQuery(
-    ['markets-search', debouncedQuery],
-    () => fetchSearch(debouncedQuery),
+    ['markets-search', debouncedQuery, product],
+    () => fetchSearch(debouncedQuery, product),
     {
       enabled: debouncedQuery.length >= SEARCH_MIN,
       keepPreviousData: true,
@@ -312,6 +335,32 @@ const Markets: React.FC = () => {
             </div>
 
             <div className="px-4 pb-4 flex items-center gap-2 flex-wrap sm:px-6">
+              {/* Gate product selector */}
+              <div
+                role="tablist"
+                aria-label="Gate product"
+                className="inline-flex flex-none items-center gap-1 rounded-full border border-line bg-surface p-0.5"
+              >
+                {PRODUCTS.map((p) => {
+                  const isActive = p.key === product;
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => selectProduct(p.key)}
+                      className={[
+                        'h-7 rounded-full px-3 text-[13px] font-medium transition-colors duration-150',
+                        isActive ? 'bg-brand-soft text-brand-2' : 'text-ink-2 hover:text-ink',
+                      ].join(' ')}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Category dropdown */}
               <div className="relative flex-none" ref={categoryRef}>
                 <button
