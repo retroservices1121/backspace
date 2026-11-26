@@ -13,6 +13,7 @@ import {
   isBrokerConfigured,
   isBrokerNotConfiguredError,
   isGateBrokerError,
+  KNOWN_GATE_LABELS,
   type BrokerRequestOptions,
 } from '@backspace/markets/server';
 
@@ -82,9 +83,10 @@ export async function gateAccountRequest<T>(
   let client: GateBrokerClient;
   try {
     client = new GateBrokerClient({ syncClock: true });
-  } catch (error) {
-    if (isBrokerNotConfiguredError(error)) throw notConfigured();
-    throw error;
+  } catch {
+    // Missing credentials or an invalid / non-https GATE_DEXBUILDER_API_URL.
+    // Either way the server is not configured for Broker access.
+    throw notConfigured();
   }
 
   try {
@@ -108,8 +110,14 @@ function mapGateError(error: unknown): GateAccountError {
     return new GateAccountError(429, 'gate_rate_limited', 'Gate is rate limiting requests. Try again shortly.');
   }
   if (error.status >= 400 && error.status < 500) {
-    // Order validation and similar business errors are safe to surface.
-    return new GateAccountError(error.status, error.label || 'gate_rejected', error.message || 'Gate rejected the request.');
+    // Only recognised Gate labels reach the client, each with a fixed
+    // message from KNOWN_GATE_LABELS. Raw upstream text is never forwarded.
+    const label = error.label && Object.prototype.hasOwnProperty.call(KNOWN_GATE_LABELS, error.label) ? error.label : null;
+    return new GateAccountError(
+      error.status,
+      label ? `gate_${label.toLowerCase()}` : 'gate_rejected',
+      label ? KNOWN_GATE_LABELS[label] : 'Gate rejected the request.',
+    );
   }
   return new GateAccountError(502, 'gate_unavailable', 'Gate is unavailable right now. Try again shortly.');
 }

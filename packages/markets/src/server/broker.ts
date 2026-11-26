@@ -104,7 +104,13 @@ export function isBrokerNotConfiguredError(error: unknown): error is BrokerNotCo
     || Boolean(error && typeof error === 'object' && (error as { code?: unknown }).code === 'GATE_BROKER_NOT_CONFIGURED');
 }
 
-/** Gate rejected or failed a Broker request. Never contains secrets or bodies. */
+/**
+ * Gate rejected or failed a Broker request.
+ *
+ * `label` is only ever one of KNOWN_GATE_LABELS and `message` is always a
+ * fixed Backspace string: raw upstream `message` / `label` text is dropped
+ * because a diagnostic could echo request headers (KEY, SIGN) back to us.
+ */
 export class GateBrokerError extends Error {
   readonly status: number;
   readonly label: string | null;
@@ -118,6 +124,59 @@ export class GateBrokerError extends Error {
     this.gateCode = gateCode;
     Object.setPrototypeOf(this, GateBrokerError.prototype);
   }
+}
+
+/**
+ * Gate labels Backspace recognises, each with a fixed client-safe message.
+ * Anything else collapses to a status-based message with label = null.
+ */
+export const KNOWN_GATE_LABELS: Record<string, string> = {
+  INVALID_PARAM_VALUE: 'Gate rejected a request parameter.',
+  INVALID_ARGUMENT: 'Gate rejected a request parameter.',
+  INVALID_REQUEST_BODY: 'Gate rejected the request body.',
+  MISSING_REQUIRED_PARAM: 'A required parameter is missing.',
+  BAD_REQUEST: 'Gate rejected the request.',
+  NOT_FOUND: 'Gate could not find the requested resource.',
+  MARKET_NOT_FOUND: 'This market was not found on Gate.',
+  ORDER_NOT_FOUND: 'This order was not found on Gate.',
+  ORDER_CLOSED: 'This order is already closed.',
+  ORDER_CANCELLED: 'This order was already cancelled.',
+  MARKET_CLOSED: 'This market is not accepting orders.',
+  BALANCE_NOT_ENOUGH: 'Insufficient balance on Gate for this order.',
+  INSUFFICIENT_BALANCE: 'Insufficient balance on Gate for this order.',
+  INSUFFICIENT_AVAILABLE: 'Insufficient balance on Gate for this order.',
+  INVALID_PRECISION: 'Order price or size has too many decimals.',
+  INVALID_PRICE: 'Order price is not valid for this market.',
+  INVALID_AMOUNT: 'Order size is not valid for this market.',
+  AMOUNT_TOO_SMALL: 'Order size is below the market minimum.',
+  AMOUNT_TOO_LARGE: 'Order size is above the market maximum.',
+  PRICE_TOO_DEVIATED: 'Order price is too far from the market.',
+  FOK_NOT_FILL: 'The order could not be filled immediately in full.',
+  USER_NOT_FOUND: 'This wallet is not registered with Gate.',
+  WALLET_NOT_REGISTERED: 'This wallet is not registered with Gate.',
+  INVALID_KEY: 'Gate did not accept the Broker credentials.',
+  INVALID_CREDENTIALS: 'Gate did not accept the Broker credentials.',
+  INVALID_SIGNATURE: 'Gate did not accept the Broker credentials.',
+  REQUEST_EXPIRED: 'Gate did not accept the Broker credentials.',
+  IP_FORBIDDEN: 'Gate did not accept the Broker credentials.',
+  FORBIDDEN: 'Gate refused this request.',
+  TOO_MANY_REQUESTS: 'Gate is rate limiting requests.',
+};
+
+function statusMessage(status: number): string {
+  if (status === 401 || status === 403) return 'Gate did not accept the Broker credentials.';
+  if (status === 404) return 'Gate could not find the requested resource.';
+  if (status === 429) return 'Gate is rate limiting requests.';
+  if (status >= 400 && status < 500) return 'Gate rejected the request.';
+  return 'Gate request failed.';
+}
+
+/** Build a GateBrokerError from untrusted upstream fields, keeping only safe values. */
+export function sanitizedGateError(status: number, rawLabel: unknown, rawCode: unknown): GateBrokerError {
+  const candidate = typeof rawLabel === 'string' ? rawLabel.trim().toUpperCase() : '';
+  const label = Object.prototype.hasOwnProperty.call(KNOWN_GATE_LABELS, candidate) ? candidate : null;
+  const gateCode = typeof rawCode === 'number' && Number.isSafeInteger(rawCode) ? rawCode : null;
+  return new GateBrokerError(status, label, label ? KNOWN_GATE_LABELS[label] : statusMessage(status), gateCode);
 }
 
 export function isGateBrokerError(error: unknown): error is GateBrokerError {
@@ -155,8 +214,55 @@ export function readBrokerConfig(env: Env = processEnv()): BrokerConfig {
   const apiKey = (env.GATE_BROKER_API_KEY || '').trim();
   const apiSecret = (env.GATE_BROKER_API_SECRET || '').trim();
   if (!apiKey || !apiSecret) throw new BrokerNotConfiguredError();
-  const baseUrl = ((env.GATE_DEXBUILDER_API_URL || '').trim() || DEFAULT_DEXBUILDER_API_URL).replace(/\/+$/, '');
+  const baseUrl = brokerOrigin((env.GATE_DEXBUILDER_API_URL || '').trim() || DEFAULT_DEXBUILDER_API_URL);
   return { apiKey, apiSecret, baseUrl };
+}
+
+const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+
+/**
+ * Validate and normalize the Broker origin. Must be `https:` with no
+ * credentials, path, query or fragment. Plain `http:` is allowed only for an
+ * explicit loopback override (local development / test stubs).
+ */
+export function brokerOrigin(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error('Gate DexBuilder API URL is not a valid URL.');
+  }
+  const loopback = LOOPBACK_HOSTS.indexOf(url.hostname) !== -1;
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) {
+    throw new Error('Gate DexBuilder API URL must use https.');
+  }
+  if (url.username || url.password || url.search || url.hash || (url.pathname !== '/' && url.pathname !== '')) {
+    throw new Error('Gate DexBuilder API URL must be a bare origin.');
+  }
+  return url.origin;
+}
+
+/**
+ * Canonical external path check. Returns the path exactly as it will be
+ * serialized on the wire, and throws unless that equals the input — so the
+ * signed REQUEST_PATH and the transmitted path are always the same bytes.
+ * Rejects fragments, queries, dot segments, empty segments, backslashes,
+ * percent-encoded bytes and anything URL parsing would re-encode.
+ */
+export function canonicalBrokerPath(path: string): string {
+  const invalid = () => new Error('Broker path must be a canonical external /api/v4 path without query or fragment.');
+  if (typeof path !== 'string' || !path.startsWith('/api/v4/')) throw invalid();
+  if (!/^[A-Za-z0-9\-._~/:@!$&'()*+,;=]+$/.test(path)) throw invalid();
+  const segments = path.slice(1).split('/');
+  if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) throw invalid();
+  let serialized: string;
+  try {
+    serialized = new URL(path, 'https://broker.invalid').pathname;
+  } catch {
+    throw invalid();
+  }
+  if (serialized !== path) throw invalid();
+  return serialized;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +295,8 @@ type FetchLike = (url: string, init: {
   method: string;
   headers: Record<string, string>;
   body?: string;
+  /** Always 'error': signed headers must never be replayed to another URL. */
+  redirect: 'error';
 }) => Promise<{
   ok: boolean;
   status: number;
@@ -231,7 +339,7 @@ export class GateBrokerClient {
     const key = config.apiKey;
     this.sign = (input) => signBrokerRequest(secret, input);
     this.keyHeader = () => key;
-    this.baseUrl = (config.baseUrl || DEFAULT_DEXBUILDER_API_URL).replace(/\/+$/, '');
+    this.baseUrl = brokerOrigin(config.baseUrl || DEFAULT_DEXBUILDER_API_URL);
     this.fetchImpl = options.fetch || (globalThis.fetch as unknown as FetchLike);
     this.now = options.now || (() => Math.floor(Date.now() / 1000));
     this.shouldSyncClock = options.syncClock === true;
@@ -250,6 +358,7 @@ export class GateBrokerClient {
     const res = await this.fetchImpl(`${this.baseUrl}/api/v4/prediction/time`, {
       method: 'GET',
       headers: { Accept: 'application/json' },
+      redirect: 'error',
     });
     if (!res.ok) throw new GateBrokerError(res.status, null, 'Gate server time unavailable.');
     const body = safeJson(await res.text()) as { server_time?: number } | null;
@@ -262,15 +371,13 @@ export class GateBrokerClient {
 
   /** Build URL, headers, and exact body bytes without sending. */
   prepare(path: string, options: BrokerRequestOptions = {}): PreparedBrokerRequest {
-    if (!path.startsWith('/api/v4/') || path.includes('?')) {
-      throw new Error('Broker path must be an external /api/v4 path without a query string.');
-    }
+    const canonicalPath = canonicalBrokerPath(path);
     const method = options.method || 'GET';
     const body = serializeBody(options.body);
     const timestamp = this.timestamp();
     const sign = this.sign({
       method,
-      path,
+      path: canonicalPath,
       queryString: signingQueryString(options.query),
       body: body === undefined ? '' : body,
       timestamp,
@@ -285,7 +392,10 @@ export class GateBrokerClient {
     if (options.walletAddress) headers['X-User-Wallet-Address'] = options.walletAddress;
     if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey;
     const qs = encodedQueryString(options.query);
-    return { url: `${this.baseUrl}${path}${qs ? `?${qs}` : ''}`, method, headers, body };
+    const url = `${this.baseUrl}${canonicalPath}${qs ? `?${qs}` : ''}`;
+    // Belt and braces: the URL actually sent must carry the signed path.
+    if (new URL(url).pathname !== canonicalPath) throw new Error('Broker URL path does not match the signed path.');
+    return { url, method, headers, body };
   }
 
   /** Signed request. Returns the parsed JSON body (Platform: unwrapped `data`). */
@@ -299,7 +409,11 @@ export class GateBrokerClient {
       method: prepared.method,
       headers: prepared.headers,
       body: prepared.body,
+      // Never follow redirects: KEY / SIGN / wallet headers stay on the
+      // signed origin and path, and a 3xx surfaces as a fetch error.
+      redirect: 'error',
     });
+    if (res.status >= 300 && res.status < 400) throw new GateBrokerError(502, null, 'Gate request failed.');
     const parsed = safeJson(await res.text().catch(() => ''));
     const platform = path.startsWith(BROKER_PATH_PREFIX.platform + '/');
     return interpretResponse<T>(res.status, res.ok, parsed, platform);
@@ -345,16 +459,12 @@ type GateErrorBody = { label?: unknown; message?: unknown; code?: unknown; data?
 
 function interpretResponse<T>(status: number, ok: boolean, parsed: unknown, platform: boolean): T {
   const body = (parsed && typeof parsed === 'object' ? parsed : {}) as GateErrorBody;
-  const label = typeof body.label === 'string' ? body.label : null;
-  const message = typeof body.message === 'string' && body.message ? body.message : 'Gate request failed.';
-  if (!ok) {
-    const code = typeof body.code === 'number' ? body.code : null;
-    throw new GateBrokerError(status, label, message, code);
-  }
+  // Raw upstream `message` / `label` text is deliberately never copied.
+  if (!ok) throw sanitizedGateError(status, body.label, body.code);
   if (platform && typeof body.code === 'number') {
     // Platform envelopes: { code, message, data, trace_id }. Some business
     // errors are HTTP 200 with a non-zero code.
-    if (body.code !== 0) throw new GateBrokerError(status === 200 ? 422 : status, label, message, body.code);
+    if (body.code !== 0) throw sanitizedGateError(status === 200 ? 422 : status, body.label, body.code);
     return body.data as T;
   }
   return parsed as T;

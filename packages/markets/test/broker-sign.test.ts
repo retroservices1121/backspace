@@ -10,9 +10,13 @@ import { test } from 'node:test';
 
 import {
   BrokerNotConfiguredError,
+  DEFAULT_DEXBUILDER_API_URL,
   GateBrokerClient,
   GateBrokerError,
+  KNOWN_GATE_LABELS,
+  brokerOrigin,
   buildSignatureString,
+  canonicalBrokerPath,
   isBrokerConfigured,
   readBrokerConfig,
   sha512Hex,
@@ -151,4 +155,85 @@ test('client object does not expose the secret when serialized', () => {
   const c = client();
   assert.ok(!JSON.stringify(c).includes(SECRET));
   assert.ok(!Object.values(c).some((value) => value === SECRET));
+});
+
+test('signed fetches never follow redirects', async () => {
+  const seen: Array<{ url: string; redirect: string }> = [];
+  const c = new GateBrokerClient({
+    config: { apiKey: 'test-broker-key', apiSecret: SECRET, baseUrl: 'https://example.invalid' },
+    fetch: async (url, init) => {
+      seen.push({ url, redirect: init.redirect });
+      return { ok: false, status: 302, text: async () => '' };
+    },
+  });
+  await assert.rejects(c.prediction('orders'), (error: unknown) => {
+    assert.ok(error instanceof GateBrokerError);
+    assert.equal((error as GateBrokerError).status, 502);
+    return true;
+  });
+  assert.deepEqual(seen, [{ url: 'https://example.invalid/api/v4/broker/prediction/orders', redirect: 'error' }]);
+});
+
+test('Broker origin must be https unless it is an explicit loopback override', () => {
+  const env = { GATE_BROKER_API_KEY: 'k', GATE_BROKER_API_SECRET: SECRET };
+  assert.equal(readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'https://api.example.com/' }).baseUrl, 'https://api.example.com');
+  assert.equal(readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'http://localhost:4010' }).baseUrl, 'http://localhost:4010');
+  assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'http://api.example.com' }), /https/);
+  assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'https://api.example.com/proxy' }), /bare origin/);
+  assert.throws(() => readBrokerConfig({ ...env, GATE_DEXBUILDER_API_URL: 'https://u:p@api.example.com' }), /bare origin/);
+  assert.equal(brokerOrigin(DEFAULT_DEXBUILDER_API_URL), 'https://api.dexbuilder.com');
+  assert.throws(() => new GateBrokerClient({
+    config: { apiKey: 'k', apiSecret: SECRET, baseUrl: 'http://example.invalid' },
+  }), /https/);
+});
+
+test('non-canonical paths are rejected so SIGN always matches the sent path', async () => {
+  const c = client();
+  for (const bad of [
+    '/api/v4/broker/prediction/../dexbuilder/user/info',
+    '/api/v4/broker/prediction/./orders',
+    '/api/v4/broker/prediction/orders#frag',
+    '/api/v4/broker/prediction/orders?x=1',
+    '/api/v4/broker/prediction//orders',
+    '/api/v4/broker/prediction/%2e%2e/orders',
+    '/api/v4/broker/prediction/or ders',
+    '/api/v4/broker/prediction\\orders',
+    '/api/v4/broker/prediction/örders',
+    'api/v4/broker/prediction/orders',
+  ]) {
+    assert.throws(() => c.prepare(bad), /canonical/, bad);
+  }
+  await assert.rejects(c.prediction('../../dexbuilder/user/info'), /canonical/);
+  assert.equal(canonicalBrokerPath('/api/v4/broker/prediction/orders/o-1'), '/api/v4/broker/prediction/orders/o-1');
+  const prepared = c.prepare('/api/v4/dexbuilder/user/info');
+  assert.equal(new URL(prepared.url).pathname, '/api/v4/dexbuilder/user/info');
+  assert.equal(prepared.headers.SIGN, FIXTURE_A);
+});
+
+test('upstream error text and unknown labels never reach GateBrokerError', async () => {
+  const leak = 'KEY=test-broker-key SIGN=deadbeef';
+  const make = (status: number, payload: unknown) => new GateBrokerClient({
+    config: { apiKey: 'test-broker-key', apiSecret: SECRET, baseUrl: 'https://example.invalid' },
+    fetch: async () => ({ ok: status < 400, status, text: async () => JSON.stringify(payload) }),
+  });
+  await assert.rejects(make(400, { label: leak, message: leak }).prediction('orders'), (error: unknown) => {
+    const e = error as GateBrokerError;
+    assert.equal(e.label, null);
+    assert.equal(e.message, 'Gate rejected the request.');
+    assert.ok(!JSON.stringify({ ...e, message: e.message }).includes('SIGN'));
+    return true;
+  });
+  await assert.rejects(make(400, { label: 'balance_not_enough', message: leak }).prediction('orders'), (error: unknown) => {
+    const e = error as GateBrokerError;
+    assert.equal(e.label, 'BALANCE_NOT_ENOUGH');
+    assert.equal(e.message, KNOWN_GATE_LABELS.BALANCE_NOT_ENOUGH);
+    return true;
+  });
+  await assert.rejects(make(200, { code: 7, label: leak, message: leak }).platform('user/info'), (error: unknown) => {
+    const e = error as GateBrokerError;
+    assert.equal(e.status, 422);
+    assert.equal(e.gateCode, 7);
+    assert.ok(!e.message.includes('KEY'));
+    return true;
+  });
 });
