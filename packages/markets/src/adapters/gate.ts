@@ -126,6 +126,12 @@ export type GatePricePoint = { t: number; p: string };
 export type GateTokenLastPrice = { price: string; timestamp: number | null };
 export type GatePriceInterval = '5m' | '15m' | '1h' | '4h' | '1d';
 
+/** Event titles/images resolved from `/events`, plus the ids already requested. */
+interface GateEventCache {
+  info: Map<string, { title: string | null; image?: string }>;
+  looked: Set<string>;
+}
+
 /**
  * Public catalog adapter for one Gate DexBuilder product. Prediction Markets
  * and Event Contracts share the same public schema under different prefixes.
@@ -161,8 +167,7 @@ export class GateCatalogAdapter implements MarketVenue {
     const target = clampCollect(args.limit);
     const search = args.search ? args.search.toLowerCase() : null;
     const noPrices = new Map<string, GateTokenLastPrice>();
-    const events = new Map<string, { title: string | null; image?: string }>();
-    const looked = new Set<string>();
+    const events: GateEventCache = { info: new Map(), looked: new Set() };
     const kept: GateRawMarket[] = [];
     let cursor: string | null = args.cursor || null;
     let pages = 0;
@@ -181,24 +186,12 @@ export class GateCatalogAdapter implements MarketVenue {
       const rows = (page.items || []).filter((row) => row.closed !== true);
 
       // Resolve missing event titles for this page (once per event id).
-      const missing = rows.flatMap((row) =>
-        row.event_id && !localizedText(row.event_title) && !looked.has(row.event_id) ? [row.event_id] : [],
-      );
-      if (missing.length > 0) {
-        missing.forEach((id) => looked.add(id));
-        (await this.eventInfo(missing)).forEach((value, key) => events.set(key, value));
-      }
+      const enrichedRows = await this.withEventInfo(rows, events);
 
       // No early break: stopping mid-page and then returning this page's
       // next_cursor would skip the unconsumed rows. If Gate ever returns more
       // rows than requested, we overshoot `target` rather than drop markets.
-      for (const row of rows) {
-        const event = row.event_id ? events.get(row.event_id) : undefined;
-        const enriched: GateRawMarket = {
-          ...row,
-          event_title: localizedText(row.event_title) || (event ? event.title : null),
-          event_icon_url: row.event_icon_url || (event ? event.image : undefined),
-        };
+      for (const enriched of enrichedRows) {
         const market = mapMarket(enriched, this.product, noPrices);
         if (!market || market.status !== 'ACTIVE') continue;
         if (search && !matchesSearch(market, search)) continue;
@@ -221,8 +214,11 @@ export class GateCatalogAdapter implements MarketVenue {
 
   async getMarket(ref: VenueMarketRef): Promise<VenueMarket | null> {
     if (ref.venue !== this.id) return null;
-    const raw = await this.getRawMarket(ref.externalId);
-    if (!raw) return null;
+    const detail = await this.getRawMarket(ref.externalId);
+    if (!detail) return null;
+    // Same event-title enrichment as listMarkets, so a market that is listed
+    // (and searchable) via its event title also opens.
+    const raw = (await this.withEventInfo([detail]))[0] || detail;
     const prices = await this.tokenPrices(outcomeTokenIds(raw)).catch(
       () => new Map<string, GateTokenLastPrice>(),
     );
@@ -314,6 +310,33 @@ export class GateCatalogAdapter implements MarketVenue {
 
   async submit(_args: SubmitArgs): Promise<SubmitResult> {
     throw new Error('Gate orders are placed by the Broker API on the Backspace server.');
+  }
+
+  /**
+   * Fill in `event_title` / `event_icon_url` from `/events` for rows that
+   * have an `event_id` but no title of their own. Shared by listMarkets and
+   * getMarket so both normalize a row identically. `cache` carries lookups
+   * across catalog pages (each event id is requested at most once).
+   */
+  private async withEventInfo(
+    rows: GateRawMarket[],
+    cache: GateEventCache = { info: new Map(), looked: new Set() },
+  ): Promise<GateRawMarket[]> {
+    const missing = Array.from(new Set(rows.flatMap((row) =>
+      row.event_id && !localizedText(row.event_title) && !cache.looked.has(row.event_id) ? [row.event_id] : [],
+    )));
+    if (missing.length > 0) {
+      missing.forEach((id) => cache.looked.add(id));
+      (await this.eventInfo(missing)).forEach((value, key) => cache.info.set(key, value));
+    }
+    return rows.map((row) => {
+      const event = row.event_id ? cache.info.get(row.event_id) : undefined;
+      return {
+        ...row,
+        event_title: localizedText(row.event_title) || (event ? event.title : null),
+        event_icon_url: row.event_icon_url || (event ? event.image : undefined),
+      };
+    });
   }
 
   /** Page `/events` to resolve titles and images for the given event ids. */

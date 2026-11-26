@@ -129,3 +129,49 @@ test('search matches markets whose question comes only from event_title, without
   assert.equal(byId.get('e5'), 'Alpha fetched event');
   assert.ok(calls.some((path) => path.endsWith('/events')));
 });
+
+/** Catalog + detail stub for one product prefix; the detail omits question/title/event_title. */
+function mockProductGate(prefix: string) {
+  const calls: string[] = [];
+  globalThis.fetch = (async (input: string) => {
+    const url = new URL(input);
+    calls.push(url.pathname);
+    assert.ok(url.pathname.startsWith(`${prefix}/`), `unexpected product path ${url.pathname}`);
+    const path = url.pathname.slice(prefix.length);
+    if (path === '/tokens/prices') return new Response(JSON.stringify({ items: [] }));
+    if (path === '/events') {
+      return new Response(JSON.stringify({
+        items: [{ event_id: 'ev-alpha', title: { en: 'Alpha fetched event' } }],
+        next_cursor: null,
+      }));
+    }
+    const detail = /^\/markets\/([^/]+)$/.exec(path);
+    if (detail) {
+      const row = EVENT_ROWS.find((r) => r.market_id === decodeURIComponent(detail[1] || ''));
+      return row ? new Response(JSON.stringify(row)) : new Response('{}', { status: 404 });
+    }
+    return new Response(JSON.stringify({ items: EVENT_ROWS, next_cursor: null }));
+  }) as typeof fetch;
+  return calls;
+}
+
+for (const [product, prefix] of [
+  ['prediction', '/api/v4/prediction'],
+  ['event_contracts', '/api/v4/event_contracts'],
+] as const) {
+  test(`${product}: a market visible only via event-title enrichment also opens via getMarket`, async () => {
+    const calls = mockProductGate(prefix);
+    const adapter = new GateCatalogAdapter({ apiUrl: 'https://gate.test', product });
+    const listed = await adapter.listMarkets({ limit: 100, search: 'alpha fetched' });
+    assert.deepEqual(ids(listed.markets), ['e5', 'e11', 'e17', 'e23', 'e29']);
+
+    for (const market of listed.markets) {
+      calls.length = 0;
+      const opened = await adapter.getMarket({ venue: 'GATE', externalId: market.externalId });
+      assert.ok(opened, `${market.externalId} should open`);
+      assert.equal(opened.question, 'Alpha fetched event');
+      assert.equal(opened.question, market.question);
+      assert.ok(calls.some((path) => path.endsWith('/events')));
+    }
+  });
+}
